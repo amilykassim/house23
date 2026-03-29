@@ -24,7 +24,7 @@ export function HostSection() {
           <div>
             <div className="flex items-center gap-6 mb-8">
               <div className="relative">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-primary-foreground text-2xl font-semibold">
+                <div className="w-16 h-16 rounded-full bg-black from-primary to-accent flex items-center justify-center text-primary-foreground text-2xl font-semibold">
                   D
                 </div>
                 <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-primary rounded-full flex items-center justify-center">
@@ -35,7 +35,7 @@ export function HostSection() {
                 <h2 className="font-serif text-2xl font-semibold text-foreground">
                   Hosted by Deborah
                 </h2>
-                <p className="text-muted-foreground">Since in 2024</p>
+                <p className="text-muted-foreground">Since 2024</p>
               </div>
             </div>
 

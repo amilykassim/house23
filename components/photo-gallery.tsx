@@ -6,12 +6,11 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const photos = [
-  { src: "/images/hero.jpg", alt: "Exterior view with pool", label: "Exterior" },
-  { src: "/images/living-room.jpg", alt: "Spacious living room", label: "Living Room" },
-  { src: "/images/bedroom.jpg", alt: "Master bedroom", label: "Master Bedroom" },
-  { src: "/images/kitchen.jpg", alt: "Gourmet kitchen", label: "Kitchen" },
-  { src: "/images/pool.jpg", alt: "Infinity pool", label: "Pool" },
-  { src: "/images/bathroom.jpg", alt: "Spa bathroom", label: "Bathroom" },
+  { src: "/images/EMMA9964.jpg", alt: "Main house", label: "House 23" },
+  { src: "/images/EMMA0017.jpg", alt: "Spacious living room", label: "Living Room" },
+  { src: "/images/EMMA0136.jpg", alt: "Kitchen", label: "Kitchen" },
+  { src: "/images/EMMA0227.jpg", alt: "Exterior view", label: "Exterior" },
+  { src: "/images/EMMA0107.jpg", alt: "Master bedroom", label: "Master Bedroom" },
 ]
 
 export function PhotoGallery() {

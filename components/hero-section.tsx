@@ -10,7 +10,7 @@ export function HeroSection() {
       {/* Hero Image */}
       <div className="absolute inset-0 pt-16">
         <Image
-          src="/images/hero.jpg"
+          src="/images/EMMA9964.jpg"
           alt="House 23 - Luxury vacation home exterior"
           fill
           className="object-cover"
