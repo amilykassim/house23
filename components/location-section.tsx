@@ -26,25 +26,15 @@ export function LocationSection() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Map */}
           <div className="lg:col-span-2 relative rounded-2xl overflow-hidden bg-muted h-[400px]">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-primary/10" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <MapPin className="h-8 w-8 text-primary-foreground" />
-                </div>
-                <p className="text-foreground font-semibold text-lg">House 23</p>
-                <p className="text-muted-foreground">Kigali, Rwanda</p>
-              </div>
-            </div>
-            {/* Decorative map pattern */}
-            <svg className="absolute inset-0 w-full h-full opacity-10" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="map-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#map-grid)" />
-            </svg>
+            <iframe
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              loading="lazy"
+              allowFullScreen
+              referrerPolicy="no-referrer-when-downgrade"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1062.1763704881878!2d30.122715354221366!3d-1.987933949009095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca70024a51111%3A0xdedd2366044e8c36!2sHouse%2023!5e0!3m2!1sen!2srw!4v1774850432549!5m2!1sen!2srw"
+            />
           </div>
 
           {/* Location Details */}
