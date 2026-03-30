@@ -35,7 +35,7 @@ const footerLinks = [
 const socialLinks = [
   { icon: Instagram, href: "#", label: "Instagram" },
   { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Mail, href: "mailto:hello@house23.com", label: "Email" },
+  { icon: Mail, href: "mailto:hello@Casamigo.com", label: "Email" },
 ]
 
 export function Footer() {
@@ -45,7 +45,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <h3 className="font-serif text-2xl font-semibold mb-4">House 23</h3>
+            <h3 className="font-serif text-2xl font-semibold mb-4">Casamigo</h3>
             <p className="text-muted-foreground dark:text-card-foreground/70 text-sm leading-relaxed mb-6">
               Your private home in Kigali. Experience luxury, comfort, and breathtaking views.
             </p>
@@ -86,9 +86,9 @@ export function Footer() {
         {/* Contact Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-8 border-t border-foreground/10 dark:border-card-foreground/10 mb-8">
           <div className="flex items-center gap-6">
-            <a href="mailto:hello@house23.com" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
+            <a href="mailto:hello@Casamigo.com" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
               <Mail className="h-4 w-4" />
-              <span className="text-sm">hello@house23.com</span>
+              <span className="text-sm">hello@Casamigo.com</span>
             </a>
             <a href="tel:+1-310-555-0123" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
               <Phone className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-foreground/10 dark:border-card-foreground/10">
           <p className="text-muted-foreground/60 dark:text-card-foreground/60 text-sm">
-            2026 House 23. All rights reserved.
+            2026 Casamigo. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link href="#" className="text-muted-foreground/60 dark:text-card-foreground/60 hover:text-muted-foreground dark:hover:text-card-foreground transition-colors text-sm">

@@ -59,7 +59,7 @@ export function LocationSection() {
             <div className="pt-6 border-t border-border">
               <h3 className="font-semibold text-foreground text-lg mb-3">About the Area</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Nestled in the vibrant city of Kigali, House 23 offers the perfect blend of
+                Nestled in the vibrant city of Kigali, Casamigo offers the perfect blend of
                 seclusion and accessibility. Enjoy local attractions, cultural experiences, and proximity to acclaimed restaurants while staying in your own
                 private paradise.
               </p>

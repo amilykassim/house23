@@ -6,7 +6,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const photos = [
-  { src: "/images/EMMA9964.jpg", alt: "Main house", label: "House 23" },
+  { src: "/images/EMMA9964.jpg", alt: "Main house", label: "Casamigo" },
   { src: "/images/EMMA0017.jpg", alt: "Spacious living room", label: "Living Room" },
   { src: "/images/EMMA0136.jpg", alt: "Kitchen", label: "Kitchen" },
   { src: "/images/EMMA0227.jpg", alt: "Exterior view", label: "Exterior" },
@@ -42,7 +42,7 @@ export function PhotoGallery() {
             Explore the Space
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Every corner of House 23 has been thoughtfully designed for comfort, beauty, and unforgettable moments
+            Every corner of Casamigo has been thoughtfully designed for comfort, beauty, and unforgettable moments
           </p>
         </div>
 

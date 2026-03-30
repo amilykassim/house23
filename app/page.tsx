@@ -30,7 +30,7 @@ export default function HomePage() {
                 </p>
                 <div className="prose prose-neutral max-w-none">
                   <p className="text-foreground leading-relaxed mb-4">
-                    Welcome to House 23, This architectural masterpiece seamlessly blends indoor and
+                    Welcome to Casamigo, This architectural masterpiece seamlessly blends indoor and
                     outdoor living, offering panoramic green zone views from the master bedroom and living room.
                   </p>
                   <p className="text-foreground leading-relaxed mb-4">
@@ -42,7 +42,7 @@ export default function HomePage() {
                   <p className="text-foreground leading-relaxed">
                     Outside, your private living room overlooks the lush green surroundings, while the
                     outdoor sitting area provides the perfect setting for al fresco dining and sunset
-                    cocktails. House 23 offers the ultimate Kigalian experience.
+                    cocktails. Casamigo offers the ultimate Kigalian experience.
                   </p>
                 </div>
               </section>

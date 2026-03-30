@@ -11,7 +11,7 @@ export function HeroSection() {
       <div className="absolute inset-0 pt-16">
         <Image
           src="/images/EMMA9964.jpg"
-          alt="House 23 - Luxury vacation home exterior"
+          alt="Casamigo - Luxury vacation home exterior"
           fill
           className="object-cover"
           priority
@@ -36,7 +36,7 @@ export function HeroSection() {
 
             {/* Title */}
             <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-card leading-tight mb-4 drop-shadow-lg text-balance">
-              House 23
+              Casamigo
             </h1>
             <p className="text-lg sm:text-xl text-card/90 mb-6 max-w-2xl drop-shadow-md text-pretty">
               Designed for privacy, calm and peace. Wake up to birdsong, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴
