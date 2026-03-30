@@ -20,6 +20,23 @@ import {
   Sun,
   Sparkles,
   TreePalm,
+  PawPrint,
+  Luggage,
+  Cigarette,
+  Calendar,
+  Bed,
+  Sofa,
+  Moon,
+  Shirt,
+  Trash2,
+  Wine,
+  Microwave,
+  DoorOpen,
+  Lock,
+  Snowflake,
+  Droplet,
+  Zap,
+  AlertTriangle,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -33,59 +50,124 @@ import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
 
 const amenityCategories = [
   {
-    name: "Highlights",
+    name: "Bathroom",
     items: [
-      { icon: Waves, label: "Private infinity pool" },
-      { icon: Mountain, label: "Ocean view" },
-      { icon: TreePalm, label: "Private beach access" },
-      { icon: Sun, label: "Outdoor lounge area" },
+      { icon: Wind, label: "Hair dryer" },
+      { icon: Sparkles, label: "Cleaning products" },
+      { icon: Droplet, label: "Body soap" },
+      { icon: Waves, label: "Bidet" },
+      { icon: Flame, label: "Hot water" },
+      { icon: Droplet, label: "Shower gel" },
     ],
   },
   {
-    name: "Kitchen & Dining",
+    name: "Bedroom and Laundry",
     items: [
-      { icon: Utensils, label: "Fully equipped kitchen" },
-      { icon: ChefHat, label: "Professional appliances" },
-      { icon: Refrigerator, label: "Large refrigerator" },
-      { icon: Coffee, label: "Espresso machine" },
+      { icon: Sparkles, label: "Essentials" },
+      { icon: Bed, label: "Towels, bed sheets, soap, and toilet paper" },
+      { icon: Shirt, label: "Hangers" },
+      { icon: Bed, label: "Bed linens" },
+      { icon: Bed, label: "Extra pillows and blankets" },
+      { icon: Moon, label: "Room-darkening shades" },
+      { icon: Sparkles, label: "Iron" },
+      { icon: WashingMachine, label: "Drying rack for clothing" },
+      { icon: Umbrella, label: "Mosquito net" },
+      { icon: Shirt, label: "Clothing storage" },
     ],
   },
   {
     name: "Entertainment",
     items: [
-      { icon: Tv, label: "75\" Smart TV" },
-      { icon: Wifi, label: "High-speed WiFi" },
-      { icon: Sparkles, label: "Sonos sound system" },
-      { icon: Dumbbell, label: "Home gym" },
+      { icon: Tv, label: "55\" Smart TV" },
+      { icon: Sparkles, label: "Books and reading material" },
     ],
   },
   {
-    name: "Comfort",
+    name: "Kitchen & Dining",
     items: [
-      { icon: Wind, label: "Central AC" },
-      { icon: Flame, label: "Indoor fireplace" },
-      { icon: WashingMachine, label: "Washer & dryer" },
-      { icon: Umbrella, label: "Beach equipment" },
+      { icon: ChefHat, label: "Space where guests can cook their own meals" },
+      { icon: Refrigerator, label: "Refrigerator" },
+      { icon: Microwave, label: "Microwave" },
+      { icon: ChefHat, label: "Cooking basics" },
+      { icon: Flame, label: "Pots and pans, oil, salt and pepper" },
+      { icon: Utensils, label: "Dishes and silverware" },
+      { icon: Utensils, label: "Bowls, chopsticks, plates, cups, etc." },
+      { icon: Snowflake, label: "Freezer" },
+      { icon: Flame, label: "Stove" },
+      { icon: Flame, label: "Oven" },
+      { icon: Coffee, label: "Hot water kettle" },
+      { icon: Coffee, label: "Coffee maker" },
+      { icon: Wine, label: "Wine glasses" },
+      { icon: Trash2, label: "Trash compactor" },
+      { icon: Coffee, label: "Coffee" },
     ],
   },
   {
-    name: "Safety",
+    name: "Family",
     items: [
-      { icon: ShieldCheck, label: "Security system" },
-      { icon: Car, label: "Private parking" },
+      { icon: Sparkles, label: "Board games" },
+    ],
+  },
+  {
+    name: "Internet and office",
+    items: [
+      { icon: Wifi, label: "WiFi" },
+      { icon: Mountain, label: "Dedicated workspace" },
+    ],
+  },
+  {
+    name: "Location features",
+    items: [
+      { icon: DoorOpen, label: "Private entrance" },
+    ],
+  },
+  {
+    name: "Outdoor",
+    items: [
+      { icon: TreePalm, label: "Backyard" },
+      { icon: Sun, label: "An open space on the property usually covered in grass" },
+    ],
+  },
+  {
+    name: "Parking and facilities",
+    items: [
+      { icon: Car, label: "Free driveway parking on premises – 2 spaces" },
+      { icon: Car, label: "Free street parking" },
+    ],
+  },
+  {
+    name: "Services",
+    items: [
+      { icon: PawPrint, label: "Pets allowed" },
+      { icon: Luggage, label: "Luggage dropoff allowed" },
+      { icon: Cigarette, label: "Smoking allowed outside" },
+      { icon: Calendar, label: "Long term stays allowed" },
+      { icon: Lock, label: "Self check-in" },
+      { icon: Sparkles, label: "Housekeeping available from 7:00 AM to 6:00 PM, every day - available at extra cost" },
+    ],
+  },
+  {
+    name: "Not included",
+    items: [
+      { icon: WashingMachine, label: "Washer" },
+      { icon: Wind, label: "Dryer" },
+      { icon: Wind, label: "Air conditioning" },
+      { icon: AlertTriangle, label: "Smoke alarm" },
+      { icon: AlertTriangle, label: "Carbon monoxide alarm" },
+      { icon: Zap, label: "Heating" },
     ],
   },
 ]
 
 const featuredAmenities = [
-  { icon: Waves, label: "Private pool" },
-  { icon: Wifi, label: "Fast WiFi" },
-  { icon: Utensils, label: "Full kitchen" },
-  { icon: Mountain, label: "Ocean view" },
-  { icon: Wind, label: "Central AC" },
+  { icon: Car, label: "Free private parking" },
+  { icon: Wind, label: "Self check-in" },
+  { icon: Mountain, label: "Lush green view" },
+  { icon: Mountain, label: "Dedicated workspace" },
+  { icon: Wifi, label: "WiFi" },
+  { icon: Utensils, label: "Kitchen" },
+  { icon: Coffee, label: "Coffe machine" },
   { icon: Tv, label: "Smart TV" },
-  { icon: Coffee, label: "Espresso machine" },
-  { icon: Car, label: "Free parking" },
 ]
 
 export function AmenitiesSection() {
@@ -120,15 +202,15 @@ export function AmenitiesSection() {
         {/* Show All Amenities */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="rounded-full px-8">
+            <Button variant="outline" size="lg" className="rounded-full px-10 py-3 text-base">
               Show all 38 amenities
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden bg-background rounded-[30px]">
             <DialogHeader>
               <DialogTitle className="font-serif text-2xl">What this place offers</DialogTitle>
             </DialogHeader>
-            <div className="mt-6 space-y-8">
+            <div className="mt-6 space-y-8 bg-background overflow-y-auto max-h-[calc(80vh-100px)]">
               {amenityCategories.map((category) => (
                 <div key={category.name}>
                   <h3 className="font-semibold text-foreground mb-4">{category.name}</h3>
@@ -139,7 +221,7 @@ export function AmenitiesSection() {
                         className="flex items-center gap-4 pb-3 border-b border-border last:border-0"
                       >
                         <item.icon className="h-5 w-5 text-muted-foreground" />
-                        <span className="text-foreground">{item.label}</span>
+                        <span className={`${category.name === "Not included" ? "line-through text-muted-foreground" : "text-foreground"}`}>{item.label}</span>
                       </div>
                     ))}
                   </div>

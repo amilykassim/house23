@@ -29,7 +29,7 @@ interface BookingCardProps {
 export function BookingCard({
   pricePerNight = 51,
   cleaningFee = 10,
-  serviceFee = 10,
+  serviceFee = 0,
   rating = 4.95,
   reviewCount = 43,
   maxGuests = 8,

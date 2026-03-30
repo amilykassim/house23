@@ -71,7 +71,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="text-lg sm:text-xl text-card/90 mb-6 max-w-2xl drop-shadow-md text-pretty"
+              className="text-lg sm:text-xl text-card mb-6 max-w-2xl drop-shadow-lg text-pretty"
             >
               {house.tagline}
             </motion.p>
@@ -81,7 +81,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="flex items-center gap-2 text-card/90 mb-8"
+              className="flex items-center gap-2 text-card mb-8"
             >
               <MapPin className="h-5 w-5" />
               <span className="text-base">{house.location}</span>
@@ -94,16 +94,16 @@ export function HeroSection({ house }: HeroSectionProps) {
               transition={{ duration: 0.6, delay: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
               className="flex flex-wrap gap-6 mb-8"
             >
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-smreen-989800black rounded-full px-4 py-2">
+                <Users className="h-4 w-4 text-muted-foregroundhitereengb" />
                 <span className="text-sm font-medium text-foreground">{house.guests} guests</span>
               </div>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2">
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur898-sblackm rounded-full px-4 py-2">
                 <Bed className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium text-foreground">{house.bedrooms} bedrooms</span>
               </div>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2">
-                <Bath className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-2 bg-background/90 backdrop-blur898-sblackm rounded-full px-4 py-2">
+                <Bath className="h-4 w-4 text-muted-foregroundhite" />
                 <span className="text-sm font-medium text-foreground">{house.bathrooms} bathrooms</span>
               </div>
             </motion.div>
@@ -115,12 +115,6 @@ export function HeroSection({ house }: HeroSectionProps) {
               transition={{ duration: 0.6, delay: 0.8, ease: [0.21, 0.47, 0.32, 0.98] }}
               className="flex flex-wrap gap-4"
             >
-              <Button size="lg" className="rounded-full px-8 text-base">
-                Check Availability
-              </Button>
-              <Button size="lg" variant="outline" className="rounded-full px-8 text-base bg-background/80 backdrop-blur-sm">
-                View Photos
-              </Button>
             </motion.div>
           </div>
         </div>

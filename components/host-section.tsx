@@ -56,7 +56,7 @@ export function HostSection() {
                 {hostHighlights.map((highlight) => (
                   <div key={highlight.text} className="flex items-center gap-3">
                     <highlight.icon className="h-5 w-5 text-primary" />
-                    <span className="text-foreground">{highlight.text}</span>
+                    <span className="text-foreground text-sm">{highlight.text}</span>
                   </div>
                 ))}
               </div>
@@ -71,8 +71,8 @@ export function HostSection() {
           {/* About Host */}
           <FadeIn direction="right" delay={0.2}>
             <div className="bg-secondary/30 rounded-2xl p-8">
-              <h3 className="font-semibold text-foreground text-lg mb-4">About Deborah</h3>
-              <p className="text-muted-foreground leading-relaxed mb-6">
+              <h4 className="font-semibold text-foreground text-medium mb-4">About Deborah</h4>
+              <p className="text-muted-foreground leading-relaxed mb-6 text-sm">
                 I&apos;m passionate about ensuring every guest has an unforgettable stay. Whether you need
                 restaurant recommendations, outdoor activities, or hiking tips, I&apos;m here to help make your
                 vacation perfect.

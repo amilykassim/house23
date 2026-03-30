@@ -40,7 +40,7 @@ export const houses: HouseData[] = [
     {
         slug: "house-23",
         name: "House 23",
-        tagline: "Designed for privacy, calm and peace. Wake up to birdsong, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴",
+        tagline: "Designed for privacy, calm and peace. Wake up to birdsong 😴, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴",
         description: [
             "Welcome to Casamigo House 23. This architectural masterpiece seamlessly blends indoor and outdoor living, offering panoramic green zone views from the master bedroom and living room.",
             "Step inside to discover an open-concept living space bathed in natural light, featuring almost floor-to-ceiling windows, custom furnishings, and designer finishes throughout. The gourmet kitchen is equipped with professional-grade appliances, perfect for preparing memorable meals with locally sourced ingredients.",
@@ -58,7 +58,7 @@ export const houses: HouseData[] = [
         bathrooms: 2,
         pricePerNight: 51,
         cleaningFee: 10,
-        serviceFee: 10,
+        serviceFee: 0,
         photos: [
             { src: "/images/EMMA9964.jpg", alt: "House 23 exterior", label: "Casamigo House 23" },
             { src: "/images/EMMA0017.jpg", alt: "Spacious living room", label: "Living Room" },
@@ -133,7 +133,7 @@ export const houses: HouseData[] = [
         bathrooms: 2,
         pricePerNight: 45,
         cleaningFee: 10,
-        serviceFee: 10,
+        serviceFee: 0,
         photos: [
             { src: "/images/EMMA9979.JPG", alt: "House 22 exterior", label: "Casamigo House 22" },
             { src: "/images/EMMA0043.JPG", alt: "Living area", label: "Living Room" },
