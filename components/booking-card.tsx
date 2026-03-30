@@ -15,12 +15,25 @@ import {
 } from "@/components/ui/select"
 import type { DateRange } from "react-day-picker"
 
-const PRICE_PER_NIGHT = 51
-const CLEANING_FEE = 10
-const SERVICE_FEE = 10
 const DISCOUNT_AMOUNT = 10
 
-export function BookingCard() {
+interface BookingCardProps {
+  pricePerNight?: number
+  cleaningFee?: number
+  serviceFee?: number
+  rating?: number
+  reviewCount?: number
+  maxGuests?: number
+}
+
+export function BookingCard({
+  pricePerNight = 51,
+  cleaningFee = 10,
+  serviceFee = 10,
+  rating = 4.95,
+  reviewCount = 43,
+  maxGuests = 8,
+}: BookingCardProps) {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [guests, setGuests] = useState("2")
   const [mounted, setMounted] = useState(false)
@@ -43,8 +56,8 @@ export function BookingCard() {
     return 0
   }, [dateRange])
 
-  const subtotal = nights * PRICE_PER_NIGHT
-  const total = subtotal + CLEANING_FEE + SERVICE_FEE
+  const subtotal = nights * pricePerNight
+  const total = subtotal + cleaningFee + serviceFee
 
   const handleDateSelect = (range: DateRange | undefined) => {
     setDateRange(range)
@@ -69,12 +82,12 @@ export function BookingCard() {
     <div className="sticky top-24 bg-card rounded-2xl border border-border p-6 shadow-lg">
       {/* Price */}
       <div className="flex items-baseline gap-2 mb-6">
-        <span className="text-2xl font-semibold text-foreground">${PRICE_PER_NIGHT}</span>
+        <span className="text-2xl font-semibold text-foreground">${pricePerNight}</span>
         <span className="text-muted-foreground">night</span>
         <div className="ml-auto flex items-center gap-1">
           <Star className="h-4 w-4 fill-primary text-primary" />
-          <span className="text-sm font-semibold">4.95</span>
-          <span className="text-muted-foreground text-sm">(43)</span>
+          <span className="text-sm font-semibold">{rating}</span>
+          <span className="text-muted-foreground text-sm">({reviewCount})</span>
         </div>
       </div>
 
@@ -124,8 +137,8 @@ export function BookingCard() {
                   <button
                     onClick={() => setSelectingStart(true)}
                     className={`flex-1 p-3 rounded-xl border-2 transition-all text-left ${selectingStart
-                        ? 'border-foreground bg-background'
-                        : 'border-border hover:border-muted-foreground'
+                      ? 'border-foreground bg-background'
+                      : 'border-border hover:border-muted-foreground'
                       }`}
                   >
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
@@ -138,8 +151,8 @@ export function BookingCard() {
                   <button
                     onClick={() => setSelectingStart(false)}
                     className={`flex-1 p-3 rounded-xl border-2 transition-all text-left ${!selectingStart
-                        ? 'border-foreground bg-background'
-                        : 'border-border hover:border-muted-foreground'
+                      ? 'border-foreground bg-background'
+                      : 'border-border hover:border-muted-foreground'
                       }`}
                   >
                     <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">
@@ -224,7 +237,7 @@ export function BookingCard() {
               </div>
             </SelectTrigger>
             <SelectContent>
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+              {Array.from({ length: maxGuests }, (_, i) => i + 1).map((num) => (
                 <SelectItem key={num} value={num.toString()}>
                   {num} {num === 1 ? "guest" : "guests"}
                 </SelectItem>
@@ -248,7 +261,7 @@ export function BookingCard() {
         <div className="space-y-3 pt-4 border-t border-border">
           <div className="flex justify-between text-foreground">
             <span className="underline cursor-pointer">
-              ${PRICE_PER_NIGHT} x {nights} nights
+              ${pricePerNight} x {nights} nights
             </span>
             <span>${subtotal}</span>
           </div>
@@ -257,14 +270,14 @@ export function BookingCard() {
               Cleaning fee
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
-            <span>${CLEANING_FEE}</span>
+            <span>${cleaningFee}</span>
           </div>
           <div className="flex justify-between text-foreground">
             <span className="underline cursor-pointer flex items-center gap-1">
               Service fee
               <Info className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
-            <span>${SERVICE_FEE}</span>
+            <span>${serviceFee}</span>
           </div>
           <div className="flex justify-between text-foreground font-semibold pt-3 border-t border-border">
             <span>Total before taxes</span>

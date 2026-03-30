@@ -11,6 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
 
 const ratingCategories = [
   { label: "Cleanliness", score: 5.0 },
@@ -124,7 +125,7 @@ export function ReviewsSection() {
     <section id="reviews" className="py-20 px-4 sm:px-6 lg:px-8 bg-background">
       <div className="mx-auto max-w-7xl">
         {/* Rating Header */}
-        <div className="flex flex-col md:flex-row md:items-center gap-6 mb-12">
+        <FadeIn className="flex flex-col md:flex-row md:items-center gap-6 mb-12">
           <div className="flex items-center gap-3">
             <Star className="h-8 w-8 fill-foreground text-foreground" />
             <span className="font-serif text-4xl font-semibold text-foreground">4.95</span>
@@ -133,24 +134,26 @@ export function ReviewsSection() {
           <p className="text-lg text-foreground">
             <span className="font-semibold">43 reviews</span> from verified guests
           </p>
-        </div>
+        </FadeIn>
 
         {/* Rating Categories */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12 pb-12 border-b border-border">
+        <StaggerContainer className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-12 pb-12 border-b border-border" staggerDelay={0.08}>
           {ratingCategories.map((category) => (
-            <div key={category.label}>
+            <StaggerItem key={category.label}>
               <p className="text-sm text-muted-foreground mb-2">{category.label}</p>
               <RatingBar score={category.score} />
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
 
         {/* Reviews Grid */}
-        <div className="grid md:grid-cols-2 gap-x-16 gap-y-10 mb-10">
+        <StaggerContainer className="grid md:grid-cols-2 gap-x-16 gap-y-10 mb-10" staggerDelay={0.1}>
           {reviews.slice(0, 6).map((review) => (
-            <ReviewCard key={review.id} review={review} />
+            <StaggerItem key={review.id}>
+              <ReviewCard review={review} />
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
 
         {/* Show All Reviews */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

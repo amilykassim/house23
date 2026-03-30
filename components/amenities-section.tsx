@@ -29,6 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
 
 const amenityCategories = [
   {
@@ -93,29 +94,28 @@ export function AmenitiesSection() {
   return (
     <section id="amenities" className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-12">
+        <FadeIn className="mb-12">
           <h2 className="font-serif text-3xl sm:text-4xl font-semibold text-foreground mb-4">
             What This Place Offers
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl">
             Everything you need for the perfect getaway, thoughtfully curated for your comfort
           </p>
-        </div>
+        </FadeIn>
 
         {/* Featured Amenities Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" staggerDelay={0.06}>
           {featuredAmenities.map((amenity) => (
-            <div
-              key={amenity.label}
-              className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border"
-            >
-              <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
-                <amenity.icon className="h-5 w-5 text-primary" />
+            <StaggerItem key={amenity.label}>
+              <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:shadow-md hover:border-primary/20 transition-all duration-300">
+                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
+                  <amenity.icon className="h-5 w-5 text-primary" />
+                </div>
+                <span className="text-foreground font-medium">{amenity.label}</span>
               </div>
-              <span className="text-foreground font-medium">{amenity.label}</span>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
 
         {/* Show All Amenities */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
