@@ -115,6 +115,8 @@ export default async function HousePage({ params }: HousePageProps) {
                                     rating={house.rating}
                                     reviewCount={house.reviewCount}
                                     maxGuests={house.guests}
+                                    houseName={house.name}
+                                    slug={house.slug}
                                 />
                             </div>
                         </div>

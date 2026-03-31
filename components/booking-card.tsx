@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { format, addDays, addMonths, differenceInDays, isAfter, isBefore, isSameDay as isSameDayFn } from "date-fns"
 import { Calendar as CalendarIcon, Star, Users, Info, X, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
@@ -20,6 +21,8 @@ interface BookingCardProps {
   rating?: number
   reviewCount?: number
   maxGuests?: number
+  houseName?: string
+  slug?: string
 }
 
 export function BookingCard({
@@ -29,7 +32,10 @@ export function BookingCard({
   rating = 4.95,
   reviewCount = 43,
   maxGuests = 8,
+  houseName = "House 23",
+  slug = "house-23",
 }: BookingCardProps) {
+  const router = useRouter()
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined)
   const [guests, setGuests] = useState("2")
   const [mounted, setMounted] = useState(false)
@@ -40,6 +46,14 @@ export function BookingCard({
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right')
+
+  const handleReserve = () => {
+    const params = new URLSearchParams()
+    if (dateRange?.from) params.set("checkIn", dateRange.from.toISOString())
+    if (dateRange?.to) params.set("checkOut", dateRange.to.toISOString())
+    params.set("guests", guests)
+    router.push(`/book/${slug}?${params.toString()}`)
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -355,7 +369,10 @@ export function BookingCard({
       </div>
 
       {/* Reserve Button */}
-      <Button className="w-full rounded-xl h-12 text-base font-semibold mb-4">
+      <Button
+        className="w-full rounded-xl h-12 text-base font-semibold mb-4"
+        onClick={handleReserve}
+      >
         Reserve
       </Button>
 
