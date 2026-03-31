@@ -26,7 +26,7 @@ export interface HouseData {
     highlights: {
         title: string
         description: string
-        icon: "sparkle" | "location" | "calendar"
+        icon: "sparkle" | "location" | "calendar" | "lock"
     }[]
     nearbyPlaces: {
         name: string
@@ -88,8 +88,13 @@ export const houses: HouseData[] = [
         ],
         highlights: [
             {
+                title: "Private from the Get Go",
+                description: "Enjoy the entire place to yourself — complete comfort, zero sharing.",
+                icon: "lock",
+            },
+            {
                 title: "Exceptional hospitality",
-                description: "43 guests gave the check-in process a 5-star rating.",
+                description: "42 guests gave the check-in process a 5-star rating.",
                 icon: "sparkle",
             },
             {
@@ -97,17 +102,14 @@ export const houses: HouseData[] = [
                 description: "100% of recent guests gave the location a 5-star rating.",
                 icon: "location",
             },
-            {
-                title: "Free cancellation before April 1",
-                description: "Get a full refund if you change your mind.",
-                icon: "calendar",
-            },
         ],
         nearbyPlaces: [
             { name: "Velvet Boutique Hotel Beach Access", distance: "2 min walk", type: "walk" },
             { name: "Lamane Bakery and Cafe", distance: "4 min drive", type: "drive" },
+            { name: "Simba Supermarket", distance: "7 min drive", type: "drive" },
             { name: "Kigali Convention Center", distance: "13 min drive", type: "drive" },
             { name: "Kigali International Airport", distance: "14 min drive", type: "drive" },
+            { name: "Luma & Lua Restaurant", distance: "12 min drive", type: "drive" },
         ],
         areaDescription:
             "Nestled in the vibrant city of Kigali, Casamigo House 23 offers the perfect blend of seclusion and accessibility. Enjoy local attractions, cultural experiences, and proximity to acclaimed restaurants while staying in your own private paradise.",
@@ -159,6 +161,11 @@ export const houses: HouseData[] = [
         ],
         highlights: [
             {
+                title: "Private from the Get Go",
+                description: "Enjoy the entire place to yourself — complete comfort, zero sharing.",
+                icon: "lock",
+            },
+            {
                 title: "Exceptional hospitality",
                 description: "28 guests gave the check-in process a 5-star rating.",
                 icon: "sparkle",
@@ -167,11 +174,6 @@ export const houses: HouseData[] = [
                 title: "Great location",
                 description: "95% of recent guests gave the location a 5-star rating.",
                 icon: "location",
-            },
-            {
-                title: "Free cancellation before April 1",
-                description: "Get a full refund if you change your mind.",
-                icon: "calendar",
             },
         ],
         nearbyPlaces: [

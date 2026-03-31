@@ -480,28 +480,44 @@ export function ReviewsSection() {
         </StaggerContainer>
 
         {/* Show All Reviews */}
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="rounded-full px-8">
-              Show all 42 reviews
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden bg-background rounded-[30px]">
-            <DialogHeader>
-              <DialogTitle className="font-serif text-2xl flex items-center gap-3">
-                <Star className="h-6 w-6 fill-foreground text-foreground" />
-                4.95 · 42 reviews
-              </DialogTitle>
-            </DialogHeader>
-            <div className="mt-6 space-y-8 bg-background overflow-y-auto max-h-[calc(80vh-100px)]">
-              {reviews.map((review) => (
-                <div key={review.id} className="pb-8 border-b border-border last:border-0">
-                  <ReviewCard review={review} />
-                </div>
-              ))}
-            </div>
-          </DialogContent>
-        </Dialog>
+        <div className="flex flex-wrap gap-4">
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="lg" className="rounded-full px-8 hover:bg-transparent hover:border-foreground hover:text-foreground">
+                Show all 42 reviews
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-hidden bg-background rounded-[30px]">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-2xl flex items-center gap-3">
+                  <Star className="h-6 w-6 fill-foreground text-foreground" />
+                  4.95 · 42 reviews
+                </DialogTitle>
+              </DialogHeader>
+              <div className="mt-6 space-y-8 bg-background overflow-y-auto max-h-[calc(80vh-100px)]">
+                {reviews.map((review) => (
+                  <div key={review.id} className="pb-8 border-b border-border last:border-0">
+                    <ReviewCard review={review} />
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button
+            variant="outline"
+            size="lg"
+            className="rounded-full px-8 hover:bg-transparent hover:border-foreground hover:text-foreground"
+            asChild
+          >
+            <a
+              href="https://www.airbnb.com/rooms/1386016117652787910/reviews?adults=2&check_in=2026-04-29&check_out=2026-04-30&guests=2&search_mode=regular_search&source_impression_id=p3_1774901794_P3F5uRC-80t7XaE1&previous_page_section_name=1000&federated_search_id=6efa6b4f-e9dd-424e-9ac5-a4a2f0af86c1"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Verify our reviews on Airbnb
+            </a>
+          </Button>
+        </div>
       </div>
     </section>
   )

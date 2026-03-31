@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
 
 const hostStats = [
-  { label: "Reviews", value: "43" },
+  { label: "Reviews", value: "42" },
   { label: "Rating", value: "4.95" },
   { label: "Years hosting", value: "3+" },
 ]
@@ -37,7 +37,7 @@ export function HostSection() {
                   <h2 className="font-serif text-2xl font-semibold text-foreground">
                     Hosted by Deborah
                   </h2>
-                  <p className="text-muted-foreground">Since 2024</p>
+                  <p className="text-muted-foreground text-sm">Since 2024</p>
                 </div>
               </div>
 
@@ -61,9 +61,11 @@ export function HostSection() {
                 ))}
               </div>
 
-              <Button variant="outline" size="lg" className="rounded-full px-8">
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Contact Host
+              <Button variant="outline" size="lg" className="rounded-full px-8 hover:bg-transparent hover:border-foreground hover:text-foreground" asChild>
+                <a href="https://wa.me/250788459885" target="_blank" rel="noopener noreferrer">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Contact Host
+                </a>
               </Button>
             </div>
           </FadeIn>

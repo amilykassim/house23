@@ -19,16 +19,14 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Casamigo" }: Phot
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showAllPhotos, setShowAllPhotos] = useState(false)
 
-  const lightboxPhotos = showAllPhotos && allPhotos ? allPhotos : photos
+  const lightboxPhotos = allPhotos && allPhotos.length > 0 ? allPhotos : photos
 
   const openLightbox = (index: number) => {
-    setShowAllPhotos(false)
     setCurrentIndex(index)
     setLightboxOpen(true)
   }
 
   const openAllPhotos = () => {
-    setShowAllPhotos(true)
     setCurrentIndex(0)
     setLightboxOpen(true)
   }
@@ -105,7 +103,7 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Casamigo" }: Phot
           <Button
             variant="outline"
             size="lg"
-            className="rounded-full px-8"
+            className="rounded-full px-8 hover:bg-transparent hover:border-foreground hover:text-foreground"
             onClick={openAllPhotos}
           >
             View All Photos

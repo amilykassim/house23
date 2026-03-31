@@ -52,20 +52,13 @@ export function LocationSection({ house }: LocationSectionProps) {
                           <Icon className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <div>
-                          <p className="font-medium text-foreground">{place.name}</p>
+                          <p className="font-medium text-foreground text-sm">{place.name}</p>
                           <p className="text-sm text-muted-foreground">{place.distance}</p>
                         </div>
                       </div>
                     )
                   })}
                 </div>
-              </div>
-
-              <div className="pt-6 border-t border-border">
-                <h3 className="font-semibold text-foreground text-lg mb-3">About the Area</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {house.areaDescription}
-                </p>
               </div>
             </div>
           </FadeIn>

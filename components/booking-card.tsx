@@ -1,18 +1,14 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { format, addDays, differenceInDays } from "date-fns"
-import { Calendar as CalendarIcon, Star, Users, Info, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { format, addDays, addMonths, differenceInDays, isAfter, isBefore, isSameDay as isSameDayFn } from "date-fns"
+import { Calendar as CalendarIcon, Star, Users, Info, X, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react"
+import { motion, AnimatePresence } from "motion/react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
+import { CalendarDayButton } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { DateRange } from "react-day-picker"
 
 const DISCOUNT_AMOUNT = 10
@@ -38,7 +34,12 @@ export function BookingCard({
   const [guests, setGuests] = useState("2")
   const [mounted, setMounted] = useState(false)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [guestsOpen, setGuestsOpen] = useState(false)
   const [selectingStart, setSelectingStart] = useState(true)
+  const [calendarKey, setCalendarKey] = useState(0)
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null)
+  const [calendarMonth, setCalendarMonth] = useState(new Date())
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right')
 
   useEffect(() => {
     setMounted(true)
@@ -57,19 +58,33 @@ export function BookingCard({
   }, [dateRange])
 
   const subtotal = nights * pricePerNight
-  const total = subtotal + cleaningFee + serviceFee
+  const applicableCleaningFee = nights >= 3 ? cleaningFee : 0
+  const total = subtotal + applicableCleaningFee + serviceFee
 
   const handleDateSelect = (range: DateRange | undefined) => {
-    setDateRange(range)
+    if (!range?.from) {
+      setDateRange(undefined)
+      setSelectingStart(true)
+      return
+    }
 
-    // Auto-close when both dates are selected
-    if (range?.from && range?.to) {
+    // react-day-picker v9 sets from and to to the same date on first click
+    const isSameDay = range.from && range.to &&
+      differenceInDays(range.to, range.from) === 0
+
+    if (isSameDay) {
+      // First click — treat as only check-in
+      setDateRange({ from: range.from, to: undefined })
+      setSelectingStart(false)
+    } else if (range.from && range.to) {
+      // Second click — check-out selected, auto-close
+      setDateRange(range)
       setTimeout(() => {
         setCalendarOpen(false)
         setSelectingStart(true)
       }, 300)
-    } else if (range?.from && !range?.to) {
-      setSelectingStart(false)
+    } else {
+      setDateRange(range)
     }
   }
 
@@ -93,7 +108,15 @@ export function BookingCard({
 
       {/* Date Selection */}
       <div className="border border-border rounded-xl overflow-hidden mb-4">
-        <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+        <Popover open={calendarOpen} onOpenChange={(open) => {
+          setCalendarOpen(open)
+          if (open) {
+            // Always start fresh when opening
+            setSelectingStart(true)
+            setDateRange(undefined)
+            setCalendarKey(k => k + 1)
+          }
+        }}>
           <PopoverTrigger asChild>
             <button className="w-full grid grid-cols-2 divide-x divide-border text-left">
               <div className={`p-3 transition-colors ${selectingStart && calendarOpen ? 'bg-muted' : 'hover:bg-muted/50'}`}>
@@ -115,9 +138,12 @@ export function BookingCard({
             </button>
           </PopoverTrigger>
           <PopoverContent
-            className="w-auto p-0 border-0 shadow-2xl rounded-2xl"
+            className="w-auto max-h-[90vh] overflow-y-auto p-0 border-0 shadow-2xl rounded-2xl"
             align="center"
+            side="bottom"
             sideOffset={8}
+            collisionPadding={16}
+            avoidCollisions={true}
           >
             <div className="bg-card rounded-2xl overflow-hidden">
               {/* Airbnb-style Header */}
@@ -135,7 +161,11 @@ export function BookingCard({
                 </div>
                 <div className="flex gap-4">
                   <button
-                    onClick={() => setSelectingStart(true)}
+                    onClick={() => {
+                      setSelectingStart(true)
+                      setDateRange(undefined)
+                      setCalendarKey(k => k + 1)
+                    }}
                     className={`flex-1 p-3 rounded-xl border-2 transition-all text-left ${selectingStart
                       ? 'border-foreground bg-background'
                       : 'border-border hover:border-muted-foreground'
@@ -149,7 +179,12 @@ export function BookingCard({
                     </div>
                   </button>
                   <button
-                    onClick={() => setSelectingStart(false)}
+                    onClick={() => {
+                      setSelectingStart(false)
+                      if (dateRange?.from) {
+                        setDateRange({ from: dateRange.from, to: undefined })
+                      }
+                    }}
                     className={`flex-1 p-3 rounded-xl border-2 transition-all text-left ${!selectingStart
                       ? 'border-foreground bg-background'
                       : 'border-border hover:border-muted-foreground'
@@ -165,44 +200,110 @@ export function BookingCard({
                 </div>
               </div>
 
+              {/* Month Navigation */}
+              <div className="flex items-center justify-between px-4 pt-4">
+                <button
+                  onClick={() => {
+                    setSlideDirection('left')
+                    setCalendarMonth(m => addMonths(m, -1))
+                  }}
+                  className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                >
+                  <ChevronLeft className="h-5 w-5 text-foreground" />
+                </button>
+                <div className="overflow-hidden flex-1 flex justify-center">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.span
+                      key={calendarMonth.toISOString() + '-title'}
+                      initial={{ x: slideDirection === 'right' ? 20 : -20 }}
+                      animate={{ x: 0 }}
+                      exit={{ x: slideDirection === 'right' ? -20 : 20 }}
+                      transition={{ duration: 0.2, ease: 'easeInOut' }}
+                      className="text-sm font-medium text-foreground block"
+                    >
+                      {format(calendarMonth, "MMMM yyyy")} — {format(addMonths(calendarMonth, 1), "MMMM yyyy")}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+                <button
+                  onClick={() => {
+                    setSlideDirection('right')
+                    setCalendarMonth(m => addMonths(m, 1))
+                  }}
+                  className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+                >
+                  <ChevronRight className="h-5 w-5 text-foreground" />
+                </button>
+              </div>
+
               {/* Calendar */}
-              <div className="p-4">
-                <Calendar
-                  mode="range"
-                  defaultMonth={mounted ? dateRange?.from || new Date() : undefined}
-                  selected={dateRange}
-                  onSelect={handleDateSelect}
-                  numberOfMonths={2}
-                  showOutsideDays={false}
-                  disabled={{ before: new Date() }}
-                  classNames={{
-                    months: "flex gap-8 flex-col md:flex-row",
-                    month: "space-y-4",
-                    month_caption: "flex justify-center pt-1 relative items-center mb-4",
-                    caption_label: "text-base font-semibold",
-                    nav: "flex items-center gap-1 w-full absolute top-0 inset-x-0 justify-between px-2",
-                    button_previous: "h-9 w-9 bg-transparent p-0 hover:bg-muted rounded-full flex items-center justify-center",
-                    button_next: "h-9 w-9 bg-transparent p-0 hover:bg-muted rounded-full flex items-center justify-center",
-                    table: "w-full border-collapse",
-                    weekdays: "flex mb-2",
-                    weekday: "text-muted-foreground rounded-md w-10 font-medium text-xs",
-                    week: "flex w-full",
-                    day: "h-10 w-10 text-center text-sm p-0 relative focus-within:relative focus-within:z-20 rounded-full",
-                    range_start: "bg-primary text-primary-foreground rounded-full",
-                    range_end: "bg-primary text-primary-foreground rounded-full",
-                    range_middle: "bg-primary/10 rounded-none",
-                    today: "bg-accent text-accent-foreground font-semibold",
-                    outside: "text-muted-foreground opacity-50",
-                    disabled: "text-muted-foreground opacity-30 cursor-not-allowed",
-                  }}
-                  components={{
-                    Chevron: ({ orientation }) => (
-                      orientation === 'left'
-                        ? <ChevronLeft className="h-5 w-5" />
-                        : <ChevronRight className="h-5 w-5" />
-                    ),
-                  }}
-                />
+              <div className="p-4 overflow-hidden">
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={calendarMonth.toISOString()}
+                    initial={{ x: slideDirection === 'right' ? 40 : -40 }}
+                    animate={{ x: 0 }}
+                    exit={{ x: slideDirection === 'right' ? -40 : 40 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  >
+                    <Calendar
+                      key={calendarKey}
+                      mode="range"
+                      month={calendarMonth}
+                      onMonthChange={setCalendarMonth}
+                      selected={dateRange}
+                      onSelect={handleDateSelect}
+                      numberOfMonths={2}
+                      showOutsideDays={false}
+                      disabled={{ before: new Date() }}
+                      classNames={{
+                        months: "flex gap-8 flex-col md:flex-row",
+                        month: "space-y-4",
+                        month_caption: "hidden",
+                        caption_label: "hidden",
+                        nav: "hidden",
+                        button_previous: "hidden",
+                        button_next: "hidden",
+                        table: "w-full border-collapse",
+                        weekdays: "flex mb-2",
+                        weekday: "text-muted-foreground rounded-md w-10 font-medium text-xs",
+                        week: "flex w-full",
+                        day: "h-10 w-10 text-center text-sm p-0 relative focus-within:relative focus-within:z-20 rounded-full",
+                        range_start: "rounded-full",
+                        range_end: "rounded-full",
+                        range_middle: "bg-muted/50 rounded-none",
+                        today: "",
+                        outside: "text-muted-foreground opacity-50",
+                        disabled: "text-muted-foreground opacity-30 cursor-not-allowed",
+                      }}
+                      components={{
+                        Chevron: ({ orientation }) => (
+                          orientation === 'left'
+                            ? <ChevronLeft className="h-5 w-5" />
+                            : <ChevronRight className="h-5 w-5" />
+                        ),
+                        DayButton: (props) => {
+                          const dayDate = props.day.date
+                          const isInHoverRange = !selectingStart && dateRange?.from && !dateRange?.to && hoveredDate &&
+                            isAfter(dayDate, dateRange.from) && (isBefore(dayDate, hoveredDate) || isSameDayFn(dayDate, hoveredDate))
+
+                          return (
+                            <div
+                              onMouseEnter={() => setHoveredDate(dayDate)}
+                              onMouseLeave={() => setHoveredDate(null)}
+                              className={isInHoverRange ? 'bg-primary/5' : ''}
+                            >
+                              <CalendarDayButton
+                                {...props}
+                                className="hover:bg-transparent hover:text-foreground hover:border hover:border-foreground/30 hover:rounded-full data-[range-start=true]:bg-transparent data-[range-start=true]:text-foreground data-[range-start=true]:border-2 data-[range-start=true]:border-foreground data-[range-start=true]:rounded-full data-[range-end=true]:bg-transparent data-[range-end=true]:text-foreground data-[range-end=true]:border-2 data-[range-end=true]:border-foreground data-[range-end=true]:rounded-full data-[selected-single=true]:bg-transparent data-[selected-single=true]:text-foreground data-[selected-single=true]:border-2 data-[selected-single=true]:border-foreground data-[selected-single=true]:rounded-full data-[range-middle=true]:bg-transparent data-[range-middle=true]:text-foreground data-[range-middle=true]:rounded-none dark:hover:text-foreground"
+                              />
+                            </div>
+                          )
+                        },
+                      }}
+                    />
+                  </motion.div>
+                </AnimatePresence>
               </div>
 
               {/* Footer */}
@@ -215,7 +316,7 @@ export function BookingCard({
                 </button>
                 <Button
                   onClick={() => setCalendarOpen(false)}
-                  className="rounded-lg px-6"
+                  className="rounded-lg px-6 bg-black text-white hover:bg-black/90"
                 >
                   Close
                 </Button>
@@ -229,21 +330,27 @@ export function BookingCard({
           <div className="text-[10px] font-semibold uppercase tracking-wider text-foreground mb-0.5">
             Guests
           </div>
-          <Select value={guests} onValueChange={setGuests}>
-            <SelectTrigger className="border-0 p-0 h-auto shadow-none focus:ring-0">
-              <div className="flex items-center gap-2 text-sm text-foreground">
+          <Popover open={guestsOpen} onOpenChange={setGuestsOpen}>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-2 text-sm text-foreground w-full">
                 <Users className="h-4 w-4 text-muted-foreground" />
-                <SelectValue />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
+                <span>{guests} {Number(guests) === 1 ? "guest" : "guests"}</span>
+                <ChevronDown className="h-3.5 w-3.5 ml-auto opacity-50" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="w-(--radix-popover-trigger-width) p-1" align="start" sideOffset={4}>
               {Array.from({ length: maxGuests }, (_, i) => i + 1).map((num) => (
-                <SelectItem key={num} value={num.toString()}>
-                  {num} {num === 1 ? "guest" : "guests"}
-                </SelectItem>
+                <button
+                  key={num}
+                  onClick={() => { setGuests(num.toString()); setGuestsOpen(false) }}
+                  className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                >
+                  <span>{num} {num === 1 ? "guest" : "guests"}</span>
+                  {guests === num.toString() && <Check className="h-4 w-4" />}
+                </button>
               ))}
-            </SelectContent>
-          </Select>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -265,17 +372,37 @@ export function BookingCard({
             </span>
             <span>${subtotal}</span>
           </div>
-          <div className="flex justify-between text-foreground">
-            <span className="underline cursor-pointer flex items-center gap-1">
-              Cleaning fee
-              <Info className="h-3.5 w-3.5 text-muted-foreground" />
-            </span>
-            <span>${cleaningFee}</span>
-          </div>
+          {nights >= 3 && (
+            <div className="flex justify-between text-foreground">
+              <span className="underline cursor-pointer flex items-center gap-1">
+                Cleaning fee
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cleaning fee is added for stays of 3 nights or more</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </span>
+              <span>${applicableCleaningFee}</span>
+            </div>
+          )}
           <div className="flex justify-between text-foreground">
             <span className="underline cursor-pointer flex items-center gap-1">
               Service fee
-              <Info className="h-3.5 w-3.5 text-muted-foreground" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Service fee is currently free of charge</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </span>
             <span>${serviceFee}</span>
           </div>

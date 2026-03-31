@@ -83,7 +83,7 @@ export function Header() {
             {sectionLinks.map((link) => (
               <Link
                 key={link.href}
-                href={link.href}
+                href={`/house/${activeHouse.slug}${link.href}`}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 {link.label}
@@ -94,7 +94,7 @@ export function Header() {
           <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
             <Button size="lg" className="rounded-full px-6">
-              Book Now
+              Book a stay
             </Button>
           </div>
 
@@ -137,7 +137,7 @@ export function Header() {
             {sectionLinks.map((link) => (
               <Link
                 key={link.href}
-                href={link.href}
+                href={`/house/${activeHouse.slug}${link.href}`}
                 className="block text-base font-medium text-muted-foreground hover:text-foreground transition-colors py-2 px-2"
                 onClick={() => setMobileMenuOpen(false)}
               >
@@ -147,7 +147,7 @@ export function Header() {
 
             <div className="pt-3">
               <Button size="lg" className="w-full rounded-full">
-                Book Now
+                Book a stay
               </Button>
             </div>
           </div>

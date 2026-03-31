@@ -1,40 +1,46 @@
 "use client"
 
 import Link from "next/link"
-import { Instagram, Facebook, Mail, Phone } from "lucide-react"
+import { Instagram, Mail, Phone } from "lucide-react"
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+      <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.27 6.27 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.87a8.28 8.28 0 004.77 1.52V6.93a4.85 4.85 0 01-1-.24z" />
+    </svg>
+  )
+}
 
 const footerLinks = [
   {
     title: "Explore",
     links: [
-      { label: "Photos", href: "#photos" },
-      { label: "Amenities", href: "#amenities" },
-      { label: "Reviews", href: "#reviews" },
-      { label: "Location", href: "#location" },
+      { label: "Photos", href: "/house/house-23#photos" },
+      { label: "Amenities", href: "/house/house-23#amenities" },
+      { label: "Reviews", href: "/house/house-23#reviews" },
+      { label: "Location", href: "/house/house-23#location" },
     ],
   },
   {
     title: "Policies",
     links: [
-      { label: "House Rules", href: "#" },
-      { label: "Cancellation Policy", href: "#" },
-      { label: "Check-in / Check-out", href: "#" },
-      { label: "Safety & Property", href: "#" },
+      { label: "House Rules", href: "/house-rules" },
+      { label: "Cancellation Policy", href: "/cancellation-policy" },
+      { label: "Check-in / Check-out", href: "/check-in-check-out" },
     ],
   },
   {
     title: "Support",
     links: [
-      { label: "Contact Host", href: "#" },
-      { label: "FAQ", href: "#" },
-      { label: "Report Issue", href: "#" },
+      { label: "Contact Host", href: "https://wa.me/250788459885" },
+      { label: "FAQ", href: "/faq" },
     ],
   },
 ]
 
 const socialLinks = [
   { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Facebook, href: "#", label: "Facebook" },
+  { icon: TikTokIcon, href: "#", label: "TikTok" },
   { icon: Mail, href: "mailto:hello@Casamigo.com", label: "Email" },
 ]
 
@@ -68,16 +74,30 @@ export function Footer() {
             <div key={group.title}>
               <h4 className="font-semibold mb-4">{group.title}</h4>
               <ul className="space-y-3">
-                {group.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors text-sm"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {group.links.map((link) => {
+                  const isExternal = link.href.startsWith("http")
+                  return (
+                    <li key={link.label}>
+                      {isExternal ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors text-sm"
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link
+                          href={link.href}
+                          className="text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors text-sm"
+                        >
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ))}
@@ -92,7 +112,7 @@ export function Footer() {
             </a>
             <a href="tel:+1-310-555-0123" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
               <Phone className="h-4 w-4" />
-              <span className="text-sm">+(250) 788-123-456</span>
+              <span className="text-sm">+(250) 788-459-885</span>
             </a>
           </div>
         </div>
@@ -103,10 +123,10 @@ export function Footer() {
             2026 Casamigo. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <Link href="#" className="text-muted-foreground/60 dark:text-card-foreground/60 hover:text-muted-foreground dark:hover:text-card-foreground transition-colors text-sm">
+            <Link href="/privacy-policy" className="text-muted-foreground/60 dark:text-card-foreground/60 hover:text-muted-foreground dark:hover:text-card-foreground transition-colors text-sm">
               Privacy Policy
             </Link>
-            <Link href="#" className="text-muted-foreground/60 dark:text-card-foreground/60 hover:text-muted-foreground dark:hover:text-card-foreground transition-colors text-sm">
+            <Link href="/terms-of-service" className="text-muted-foreground/60 dark:text-card-foreground/60 hover:text-muted-foreground dark:hover:text-card-foreground transition-colors text-sm">
               Terms of Service
             </Link>
           </div>

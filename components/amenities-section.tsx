@@ -189,7 +189,7 @@ export function AmenitiesSection() {
         <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" staggerDelay={0.06}>
           {featuredAmenities.map((amenity) => (
             <StaggerItem key={amenity.label}>
-              <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:shadow-md hover:border-primary/20 transition-all duration-300">
+              <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
                 <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
                   <amenity.icon className="h-5 w-5 text-primary" />
                 </div>
@@ -202,7 +202,7 @@ export function AmenitiesSection() {
         {/* Show All Amenities */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="lg" className="rounded-full px-10 py-3 text-base">
+            <Button variant="outline" size="lg" className="rounded-full px-10 py-3 text-base hover:bg-transparent hover:border-foreground hover:text-foreground">
               Show all 38 amenities
             </Button>
           </DialogTrigger>
