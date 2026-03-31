@@ -8,7 +8,6 @@ import {
     Users,
     User,
     Phone,
-    Mail,
     CreditCard,
     CheckCircle2,
     ArrowRight,
@@ -31,6 +30,7 @@ import type { DateRange } from "react-day-picker"
 
 const WHATSAPP_NUMBER = "250788459885"
 const MOMO_CODE = "*182*8*1*12345#"
+const USD_TO_RWF = 1460
 
 const steps = [
     { id: 1, label: "Review", icon: CalendarDays },
@@ -57,7 +57,6 @@ export default function BookPage() {
     // Guest info
     const [guestName, setGuestName] = useState("")
     const [guestPhone, setGuestPhone] = useState("")
-    const [guestEmail, setGuestEmail] = useState("")
     const [specialRequests, setSpecialRequests] = useState("")
     const [momoTransactionId, setMomoTransactionId] = useState("")
 
@@ -121,13 +120,18 @@ export default function BookPage() {
     const applicableCleaningFee = nights >= 3 ? cleaningFee : 0
     const total = subtotal + applicableCleaningFee + serviceFee
 
+    // RWF amounts
+    const totalRwf = total * USD_TO_RWF
+    const formatRwf = (amount: number) => amount.toLocaleString("en-RW")
+
     const goNext = () => {
         if (currentStep === 2) {
             const newErrors: Record<string, string> = {}
             if (!guestName.trim()) newErrors.name = "Name is required"
-            if (!guestPhone.trim()) newErrors.phone = "Phone number is required"
-            if (guestEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
-                newErrors.email = "Invalid email address"
+            if (!guestPhone.trim()) {
+                newErrors.phone = "Phone number is required"
+            } else if (!/^(?:\+?250|0)?7[2389]\d{7}$/.test(guestPhone.replace(/\s/g, ""))) {
+                newErrors.phone = "Enter a valid Rwandan phone number (e.g. 078X XXX XXX)"
             }
             if (Object.keys(newErrors).length > 0) {
                 setErrors(newErrors)
@@ -136,7 +140,11 @@ export default function BookPage() {
         }
         if (currentStep === 3) {
             const newErrors: Record<string, string> = {}
-            if (!momoTransactionId.trim()) newErrors.momo = "Transaction ID is required"
+            if (!momoTransactionId.trim()) {
+                newErrors.momo = "Transaction ID is required"
+            } else if (momoTransactionId.trim().length < 10) {
+                newErrors.momo = "Transaction ID is invalid"
+            }
             if (Object.keys(newErrors).length > 0) {
                 setErrors(newErrors)
                 return
@@ -171,7 +179,7 @@ export default function BookPage() {
 
 👤 *Guest Details*
 • Name: ${guestName}
-• Phone: ${guestPhone}${guestEmail ? `\n• Email: ${guestEmail}` : ""}
+• Phone: ${guestPhone}
 
 📅 *Stay Details*
 • Check-in: ${checkIn}
@@ -181,7 +189,7 @@ export default function BookPage() {
 
 💰 *Payment Summary*
 • ${nights} nights × $${pricePerNight} = $${subtotal}${applicableCleaningFee > 0 ? `\n• Cleaning fee: $${applicableCleaningFee}` : ""}${serviceFee > 0 ? `\n• Service fee: $${serviceFee}` : ""}
-• *Total: $${total}*
+• *Total: ${totalRwf.toLocaleString("en-RW")} RWF* ($${total} at ${USD_TO_RWF} RWF/USD)
 
 📱 *MoMo Transaction ID:* ${momoTransactionId}
 ${specialRequests ? `\n📝 *Special Requests:*\n${specialRequests}` : ""}
@@ -369,7 +377,12 @@ _Sent from Casamigo website_`
                                                 <Separator />
                                                 <div className="flex justify-between font-semibold">
                                                     <span className="text-foreground">Total</span>
-                                                    <span className="text-foreground">${total}</span>
+                                                    <div className="text-right">
+                                                        <span className="text-foreground">${total}</span>
+                                                        <p className="text-xs font-normal text-muted-foreground mt-0.5">
+                                                            ≈ {formatRwf(totalRwf)} RWF
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -442,29 +455,6 @@ _Sent from Casamigo website_`
                                                 )}
                                             </div>
 
-                                            {/* Email */}
-                                            <div>
-                                                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                                                    Email <span className="text-muted-foreground text-xs">(optional)</span>
-                                                </label>
-                                                <div className="relative">
-                                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        value={guestEmail}
-                                                        onChange={(e) => {
-                                                            setGuestEmail(e.target.value)
-                                                            if (errors.email) setErrors((p) => ({ ...p, email: "" }))
-                                                        }}
-                                                        placeholder="john@example.com"
-                                                        type="email"
-                                                        className={`pl-10 h-11 rounded-xl ${errors.email ? "border-red-500" : ""}`}
-                                                    />
-                                                </div>
-                                                {errors.email && (
-                                                    <p className="text-xs text-red-500 mt-1">{errors.email}</p>
-                                                )}
-                                            </div>
-
                                             {/* Special Requests */}
                                             <div>
                                                 <label className="text-sm font-medium text-foreground mb-1.5 block">
@@ -504,9 +494,21 @@ _Sent from Casamigo website_`
 
                                         <div className="space-y-4">
                                             {/* Amount to pay */}
-                                            <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 text-center">
-                                                <p className="text-xs text-muted-foreground mb-0.5">Amount to pay</p>
-                                                <p className="text-2xl font-bold text-foreground">${total}</p>
+                                            <div className="rounded-xl border border-primary/15 overflow-hidden">
+                                                <div className="bg-primary/5 px-4 py-4 text-center">
+                                                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">Amount to pay</p>
+                                                    <p className="text-3xl font-bold text-foreground tracking-tight">
+                                                        {formatRwf(totalRwf)}
+                                                        <span className="text-lg font-semibold text-muted-foreground ml-1">RWF</span>
+                                                    </p>
+                                                </div>
+                                                <div className="bg-muted/40 px-4 py-2 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-background border border-border font-medium">
+                                                        1 USD = {USD_TO_RWF.toLocaleString()} RWF
+                                                    </span>
+                                                    <span>·</span>
+                                                    <span>${total} USD</span>
+                                                </div>
                                             </div>
 
                                             {/* MoMo Instructions */}
@@ -544,7 +546,7 @@ _Sent from Casamigo website_`
                                                             2
                                                         </div>
                                                         <p className="text-sm text-foreground">
-                                                            Enter amount: <span className="font-semibold">${total}</span>
+                                                            Enter amount: <span className="font-semibold">{formatRwf(totalRwf)} RWF</span>
                                                         </p>
                                                     </div>
 
@@ -657,7 +659,12 @@ _Sent from Casamigo website_`
 
                                             <div className="flex justify-between items-center font-semibold">
                                                 <span className="text-foreground">Total Paid</span>
-                                                <span className="text-foreground">${total}</span>
+                                                <div className="text-right">
+                                                    <span className="text-foreground">{formatRwf(totalRwf)} RWF</span>
+                                                    <p className="text-xs font-normal text-muted-foreground mt-0.5">
+                                                        ${total} · 1 USD = {USD_TO_RWF.toLocaleString()} RWF
+                                                    </p>
+                                                </div>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-muted-foreground">MoMo TXN ID</span>
