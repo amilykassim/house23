@@ -165,7 +165,7 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Casamigo" }: Phot
                 <button
                   key={photo.src}
                   onClick={() => setCurrentIndex(index)}
-                  className={`relative w-16 h-12 rounded-lg overflow-hidden transition-all flex-shrink-0 ${index === currentIndex ? "ring-2 ring-background scale-110" : "opacity-60 hover:opacity-100"
+                  className={`relative w-16 h-12 rounded-lg overflow-hidden transition-all shrink-0 ${index === currentIndex ? "ring-2 ring-background scale-110" : "opacity-60 hover:opacity-100"
                     }`}
                 >
                   <Image src={photo.src} alt={photo.alt} fill className="object-cover" />

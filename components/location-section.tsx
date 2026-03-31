@@ -25,7 +25,7 @@ export function LocationSection({ house }: LocationSectionProps) {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Map */}
           <ScaleIn className="lg:col-span-2">
-            <div className="relative rounded-2xl overflow-hidden bg-muted h-[400px]">
+            <div className="relative rounded-2xl overflow-hidden bg-muted h-100">
               <iframe
                 width="100%"
                 height="100%"

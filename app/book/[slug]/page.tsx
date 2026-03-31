@@ -236,8 +236,8 @@ _Sent from Casamigo website_`
                                         <div className="flex flex-col items-center flex-1">
                                             <div
                                                 className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${currentStep >= step.id
-                                                        ? "bg-foreground text-background"
-                                                        : "bg-muted text-muted-foreground"
+                                                    ? "bg-foreground text-background"
+                                                    : "bg-muted text-muted-foreground"
                                                     }`}
                                             >
                                                 {currentStep > step.id ? (
@@ -248,8 +248,8 @@ _Sent from Casamigo website_`
                                             </div>
                                             <span
                                                 className={`text-xs mt-1.5 font-medium transition-colors ${currentStep >= step.id
-                                                        ? "text-foreground"
-                                                        : "text-muted-foreground"
+                                                    ? "text-foreground"
+                                                    : "text-muted-foreground"
                                                     }`}
                                             >
                                                 {step.label}

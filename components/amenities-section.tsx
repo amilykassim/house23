@@ -190,7 +190,7 @@ export function AmenitiesSection() {
           {featuredAmenities.map((amenity) => (
             <StaggerItem key={amenity.label}>
               <div className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border">
-                <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
+                <div className="shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
                   <amenity.icon className="h-5 w-5 text-primary" />
                 </div>
                 <span className="text-foreground font-medium">{amenity.label}</span>

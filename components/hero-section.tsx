@@ -32,7 +32,7 @@ export function HeroSection({ house }: HeroSectionProps) {
           className="object-cover"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-transparent to-background" />
+        <div className="absolute inset-0 bg-linear-to-b from-background/30 via-transparent to-background" />
       </motion.div>
 
       {/* Hero Content */}
