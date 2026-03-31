@@ -37,9 +37,13 @@ export function Header() {
   // Determine the active house from the URL, default to House 23
   const activeHouse = houses.find((h) => pathname.includes(h.slug)) ?? houses.find((h) => h.slug === DEFAULT_HOUSE_SLUG)!
 
+  // On booking page, window doesn't scroll (content scrolls in inner div),
+  // so always show the "scrolled" header style to keep it visible
+  const showScrolledStyle = scrolled || pathname.startsWith("/book/")
+
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${scrolled
+      className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${showScrolledStyle
         ? "bg-background/50 backdrop-blur-lg border-border/50"
         : "bg-background/80 backdrop-blur-md border-transparent"
         }`}
@@ -93,9 +97,11 @@ export function Header() {
 
           <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
-            <Button size="lg" className="rounded-full px-6">
-              Book a stay
-            </Button>
+            {!pathname.startsWith("/book/") && (
+              <Button size="lg" className="rounded-full px-6">
+                Book a stay
+              </Button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -145,11 +151,13 @@ export function Header() {
               </Link>
             ))}
 
-            <div className="pt-3">
-              <Button size="lg" className="w-full rounded-full">
-                Book a stay
-              </Button>
-            </div>
+            {!pathname.startsWith("/book/") && (
+              <div className="pt-3">
+                <Button size="lg" className="w-full rounded-full">
+                  Book a stay
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -220,11 +220,11 @@ _Sent from Casamigo website_`
     }
 
     return (
-        <main className="h-dvh flex flex-col">
+        <main className="h-dvh flex flex-col bg-background">
             <Header />
 
             {/* Full-height booking layout */}
-            <div className="flex-1 flex flex-col pt-16 bg-background">
+            <div className="flex-1 flex flex-col pt-16">
                 {/* Top bar: back link + title + step indicator (fixed, no scroll) */}
                 <div className="shrink-0 px-4 sm:px-6 lg:px-8">
                     <div className="mx-auto max-w-2xl pt-5">
