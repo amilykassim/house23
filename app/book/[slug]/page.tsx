@@ -716,10 +716,10 @@ _Sent from Casamigo website_`
                         {currentStep === 4 && (
                             <Button
                                 variant="outline"
-                                onClick={() => router.push(`/house/${slug}`)}
+                                onClick={() => router.push("/check-in-check-out")}
                                 className="rounded-xl"
                             >
-                                Back to listing
+                                Check-in & Check-out Info
                             </Button>
                         )}
                     </div>
