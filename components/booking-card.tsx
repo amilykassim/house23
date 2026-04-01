@@ -61,9 +61,24 @@ export function BookingCard({
   }, [])
 
   useEffect(() => {
+    // Fetch manually blocked dates
     fetch(`/api/blocked-dates?house=${slug}`)
       .then((res) => res.json())
       .then((data) => setBlockedDates(new Set(data.dates || [])))
+      .catch(() => { })
+
+    // Fetch Airbnb booked dates
+    fetch(`/api/airbnb-sync?house=${slug}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.dates?.length) {
+          setBlockedDates((prev) => {
+            const merged = new Set(prev)
+            data.dates.forEach((d: string) => merged.add(d))
+            return merged
+          })
+        }
+      })
       .catch(() => { })
   }, [slug])
 
