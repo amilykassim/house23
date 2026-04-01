@@ -52,7 +52,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
-              Casamigo
+              House by AD
             </span>
           </Link>
 
@@ -69,7 +69,7 @@ export function Header() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" sideOffset={12} className="w-48">
                 {houses.map((house) => (
-                  <DropdownMenuItem key={house.slug} asChild>
+                  <DropdownMenuItem key={house.slug} asChild className="focus:bg-primary/10 focus:text-foreground">
                     <Link
                       href={`/house/${house.slug}`}
                       className={activeHouse.slug === house.slug ? "font-semibold text-primary" : ""}
@@ -129,7 +129,7 @@ export function Header() {
                 href={`/house/${house.slug}`}
                 className={`block text-base font-medium transition-colors py-2 px-2 rounded-lg ${activeHouse.slug === house.slug
                   ? "text-primary bg-primary/5"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  : "text-muted-foreground hover:text-foreground hover:bg-primary/10"
                   }`}
                 onClick={() => setMobileMenuOpen(false)}
               >

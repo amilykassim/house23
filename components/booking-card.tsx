@@ -357,7 +357,7 @@ export function BookingCard({
                 <button
                   key={num}
                   onClick={() => { setGuests(num.toString()); setGuestsOpen(false) }}
-                  className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                  className="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded-sm hover:bg-primary/10 hover:text-foreground transition-colors"
                 >
                   <span>{num} {num === 1 ? "guest" : "guests"}</span>
                   {guests === num.toString() && <Check className="h-4 w-4" />}

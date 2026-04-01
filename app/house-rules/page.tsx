@@ -5,8 +5,8 @@ import { Clock, Users, Volume2, Cigarette, Dog, PartyPopper, Baby, ShieldCheck, 
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "House Rules | Casamigo",
-    description: "House rules for your stay at Casamigo. Please review before booking.",
+    title: "House Rules | House by AD",
+    description: "House rules for your stay at House by AD. Please review before booking.",
 }
 
 const rules = [
@@ -115,7 +115,7 @@ export default function HouseRulesPage() {
 
                     <div className="mt-12 p-6 bg-muted rounded-2xl">
                         <p className="text-sm text-muted-foreground leading-relaxed">
-                            By booking Casamigo, you agree to abide by these house rules. Violation of any rules may result in immediate termination of your stay without refund. If you have any questions about these rules, please don&apos;t hesitate to contact your host before booking.
+                            By booking House by AD, you agree to abide by these house rules. Violation of any rules may result in immediate termination of your stay without refund. If you have any questions about these rules, please don&apos;t hesitate to contact your host before booking.
                         </p>
                     </div>
                 </div>

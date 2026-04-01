@@ -3,8 +3,8 @@ import { Footer } from "@/components/footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "Terms of Service | Casamigo",
-    description: "Terms and conditions for booking and staying at Casamigo.",
+    title: "Terms of Service | House by AD",
+    description: "Terms and conditions for booking and staying at House by AD.",
 }
 
 export default function TermsOfServicePage() {
@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
                                 1. Acceptance of Terms
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
-                                By accessing our website or booking a stay at Casamigo, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, please do not use our website or services.
+                                By accessing our website or booking a stay at House by AD, you agree to be bound by these Terms of Service. If you do not agree with any part of these terms, please do not use our website or services.
                             </p>
                         </section>
 
@@ -38,7 +38,7 @@ export default function TermsOfServicePage() {
                                 2. The Property
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
-                                Casamigo operates short-term vacation rental properties in Kigali, Rwanda. The property descriptions, photos, and amenities listed on our website are accurate representations. Minor variations may occur due to seasonal maintenance or updates.
+                                House by AD operates short-term vacation rental properties in Kigali, Rwanda. The property descriptions, photos, and amenities listed on our website are accurate representations. Minor variations may occur due to seasonal maintenance or updates.
                             </p>
                         </section>
 
@@ -114,7 +114,7 @@ export default function TermsOfServicePage() {
                                 8. Limitation of Liability
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
-                                Casamigo and its host are not liable for any personal injury, illness, loss, or damage to personal belongings during your stay, except where caused by proven negligence on our part. Guests stay at their own risk and are encouraged to carry appropriate travel and health insurance.
+                                House by AD and its host are not liable for any personal injury, illness, loss, or damage to personal belongings during your stay, except where caused by proven negligence on our part. Guests stay at their own risk and are encouraged to carry appropriate travel and health insurance.
                             </p>
                         </section>
 
@@ -132,7 +132,7 @@ export default function TermsOfServicePage() {
                                 10. Intellectual Property
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
-                                All content on this website — including text, images, design, and branding — is the property of Casamigo and is protected by copyright. You may not reproduce, distribute, or use any content without prior written permission.
+                                All content on this website — including text, images, design, and branding — is the property of House by AD and is protected by copyright. You may not reproduce, distribute, or use any content without prior written permission.
                             </p>
                         </section>
 
@@ -171,8 +171,8 @@ export default function TermsOfServicePage() {
                                 For questions about these Terms of Service, please contact us:
                             </p>
                             <div className="mt-3 p-6 bg-muted rounded-2xl">
-                                <p className="text-foreground font-medium">Casamigo</p>
-                                <p className="text-muted-foreground text-sm mt-1">Email: hello@Casamigo.com</p>
+                                <p className="text-foreground font-medium">House by AD</p>
+                                <p className="text-muted-foreground text-sm mt-1">Email: hello@House by AD.com</p>
                                 <p className="text-muted-foreground text-sm">Location: Kicukiro, Kigali, Rwanda</p>
                             </div>
                         </section>

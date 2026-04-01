@@ -28,8 +28,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Casamigo | Luxury Vacation Rental',
-  description: 'Experience Casamigo - Designed for privacy, calm and peace, our modern home is the perfect getaway for relaxation and good vibes. Wake up to birdsong, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴',
+  title: 'House by AD | Luxury Vacation Rental',
+  description: 'Experience House by AD - Designed for privacy, calm and peace, our modern home is the perfect getaway for relaxation and good vibes. Wake up to birdsong, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴',
   generator: 'v0.app',
   icons: {
     icon: [

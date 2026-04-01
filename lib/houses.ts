@@ -42,9 +42,9 @@ export const houses: HouseData[] = [
         name: "House 23",
         tagline: "Designed for privacy, calm and peace. Wake up to birdsong 😴, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴",
         description: [
-            "Welcome to Casamigo House 23. This architectural masterpiece seamlessly blends indoor and outdoor living, offering panoramic green zone views from the master bedroom and living room.",
+            "Welcome to House by AD House 23. This architectural masterpiece seamlessly blends indoor and outdoor living, offering panoramic green zone views from the master bedroom and living room.",
             "Step inside to discover an open-concept living space bathed in natural light, featuring almost floor-to-ceiling windows, custom furnishings, and designer finishes throughout. The gourmet kitchen is equipped with professional-grade appliances, perfect for preparing memorable meals with locally sourced ingredients.",
-            "Outside, your private living room overlooks the lush green surroundings, while the outdoor sitting area provides the perfect setting for al fresco dining and sunset cocktails. Casamigo offers the ultimate Kigalian experience.",
+            "Outside, your private living room overlooks the lush green surroundings, while the outdoor sitting area provides the perfect setting for al fresco dining and sunset cocktails. House by AD offers the ultimate Kigalian experience.",
         ],
         heroImage: "/images/EMMA9964.jpg",
         location: "Kicukiro - Kigali, Rwanda",
@@ -60,7 +60,7 @@ export const houses: HouseData[] = [
         cleaningFee: 10,
         serviceFee: 0,
         photos: [
-            { src: "/images/EMMA9964.jpg", alt: "House 23 exterior", label: "Casamigo House 23" },
+            { src: "/images/EMMA9964.jpg", alt: "House 23 exterior", label: "House by AD House 23" },
             { src: "/images/EMMA0017.jpg", alt: "Spacious living room", label: "Living Room" },
             { src: "/images/EMMA0136.jpg", alt: "Kitchen", label: "Kitchen" },
             { src: "/images/EMMA0227.jpg", alt: "Exterior view", label: "Exterior" },
@@ -112,14 +112,14 @@ export const houses: HouseData[] = [
             { name: "Luma & Lua Restaurant", distance: "12 min drive", type: "drive" },
         ],
         areaDescription:
-            "Nestled in the vibrant city of Kigali, Casamigo House 23 offers the perfect blend of seclusion and accessibility. Enjoy local attractions, cultural experiences, and proximity to acclaimed restaurants while staying in your own private paradise.",
+            "Nestled in the vibrant city of Kigali, House by AD House 23 offers the perfect blend of seclusion and accessibility. Enjoy local attractions, cultural experiences, and proximity to acclaimed restaurants while staying in your own private paradise.",
     },
     {
         slug: "house-22",
         name: "House 22",
         tagline: "A cozy retreat nestled in the heart of Kigali. Modern comforts meet warm hospitality in this beautifully curated space. 🏡",
         description: [
-            "Welcome to Casamigo House 22. A beautifully designed home that combines modern aesthetics with the warmth of Rwandan hospitality, creating a truly unique stay experience.",
+            "Welcome to House by AD House 22. A beautifully designed home that combines modern aesthetics with the warmth of Rwandan hospitality, creating a truly unique stay experience.",
             "The open-plan living and dining area is flooded with natural light, while the fully equipped kitchen makes it easy to prepare your favorite meals. Each bedroom is thoughtfully furnished with premium linens and blackout curtains for a restful night's sleep.",
             "Enjoy your morning coffee on the private terrace overlooking the garden, or relax in the cozy living room after a day exploring Kigali. House 22 is your home away from home.",
         ],
@@ -137,7 +137,7 @@ export const houses: HouseData[] = [
         cleaningFee: 10,
         serviceFee: 0,
         photos: [
-            { src: "/images/EMMA9979.JPG", alt: "House 22 exterior", label: "Casamigo House 22" },
+            { src: "/images/EMMA9979.JPG", alt: "House 22 exterior", label: "House by AD House 22" },
             { src: "/images/EMMA0043.JPG", alt: "Living area", label: "Living Room" },
             { src: "/images/EMMA0053.JPG", alt: "Kitchen area", label: "Kitchen" },
             { src: "/images/EMMA0061.JPG", alt: "Bedroom", label: "Bedroom" },
@@ -183,7 +183,7 @@ export const houses: HouseData[] = [
             { name: "Kigali International Airport", distance: "14 min drive", type: "drive" },
         ],
         areaDescription:
-            "Located in the heart of Kigali, Casamigo House 22 offers easy access to the city's best attractions while providing a peaceful retreat. The neighborhood is safe, walkable, and full of character.",
+            "Located in the heart of Kigali, House by AD House 22 offers easy access to the city's best attractions while providing a peaceful retreat. The neighborhood is safe, walkable, and full of character.",
     },
 ]
 

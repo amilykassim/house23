@@ -175,7 +175,7 @@ export default function BookPage() {
         const checkIn = dateRange?.from ? format(dateRange.from, "EEE, MMM d, yyyy") : "N/A"
         const checkOut = dateRange?.to ? format(dateRange.to, "EEE, MMM d, yyyy") : "N/A"
 
-        const message = `🏠 *New Booking Request - Casamigo ${house.name}*
+        const message = `🏠 *New Booking Request - House by AD ${house.name}*
 
 👤 *Guest Details*
 • Name: ${guestName}
@@ -194,7 +194,7 @@ export default function BookPage() {
 📱 *MoMo Transaction ID:* ${momoTransactionId}
 ${specialRequests ? `\n📝 *Special Requests:*\n${specialRequests}` : ""}
 
-_Sent from Casamigo website_`
+_Sent from House by AD website_`
 
         return encodeURIComponent(message)
     }
@@ -233,7 +233,7 @@ _Sent from Casamigo website_`
                             Complete Your Booking
                         </h1>
                         <p className="text-sm text-muted-foreground mb-5">
-                            Casamigo {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
+                            House by AD {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
                         </p>
 
                         {/* Step Indicator */}
@@ -306,7 +306,7 @@ _Sent from Casamigo website_`
                                                     <span className="text-lg">🏠</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-foreground">Casamigo {house.name}</p>
+                                                    <p className="text-sm font-medium text-foreground">House by AD {house.name}</p>
                                                     <p className="text-xs text-muted-foreground">{house.location}</p>
                                                 </div>
                                             </div>
@@ -626,7 +626,7 @@ _Sent from Casamigo website_`
                                         <div className="rounded-xl border border-border p-4 space-y-2 mb-4 bg-muted/30 text-sm">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-muted-foreground">Property</span>
-                                                <span className="text-foreground font-medium">Casamigo {house.name}</span>
+                                                <span className="text-foreground font-medium">House by AD {house.name}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-muted-foreground">Dates</span>
@@ -678,7 +678,7 @@ _Sent from Casamigo website_`
                                             className="w-full h-12 rounded-xl text-base font-semibold bg-[#075E54] hover:bg-[#064E45] text-white gap-2"
                                         >
                                             <Send className="h-5 w-5" />
-                                            Send Booking to Host via WhatsApp
+                                            Send Booking Confirmation
                                         </Button>
 
                                         <p className="text-xs text-center text-muted-foreground mt-2">
@@ -697,7 +697,7 @@ _Sent from Casamigo website_`
                         <Button
                             variant="ghost"
                             onClick={goBack}
-                            className="rounded-xl gap-1"
+                            className="rounded-xl gap-1 hover:bg-black hover:text-white"
                         >
                             <ArrowLeft className="h-4 w-4" />
                             {currentStep === 1 ? "Back to listing" : "Back"}

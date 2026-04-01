@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: HousePageProps): Promise<Meta
     const house = getHouseBySlug(slug)
     if (!house) return { title: "House Not Found" }
     return {
-        title: `Casamigo ${house.name} - Luxury Vacation Home in Kigali`,
+        title: `House by AD ${house.name} - Luxury Vacation Home in Kigali`,
         description: house.tagline,
     }
 }
@@ -124,7 +124,7 @@ export default async function HousePage({ params }: HousePageProps) {
                 </div>
             </div>
 
-            <PhotoGallery photos={house.photos} allPhotos={house.allPhotos} houseName={`Casamigo ${house.name}`} />
+            <PhotoGallery photos={house.photos} allPhotos={house.allPhotos} houseName={`House by AD ${house.name}`} />
             <AmenitiesSection />
             <ReviewsSection />
             <LocationSection house={house} />

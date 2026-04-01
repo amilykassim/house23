@@ -15,7 +15,7 @@ const faqCategories = [
         title: "Booking & Reservations",
         faqs: [
             {
-                question: "How do I book Casamigo?",
+                question: "How do I book House by AD?",
                 answer:
                     "You can book directly through our Airbnb listing or contact the host via the booking card on this website. Simply select your dates, number of guests, and complete the reservation process.",
             },
@@ -42,7 +42,7 @@ const faqCategories = [
             {
                 question: "How many guests can the property accommodate?",
                 answer:
-                    "Casamigo House 23 comfortably accommodates up to 3 guests with 2 bedrooms, 2 beds, and 2 bathrooms.",
+                    "House by AD House 23 comfortably accommodates up to 3 guests with 2 bedrooms, 2 beds, and 2 bathrooms.",
             },
             {
                 question: "Is Wi-Fi available?",
@@ -92,7 +92,7 @@ const faqCategories = [
             {
                 question: "Where is the property located?",
                 answer:
-                    "Casamigo House 23 is located in Kicukiro, Kigali, Rwanda — a peaceful residential neighborhood with easy access to the city center, restaurants, and coffee shops.",
+                    "House by AD House 23 is located in Kicukiro, Kigali, Rwanda — a peaceful residential neighborhood with easy access to the city center, restaurants, and coffee shops.",
             },
             {
                 question: "How do I get around Kigali?",
@@ -142,7 +142,7 @@ const faqCategories = [
             {
                 question: "Is the neighborhood safe?",
                 answer:
-                    "Yes, Casamigo is located in a very safe, quiet, and secure residential neighborhood. Rwanda is widely recognized as one of the safest countries in Africa.",
+                    "Yes, House by AD is located in a very safe, quiet, and secure residential neighborhood. Rwanda is widely recognized as one of the safest countries in Africa.",
             },
             {
                 question: "Is there security on the property?",
@@ -171,7 +171,7 @@ export default function FAQPage() {
                         </h1>
                     </div>
                     <p className="text-muted-foreground text-lg mb-12">
-                        Find answers to common questions about staying at Casamigo. Can&apos;t find what you&apos;re looking for? Contact the host directly.
+                        Find answers to common questions about staying at House by AD. Can&apos;t find what you&apos;re looking for? Contact the host directly.
                     </p>
 
                     <div className="space-y-12">

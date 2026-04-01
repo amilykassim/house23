@@ -3,8 +3,8 @@ import { Footer } from "@/components/footer"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "Privacy Policy | Casamigo",
-    description: "Privacy policy for Casamigo. Learn how we handle your personal information.",
+    title: "Privacy Policy | House by AD",
+    description: "Privacy policy for House by AD. Learn how we handle your personal information.",
 }
 
 export default function PrivacyPolicyPage() {
@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
                                 1. Information We Collect
                             </h2>
                             <p className="text-muted-foreground leading-relaxed mb-3">
-                                When you interact with Casamigo, we may collect the following types of information:
+                                When you interact with House by AD, we may collect the following types of information:
                             </p>
                             <ul className="text-muted-foreground space-y-2 leading-relaxed">
                                 <li><span className="font-medium text-foreground">Contact Information</span> — Name, email address, and phone number provided when you make a booking inquiry or contact the host.</li>
@@ -111,7 +111,7 @@ export default function PrivacyPolicyPage() {
                                 <li>Opt out of marketing communications</li>
                             </ul>
                             <p className="text-muted-foreground leading-relaxed mt-3">
-                                To exercise any of these rights, please contact us at hello@Casamigo.com.
+                                To exercise any of these rights, please contact us at hello@House by AD.com.
                             </p>
                         </section>
 
@@ -141,8 +141,8 @@ export default function PrivacyPolicyPage() {
                                 If you have any questions or concerns about this Privacy Policy, please contact us at:
                             </p>
                             <div className="mt-3 p-6 bg-muted rounded-2xl">
-                                <p className="text-foreground font-medium">Casamigo</p>
-                                <p className="text-muted-foreground text-sm mt-1">Email: hello@Casamigo.com</p>
+                                <p className="text-foreground font-medium">House by AD</p>
+                                <p className="text-muted-foreground text-sm mt-1">Email: hello@House by AD.com</p>
                                 <p className="text-muted-foreground text-sm">Location: Kicukiro, Kigali, Rwanda</p>
                             </div>
                         </section>

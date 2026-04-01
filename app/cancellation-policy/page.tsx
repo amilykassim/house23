@@ -4,8 +4,8 @@ import { ShieldCheck, Clock, AlertTriangle, CalendarX, RefreshCw } from "lucide-
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "Cancellation Policy | Casamigo",
-    description: "Cancellation policy for bookings at Casamigo.",
+    title: "Cancellation Policy | House by AD",
+    description: "Cancellation policy for bookings at House by AD.",
 }
 
 const policies = [
@@ -70,14 +70,14 @@ export default function CancellationPolicyPage() {
                                 {/* Icon */}
                                 <div
                                     className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 z-10 ${policy.highlight
-                                            ? "bg-green-100 dark:bg-green-900/30"
-                                            : "bg-primary/5"
+                                        ? "bg-green-100 dark:bg-green-900/30"
+                                        : "bg-primary/5"
                                         }`}
                                 >
                                     <policy.icon
                                         className={`h-6 w-6 ${policy.highlight
-                                                ? "text-green-600 dark:text-green-400"
-                                                : "text-primary"
+                                            ? "text-green-600 dark:text-green-400"
+                                            : "text-primary"
                                             }`}
                                     />
                                 </div>
