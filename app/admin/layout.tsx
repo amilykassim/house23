@@ -8,147 +8,145 @@ import {
     LayoutDashboard,
     CalendarDays,
     BookOpen,
-    ChevronLeft,
-    Menu,
     Home,
-    Moon,
-    Sun,
+    Menu,
+    X,
 } from "lucide-react"
-import { useTheme } from "next-themes"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 const navItems = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/admin/bookings", label: "Bookings", icon: BookOpen },
-    { href: "/admin/calendar", label: "Calendar", icon: CalendarDays },
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: "/admin/bookings", label: "Bookings", icon: BookOpen, exact: false },
+    { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
-    const [sidebarOpen, setSidebarOpen] = useState(false)
-    const [mounted, setMounted] = useState(false)
-    const { theme, setTheme } = useTheme()
+    const [scrolled, setScrolled] = useState(false)
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     useEffect(() => {
-        setMounted(true)
+        const handleScroll = () => {
+            setScrolled(window.scrollY > 50)
+        }
+        window.addEventListener("scroll", handleScroll, { passive: true })
+        return () => window.removeEventListener("scroll", handleScroll)
     }, [])
 
     return (
-        <div className="min-h-screen bg-background flex">
-            {/* Mobile overlay */}
-            {sidebarOpen && (
-                <div
-                    className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-                    onClick={() => setSidebarOpen(false)}
-                />
-            )}
-
-            {/* Sidebar */}
-            <aside
-                className={`
-                    fixed top-0 left-0 z-50 h-full w-64 bg-card border-r border-border
-                    flex flex-col transition-transform duration-300 ease-in-out
-                    lg:translate-x-0 lg:static lg:z-auto lg:h-screen lg:sticky lg:top-0
-                    ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-                `}
+        <div className="min-h-screen bg-background flex flex-col">
+            {/* Header — matches website header design */}
+            <header
+                className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${scrolled
+                    ? "bg-background/90 backdrop-blur-lg border-border"
+                    : "bg-background/90 backdrop-blur-md border-border"
+                    }`}
             >
-                {/* Logo */}
-                <div className="px-6 py-5 border-b border-border">
-                    <Link href="/admin" className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-                            <span className="text-background font-bold text-sm">AD</span>
-                        </div>
-                        <div>
-                            <h1 className="font-serif text-base font-semibold text-foreground leading-tight">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="flex h-16 items-center justify-between">
+                        {/* Logo */}
+                        <Link href="/admin" className="flex items-center gap-2">
+                            <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
                                 House by AD
-                            </h1>
-                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
-                                Admin Panel
-                            </p>
-                        </div>
-                    </Link>
-                </div>
+                            </span>
+                        </Link>
 
-                {/* Navigation */}
-                <nav className="flex-1 px-3 py-4 space-y-1">
-                    {navItems.map((item) => {
-                        const isActive =
-                            item.href === "/admin"
-                                ? pathname === "/admin"
-                                : pathname.startsWith(item.href)
-                        return (
+                        {/* Desktop Navigation */}
+                        <nav className="hidden md:flex items-center gap-6">
+                            {navItems.map((item) => {
+                                const isActive = item.exact
+                                    ? pathname === item.href
+                                    : pathname.startsWith(item.href)
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive
+                                            ? "text-foreground"
+                                            : "text-muted-foreground hover:text-foreground"
+                                            }`}
+                                    >
+                                        <item.icon className="h-4 w-4" />
+                                        {item.label}
+                                    </Link>
+                                )
+                            })}
+                        </nav>
+
+                        {/* Right actions */}
+                        <div className="hidden md:flex items-center gap-4">
                             <Link
-                                key={item.href}
-                                href={item.href}
-                                onClick={() => setSidebarOpen(false)}
-                                className={`
-                                    flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
-                                    ${isActive
-                                        ? "bg-foreground text-background"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                                    }
-                                `}
+                                href="/"
+                                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                             >
-                                <item.icon className="h-4 w-4" />
-                                {item.label}
+                                <Home className="h-4 w-4" />
+                                Website
                             </Link>
-                        )
-                    })}
-                </nav>
-
-                {/* Bottom actions */}
-                <div className="px-3 py-4 border-t border-border space-y-1">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-                    >
-                        <Home className="h-4 w-4" />
-                        Back to Website
-                    </Link>
-                    {mounted && (
-                        <button
-                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-all w-full"
-                        >
-                            {theme === "dark" ? (
-                                <Sun className="h-4 w-4" />
-                            ) : (
-                                <Moon className="h-4 w-4" />
-                            )}
-                            {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                        </button>
-                    )}
-                </div>
-            </aside>
-
-            {/* Main content */}
-            <div className="flex-1 flex flex-col min-h-screen">
-                {/* Mobile header */}
-                <header className="lg:hidden sticky top-0 z-30 bg-background/80 backdrop-blur-lg border-b border-border px-4 py-3 flex items-center gap-3">
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="h-9 w-9 flex items-center justify-center rounded-lg hover:bg-muted transition-colors"
-                    >
-                        <Menu className="h-5 w-5 text-foreground" />
-                    </button>
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded-md bg-foreground flex items-center justify-center">
-                            <span className="text-background font-bold text-[10px]">AD</span>
+                            <span className="h-4 w-px bg-border" />
+                            <ThemeToggle />
                         </div>
-                        <span className="font-serif text-sm font-semibold text-foreground">
-                            Admin
-                        </span>
-                    </div>
-                </header>
 
-                {/* Page content */}
-                <main className="flex-1">{children}</main>
-                <Toaster
-                    position="top-right"
-                    toastOptions={{
-                        className: "!bg-card !text-foreground !border-border",
-                    }}
-                />
-            </div>
+                        {/* Mobile Menu Button */}
+                        <button
+                            className="md:hidden p-2 text-foreground"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            aria-label="Toggle menu"
+                        >
+                            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Mobile Menu */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden bg-background border-t border-border">
+                        <div className="px-4 py-4 space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2 pt-2 pb-1">
+                                Admin
+                            </p>
+                            {navItems.map((item) => {
+                                const isActive = item.exact
+                                    ? pathname === item.href
+                                    : pathname.startsWith(item.href)
+                                return (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        className={`flex items-center gap-3 text-base font-medium transition-colors py-2 px-2 rounded-lg ${isActive
+                                            ? "text-foreground bg-muted"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                                            }`}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                    >
+                                        <item.icon className="h-4 w-4" />
+                                        {item.label}
+                                    </Link>
+                                )
+                            })}
+
+                            <div className="border-t border-border my-3" />
+
+                            <Link
+                                href="/"
+                                className="flex items-center gap-3 text-base font-medium text-muted-foreground hover:text-foreground transition-colors py-2 px-2 rounded-lg hover:bg-muted/50"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                <Home className="h-4 w-4" />
+                                Back to Website
+                            </Link>
+                        </div>
+                    </div>
+                )}
+            </header>
+
+            {/* Page content — offset for fixed header */}
+            <main className="flex-1 pt-16">{children}</main>
+            <Toaster
+                position="top-right"
+                toastOptions={{
+                    className: "!bg-card !text-foreground !border-border",
+                }}
+            />
         </div>
     )
 }

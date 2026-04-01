@@ -353,8 +353,12 @@ export default function AdminDashboardPage() {
                                         key={house.slug}
                                         className="flex items-center gap-4 p-4 rounded-xl bg-muted/40"
                                     >
-                                        <div className="w-12 h-12 rounded-xl bg-foreground/5 flex items-center justify-center shrink-0">
-                                            <Home className="h-5 w-5 text-foreground/60" />
+                                        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
+                                            <img
+                                                src={house.heroImage}
+                                                alt={house.name}
+                                                className="w-full h-full object-cover"
+                                            />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between mb-1.5">
