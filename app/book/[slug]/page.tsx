@@ -16,7 +16,6 @@ import {
     Copy,
     Check,
     Smartphone,
-    Send,
 
 } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
@@ -789,30 +788,78 @@ _Sent from House by AD website_`
                 }}>
                     <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-0 [&>button]:hidden">
                         <DialogTitle className="sr-only">Booking Submitted</DialogTitle>
+
+                        {/* Success header */}
                         <div className="bg-green-50 dark:bg-green-500/10 px-6 pt-8 pb-5 text-center">
-                            <div className="w-16 h-16 rounded-full bg-[#075E54] flex items-center justify-center mx-auto mb-4">
-                                <svg viewBox="0 0 24 24" className="h-8 w-8 text-white fill-current">
-                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-                                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.11-1.14L4 20l1.14-3.89A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
-                                </svg>
+                            <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-500/20 flex items-center justify-center mx-auto mb-4">
+                                <CheckCircle2 className="h-7 w-7 text-green-600 dark:text-green-400" />
                             </div>
                             <h3 className="text-lg font-semibold text-foreground mb-1">
                                 Booking Submitted!
                             </h3>
-                            <p className="text-sm text-muted-foreground">
-                                Thank you for your booking with us! We'll confirm your booking within 1 hour.
-                                If you provided an email, you'll receive a confirmation email once your booking is approved.
-                                For faster approval, send your booking details directly to the host on WhatsApp.
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                Hi <span className="font-semibold text-foreground">{guestName.split(" ")[0]}</span>, thank you for choosing House by AD! Your booking request has been received and we&apos;ll confirm it within 1 hour.
                             </p>
                         </div>
+
+                        {/* Booking summary mini-card */}
+                        <div className="px-6 pt-4">
+                            <div className="rounded-xl border border-border bg-muted/30 p-3.5 space-y-2 text-sm">
+                                <div className="flex items-center gap-2.5">
+                                    <CalendarDays className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="text-muted-foreground">
+                                        {mounted && dateRange?.from ? format(dateRange.from, "MMM d") : "—"} → {mounted && dateRange?.to ? format(dateRange.to, "MMM d") : "—"}
+                                    </span>
+                                    <span className="text-muted-foreground/60">·</span>
+                                    <span className="text-muted-foreground">{nights} night{nights !== 1 ? "s" : ""}</span>
+                                </div>
+                                <div className="flex items-center gap-2.5">
+                                    <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    <span className="font-semibold text-foreground">{formatRwf(totalRwf)} RWF</span>
+                                    <span className="text-muted-foreground/60">·</span>
+                                    <span className="text-xs text-muted-foreground font-mono">{momoTransactionId}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* What happens next */}
+                        <div className="px-6 pt-4">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">What happens next</p>
+                            <div className="space-y-2.5">
+                                <div className="flex items-start gap-2.5">
+                                    <div className="w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
+                                    <p className="text-sm text-muted-foreground">We&apos;ll verify your payment and review your booking</p>
+                                </div>
+                                <div className="flex items-start gap-2.5">
+                                    <div className="w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
+                                    <p className="text-sm text-muted-foreground">
+                                        You&apos;ll receive a confirmation{guestEmail ? " via email" : ""} within 1 hour
+                                    </p>
+                                </div>
+                                <div className="flex items-start gap-2.5">
+                                    <div className="w-5 h-5 rounded-full bg-foreground text-background flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</div>
+                                    <p className="text-sm text-muted-foreground">Check-in details will be shared before your stay</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* WhatsApp fast-track + skip */}
                         <div className="px-6 pb-6 pt-4 space-y-3">
-                            <Button
-                                onClick={openWhatsApp}
-                                className="w-full h-12 rounded-xl text-base font-semibold bg-[#075E54] hover:bg-[#064E45] text-white gap-2"
-                            >
-                                <Send className="h-5 w-5" />
-                                Send via WhatsApp
-                            </Button>
+                            <div className="rounded-xl border border-[#075E54]/20 bg-[#075E54]/5 p-3 text-center">
+                                <p className="text-xs text-muted-foreground mb-3">
+                                    Want faster approval? Send your details directly to the host.
+                                </p>
+                                <Button
+                                    onClick={openWhatsApp}
+                                    className="w-full h-11 rounded-xl text-sm font-semibold bg-[#075E54] hover:bg-[#064E45] text-white gap-2"
+                                >
+                                    <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 fill-current">
+                                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                                        <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.11-1.14L4 20l1.14-3.89A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
+                                    </svg>
+                                    Send via WhatsApp
+                                </Button>
+                            </div>
                             <Button
                                 variant="ghost"
                                 onClick={() => {
@@ -821,7 +868,7 @@ _Sent from House by AD website_`
                                 }}
                                 className="w-full rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-green-500/10"
                             >
-                                Skip for now
+                                I&apos;ll wait for confirmation
                             </Button>
                         </div>
                     </DialogContent>
