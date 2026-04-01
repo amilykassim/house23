@@ -1,5 +1,9 @@
 import { Resend } from "resend"
 
+// ⚠️ TEMPORARY: Email sending disabled during development
+// Set to false to re-enable email sending
+const EMAILS_DISABLED = true
+
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 const FROM_EMAIL = process.env.FROM_EMAIL || "House by AD <bookings@resend.dev>"
@@ -21,6 +25,10 @@ interface BookingEmailData {
 }
 
 export async function sendBookingAcknowledgment(data: BookingEmailData) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping acknowledgment email")
+        return
+    }
     if (!process.env.RESEND_API_KEY) {
         console.warn("RESEND_API_KEY not set — skipping acknowledgment email")
         return
@@ -140,6 +148,10 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
 }
 
 export async function sendBookingConfirmation(data: BookingEmailData) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping confirmation email")
+        return
+    }
     if (!process.env.RESEND_API_KEY) {
         console.warn("RESEND_API_KEY not set — skipping confirmation email")
         return
@@ -258,6 +270,10 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
 }
 
 export async function sendBookingCancellation(data: BookingEmailData) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping cancellation email")
+        return
+    }
     if (!process.env.RESEND_API_KEY) {
         console.warn("RESEND_API_KEY not set — skipping cancellation email")
         return
@@ -327,6 +343,10 @@ export async function sendBookingCancellation(data: BookingEmailData) {
 }
 
 export async function sendAdminNewBookingNotification(data: BookingEmailData) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping admin notification email")
+        return
+    }
     if (!process.env.RESEND_API_KEY) {
         console.warn("RESEND_API_KEY not set — skipping admin notification email")
         return
