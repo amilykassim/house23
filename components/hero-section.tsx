@@ -63,7 +63,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.35, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-card leading-tight mb-4 drop-shadow-lg text-balance"
+              className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-white/90 leading-tight mb-4 drop-shadow-lg text-balance"
             >
               {house.name}
             </motion.h1>
@@ -71,7 +71,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="text-lg sm:text-xl text-card mb-6 max-w-2xl drop-shadow-lg text-pretty"
+              className="text-lg sm:text-xl text-white/85 mb-6 max-w-2xl drop-shadow-lg text-pretty"
             >
               {house.tagline}
             </motion.p>
@@ -81,7 +81,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="flex items-center gap-2 text-card mb-8"
+              className="flex items-center gap-2 text-white/80 mb-8"
             >
               <MapPin className="h-5 w-5" />
               <span className="text-base">{house.location}</span>
