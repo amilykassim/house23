@@ -96,7 +96,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "TxId:27033789345",
     "specialRequests": "",
-    "status": "pending",
+    "status": "completed",
     "createdAt": "2026-03-28T08:00:00Z"
   },
   {
@@ -136,7 +136,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "TxId:27034012567",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-03-31T19:45:00Z"
   },
   {
@@ -156,7 +156,7 @@
     "totalRwf": 211700,
     "momoTransactionId": "",
     "specialRequests": "Quiet room preferred",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T10:00:00Z"
   },
   {
@@ -176,7 +176,7 @@
     "totalRwf": 386900,
     "momoTransactionId": "123456789ofgshj",
     "specialRequests": "airport pickup",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T07:49:48.858Z"
   },
   {
@@ -196,7 +196,7 @@
     "totalRwf": 386900,
     "momoTransactionId": "123456789ofgshj",
     "specialRequests": "airport pickup",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T07:53:15.401Z"
   },
   {
@@ -216,7 +216,7 @@
     "totalRwf": 386900,
     "momoTransactionId": "123456789ofgshj",
     "specialRequests": "airport pickup",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T08:59:23.019Z"
   },
   {
@@ -236,7 +236,7 @@
     "totalRwf": 312440,
     "momoTransactionId": "asfasfafsasfas",
     "specialRequests": "earasra",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T09:00:52.487Z"
   },
   {
@@ -256,7 +256,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasfafs",
     "specialRequests": "aasfa",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T09:37:43.328Z"
   },
   {
@@ -264,7 +264,7 @@
     "house": "house-23",
     "houseName": "House 23",
     "guestName": "Kash",
-    "guestEmail": "amilykassim12@gmail.com",
+    "guestEmail": "amilykassim012@gmail.com",
     "guestPhone": "0782228870",
     "checkIn": "2026-04-21",
     "checkOut": "2026-04-24",
@@ -276,8 +276,8 @@
     "total": 163,
     "totalRwf": 237980,
     "momoTransactionId": "fasfafasfdasfafaf",
-    "specialRequests": "pickup",
-    "status": "confirmed",
+    "specialRequests": "Airport pickup",
+    "status": "cancelled",
     "createdAt": "2026-04-01T10:56:30.511Z"
   },
   {
@@ -319,7 +319,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "fasfasfasfasfa",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T11:11:54.199Z"
   },
   {
@@ -340,7 +340,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "asfasfasfa",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T11:34:28.338Z"
   },
   {
@@ -361,7 +361,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "afasfasfafa",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T11:41:43.204Z"
   },
   {
@@ -424,7 +424,28 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasfasf",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "completed",
     "createdAt": "2026-04-01T11:55:38.964Z"
+  },
+  {
+    "id": "BK-022",
+    "house": "house-23",
+    "houseName": "House 23",
+    "guestName": "Bobora",
+    "guestEmail": "amilykassim012@gmail.com",
+    "guestPhone": "0782228870",
+    "checkIn": "2026-05-01",
+    "checkOut": "2026-05-05",
+    "nights": 4,
+    "guests": 3,
+    "pricePerNight": 51,
+    "cleaningFee": 10,
+    "serviceFee": 0,
+    "total": 214,
+    "totalRwf": 312440,
+    "momoTransactionId": "Txid:3456726272772",
+    "specialRequests": "I want a lot of drinks on my arrival",
+    "status": "confirmed",
+    "createdAt": "2026-04-01T12:33:48.533Z"
   }
 ]

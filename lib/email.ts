@@ -322,7 +322,7 @@ export async function sendBookingCancellation(data: BookingEmailData) {
 
                 <p style="color:#52525b;font-size:13px;line-height:1.6;margin:0;">
                     We'd love to host you on different dates! Feel free to check availability on our website
-                    or contact us via WhatsApp at <strong>+250 788 459 885</strong>.
+                    or contact us directly at <strong>+250 788 459 885</strong>.
                 </p>
             </div>
 

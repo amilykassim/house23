@@ -24,6 +24,7 @@ import {
     Undo2,
 } from "lucide-react"
 import { toast } from "sonner"
+import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
 
 interface Booking {
@@ -454,7 +455,7 @@ export default function AdminDashboardPage() {
                             </div>
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+                                    <div className="w-2.5 h-2.5 rounded-full bg-green-600" />
                                     <span className="text-sm text-foreground">Completed</span>
                                 </div>
                                 <span className="text-sm font-semibold text-foreground">
@@ -468,7 +469,7 @@ export default function AdminDashboardPage() {
                             <div className="mt-4 flex h-2 rounded-full overflow-hidden gap-0.5">
                                 {stats.completedCount > 0 && (
                                     <div
-                                        className="bg-green-500 rounded-full"
+                                        className="bg-green-600 rounded-full"
                                         style={{
                                             width: `${(stats.completedCount / stats.totalBookings) * 100}%`,
                                         }}
@@ -542,59 +543,69 @@ export default function AdminDashboardPage() {
                                                         <p className="text-sm font-semibold text-foreground">
                                                             ${b.total}
                                                         </p>
-                                                        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isPendingExpanded ? "rotate-180" : ""}`} />
+                                                        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${isPendingExpanded ? "rotate-180" : ""}`} />
                                                     </div>
                                                 </button>
-                                                {isPendingExpanded && (
-                                                    <div className="px-3 pb-3 pt-1 space-y-2.5">
-                                                        <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Phone</span>
-                                                                <span className="text-foreground flex items-center gap-1">
-                                                                    <Phone className="h-3 w-3" />
-                                                                    {b.guestPhone}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Guests</span>
-                                                                <span className="text-foreground">{b.guests}</span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Nights</span>
-                                                                <span className="text-foreground">{b.nights} night{b.nights > 1 ? "s" : ""}</span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Total</span>
-                                                                <span className="text-foreground font-semibold">${b.total} · {b.totalRwf.toLocaleString()} RWF</span>
-                                                            </div>
-                                                            {b.momoTransactionId && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-muted-foreground">MoMo</span>
-                                                                    <span className="text-foreground font-mono">{b.momoTransactionId}</span>
+                                                <AnimatePresence initial={false}>
+                                                    {isPendingExpanded && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="px-3 pb-3 pt-1 space-y-2.5">
+                                                                <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-muted-foreground">Phone</span>
+                                                                        <span className="text-foreground flex items-center gap-1">
+                                                                            <Phone className="h-3 w-3" />
+                                                                            {b.guestPhone}
+                                                                        </span>
+                                                                    </div>
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-muted-foreground">Guests</span>
+                                                                        <span className="text-foreground">{b.guests}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-muted-foreground">Nights</span>
+                                                                        <span className="text-foreground">{b.nights} night{b.nights > 1 ? "s" : ""}</span>
+                                                                    </div>
+                                                                    <div className="flex justify-between">
+                                                                        <span className="text-muted-foreground">Total</span>
+                                                                        <span className="text-foreground font-semibold">${b.total} · {b.totalRwf.toLocaleString()} RWF</span>
+                                                                    </div>
+                                                                    {b.momoTransactionId && (
+                                                                        <div className="flex justify-between">
+                                                                            <span className="text-muted-foreground">MoMo</span>
+                                                                            <span className="text-foreground font-mono">{b.momoTransactionId}</span>
+                                                                        </div>
+                                                                    )}
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="flex flex-wrap items-center gap-1.5">
-                                                            <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
-                                                            <button
-                                                                onClick={() => handleReview(b.id, "confirmed")}
-                                                                disabled={actionLoading === b.id}
-                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                            >
-                                                                <CheckCircle2 className="h-3 w-3" />
-                                                                Accept
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleReview(b.id, "cancelled")}
-                                                                disabled={actionLoading === b.id}
-                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                            >
-                                                                <XCircle className="h-3 w-3" />
-                                                                Reject
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
+                                                                <div className="flex flex-wrap items-center gap-1.5">
+                                                                    <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
+                                                                    <button
+                                                                        onClick={() => handleReview(b.id, "confirmed")}
+                                                                        disabled={actionLoading === b.id}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <CheckCircle2 className="h-3 w-3" />
+                                                                        Accept
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleReview(b.id, "cancelled")}
+                                                                        disabled={actionLoading === b.id}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <XCircle className="h-3 w-3" />
+                                                                        Reject
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         )
                                     })}
@@ -691,89 +702,99 @@ export default function AdminDashboardPage() {
                                                         {booking.status}
                                                     </span>
                                                 </div>
-                                                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
                                             </div>
                                         </button>
-                                        {isExpanded && (
-                                            <div className="px-3 pb-3 pt-1 space-y-2.5">
-                                                <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Phone</span>
-                                                        <span className="text-foreground flex items-center gap-1">
-                                                            <Phone className="h-3 w-3" />
-                                                            {booking.guestPhone}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Guests</span>
-                                                        <span className="text-foreground">{booking.guests}</span>
-                                                    </div>
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">Total</span>
-                                                        <span className="text-foreground font-semibold">${booking.total} · {booking.totalRwf.toLocaleString()} RWF</span>
-                                                    </div>
-                                                    {booking.momoTransactionId && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">MoMo</span>
-                                                            <span className="text-foreground font-mono">{booking.momoTransactionId}</span>
+                                        <AnimatePresence initial={false}>
+                                            {isExpanded && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="px-3 pb-3 pt-1 space-y-2.5">
+                                                        <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Phone</span>
+                                                                <span className="text-foreground flex items-center gap-1">
+                                                                    <Phone className="h-3 w-3" />
+                                                                    {booking.guestPhone}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Guests</span>
+                                                                <span className="text-foreground">{booking.guests}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Total</span>
+                                                                <span className="text-foreground font-semibold">${booking.total} · {booking.totalRwf.toLocaleString()} RWF</span>
+                                                            </div>
+                                                            {booking.momoTransactionId && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-muted-foreground">MoMo</span>
+                                                                    <span className="text-foreground font-mono">{booking.momoTransactionId}</span>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                    )}
-                                                </div>
-                                                {/* Quick status change */}
-                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                    <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
-                                                    {booking.status === "confirmed" && (
-                                                        <button
-                                                            onClick={() => handleReview(booking.id, "cancelled")}
-                                                            disabled={actionLoading === booking.id}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                        >
-                                                            <Undo2 className="h-3 w-3" />
-                                                            Undo Accept
-                                                        </button>
-                                                    )}
-                                                    {booking.status === "cancelled" && (
-                                                        <button
-                                                            onClick={() => handleReview(booking.id, "confirmed")}
-                                                            disabled={actionLoading === booking.id}
-                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
-                                                        >
-                                                            <Undo2 className="h-3 w-3" />
-                                                            Undo Reject
-                                                        </button>
-                                                    )}
-                                                    {booking.status === "pending" && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleReview(booking.id, "confirmed")}
-                                                                disabled={actionLoading === booking.id}
-                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                        {/* Quick status change */}
+                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                            <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
+                                                            {booking.status === "confirmed" && (
+                                                                <button
+                                                                    onClick={() => handleReview(booking.id, "cancelled")}
+                                                                    disabled={actionLoading === booking.id}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <Undo2 className="h-3 w-3" />
+                                                                    Undo Accept
+                                                                </button>
+                                                            )}
+                                                            {booking.status === "cancelled" && (
+                                                                <button
+                                                                    onClick={() => handleReview(booking.id, "confirmed")}
+                                                                    disabled={actionLoading === booking.id}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <Undo2 className="h-3 w-3" />
+                                                                    Undo Reject
+                                                                </button>
+                                                            )}
+                                                            {booking.status === "pending" && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleReview(booking.id, "confirmed")}
+                                                                        disabled={actionLoading === booking.id}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <CheckCircle2 className="h-3 w-3" />
+                                                                        Accept
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleReview(booking.id, "cancelled")}
+                                                                        disabled={actionLoading === booking.id}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <XCircle className="h-3 w-3" />
+                                                                        Reject
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                            {booking.status === "completed" && (
+                                                                <span className="text-[11px] text-muted-foreground">No actions available</span>
+                                                            )}
+                                                            <Link
+                                                                href="/admin/bookings"
+                                                                className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
                                                             >
-                                                                <CheckCircle2 className="h-3 w-3" />
-                                                                Accept
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleReview(booking.id, "cancelled")}
-                                                                disabled={actionLoading === booking.id}
-                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                            >
-                                                                <XCircle className="h-3 w-3" />
-                                                                Reject
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                    {booking.status === "completed" && (
-                                                        <span className="text-[11px] text-muted-foreground">No actions available</span>
-                                                    )}
-                                                    <Link
-                                                        href="/admin/bookings"
-                                                        className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                                                    >
-                                                        Full details →
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        )}
+                                                                Full details →
+                                                            </Link>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 )
                             })}
