@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Toaster } from "sonner"
 import {
     LayoutDashboard,
     CalendarDays,
@@ -141,12 +140,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Page content — offset for fixed header */}
             <main className="flex-1 pt-16">{children}</main>
-            <Toaster
-                position="top-right"
-                toastOptions={{
-                    className: "!bg-card !text-foreground !border-border",
-                }}
-            />
         </div>
     )
 }

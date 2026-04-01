@@ -96,7 +96,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "TxId:27033789345",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "pending",
     "createdAt": "2026-03-28T08:00:00Z"
   },
   {
@@ -116,7 +116,7 @@
     "totalRwf": 277400,
     "momoTransactionId": "TxId:27033901456",
     "specialRequests": "Late check-out if possible",
-    "status": "confirmed",
+    "status": "cancelled",
     "createdAt": "2026-03-30T15:30:00Z"
   },
   {
@@ -277,7 +277,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "fasfafasfdasfafaf",
     "specialRequests": "pickup",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T10:56:30.511Z"
   },
   {
@@ -298,7 +298,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "asfasfasfasfafsafasfa",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:07:49.122Z"
   },
   {
@@ -319,7 +319,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "fasfasfasfasfa",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:11:54.199Z"
   },
   {
@@ -340,7 +340,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "asfasfasfa",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:34:28.338Z"
   },
   {
@@ -361,7 +361,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "afasfasfafa",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:41:43.204Z"
   },
   {
@@ -382,7 +382,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "afasfasfasf",
     "specialRequests": "",
-    "status": "pending",
+    "status": "cancelled",
     "createdAt": "2026-04-01T11:47:12.172Z"
   },
   {
@@ -403,7 +403,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasasfa",
     "specialRequests": "",
-    "status": "pending",
+    "status": "cancelled",
     "createdAt": "2026-04-01T11:48:11.653Z"
   },
   {
@@ -424,7 +424,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasfasf",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:55:38.964Z"
   }
 ]

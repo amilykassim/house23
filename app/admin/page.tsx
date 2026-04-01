@@ -102,16 +102,47 @@ export default function AdminDashboardPage() {
                 )
                 setTimeout(() => {
                     if (action === "confirmed") {
-                        toast.success(`Booking accepted — ${booking?.guestName}`, {
-                            description: `Dates ${booking?.checkIn} to ${booking?.checkOut} have been blocked on the calendar.`,
+                        toast("Booking Confirmed!", {
+                            icon: "🎉",
+                            description: `${booking?.guestName} \u00b7 ${booking?.checkIn} \u2192 ${booking?.checkOut}\n\ud83d\udcc5 Dates blocked on the calendar`,
+                            duration: 5000,
+                            unstyled: true,
+                            classNames: {
+                                toast: "w-full flex items-start gap-3 bg-green-500/10 border border-green-200/60 dark:border-green-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                                icon: "text-2xl mt-0.5 shrink-0",
+                                title: "font-semibold text-green-800 dark:text-green-200 text-sm",
+                                description: "text-xs text-green-700/70 dark:text-green-300/70 mt-0.5 whitespace-pre-line",
+                            },
                         })
                     } else {
-                        toast.error(`Booking rejected — ${booking?.guestName}`)
+                        toast("Booking Rejected", {
+                            icon: "🚫",
+                            description: `${booking?.guestName}'s request has been declined`,
+                            duration: 4000,
+                            unstyled: true,
+                            classNames: {
+                                toast: "w-full flex items-start gap-3 bg-red-500/10 border border-red-200/60 dark:border-red-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                                icon: "text-2xl mt-0.5 shrink-0",
+                                title: "font-semibold text-red-800 dark:text-red-200 text-sm",
+                                description: "text-xs text-red-700/70 dark:text-red-300/70 mt-0.5",
+                            },
+                        })
                     }
                 }, 0)
             }
         } catch {
-            setTimeout(() => toast.error("Failed to update booking"), 0)
+            setTimeout(() => toast("Something went wrong", {
+                icon: "⚠️",
+                description: "Failed to update booking",
+                duration: 4000,
+                unstyled: true,
+                classNames: {
+                    toast: "w-full flex items-start gap-3 bg-red-500/10 border border-red-200/60 dark:border-red-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                    icon: "text-2xl mt-0.5 shrink-0",
+                    title: "font-semibold text-red-800 dark:text-red-200 text-sm",
+                    description: "text-xs text-red-700/70 dark:text-red-300/70 mt-0.5",
+                },
+            }), 0)
         }
         finally {
             setActionLoading(null)

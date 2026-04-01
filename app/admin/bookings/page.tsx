@@ -112,18 +112,62 @@ export default function AdminBookingsPage() {
                 setBookings((prev) =>
                     prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
                 )
-                if (newStatus === "confirmed") {
-                    toast.success(`Booking accepted — ${booking?.guestName}`, {
-                        description: `Dates ${booking?.checkIn} to ${booking?.checkOut} have been blocked on the calendar.`,
-                    })
-                } else if (newStatus === "cancelled") {
-                    toast.error(`Booking rejected — ${booking?.guestName}`)
-                } else {
-                    toast.success(`Status updated to ${newStatus}`)
-                }
+                setTimeout(() => {
+                    if (newStatus === "confirmed") {
+                        toast("Booking Confirmed!", {
+                            icon: "🎉",
+                            description: `${booking?.guestName} \u00b7 ${booking?.checkIn} \u2192 ${booking?.checkOut}\n\ud83d\udcc5 Dates blocked on the calendar`,
+                            duration: 5000,
+                            unstyled: true,
+                            classNames: {
+                                toast: "w-full flex items-start gap-3 bg-green-500/10 border border-green-200/60 dark:border-green-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                                icon: "text-2xl mt-0.5 shrink-0",
+                                title: "font-semibold text-green-800 dark:text-green-200 text-sm",
+                                description: "text-xs text-green-700/70 dark:text-green-300/70 mt-0.5 whitespace-pre-line",
+                            },
+                        })
+                    } else if (newStatus === "cancelled") {
+                        toast("Booking Rejected", {
+                            icon: "🚫",
+                            description: `${booking?.guestName}'s request has been declined`,
+                            duration: 4000,
+                            unstyled: true,
+                            classNames: {
+                                toast: "w-full flex items-start gap-3 bg-red-500/10 border border-red-200/60 dark:border-red-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                                icon: "text-2xl mt-0.5 shrink-0",
+                                title: "font-semibold text-red-800 dark:text-red-200 text-sm",
+                                description: "text-xs text-red-700/70 dark:text-red-300/70 mt-0.5",
+                            },
+                        })
+                    } else {
+                        toast("Status Updated", {
+                            icon: "✨",
+                            description: `Changed to ${newStatus}`,
+                            duration: 3000,
+                            unstyled: true,
+                            classNames: {
+                                toast: "w-full flex items-start gap-3 bg-blue-500/10 border border-blue-200/60 dark:border-blue-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                                icon: "text-2xl mt-0.5 shrink-0",
+                                title: "font-semibold text-blue-800 dark:text-blue-200 text-sm",
+                                description: "text-xs text-blue-700/70 dark:text-blue-300/70 mt-0.5",
+                            },
+                        })
+                    }
+                }, 0)
             }
         } catch {
-            toast.error("Failed to update booking status")
+            setTimeout(() => toast("Something went wrong", {
+                icon: "⚠️",
+                description: "Failed to update booking status",
+                duration: 4000,
+                unstyled: true,
+                classNames: {
+                    toast: "w-full flex items-start gap-3 bg-red-500/10 border border-red-200/60 dark:border-red-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                    icon: "text-2xl mt-0.5 shrink-0",
+                    title: "font-semibold text-red-800 dark:text-red-200 text-sm",
+                    description: "text-xs text-red-700/70 dark:text-red-300/70 mt-0.5",
+                },
+            }), 0)
         } finally {
             setUpdatingStatus(null)
         }
@@ -139,10 +183,32 @@ export default function AdminBookingsPage() {
                 setBookings((prev) => prev.filter((b) => b.id !== id))
                 setExpandedBooking(null)
                 setConfirmDelete(null)
-                toast.success("Booking deleted")
+                setTimeout(() => toast("Booking Deleted", {
+                    icon: "🗑️",
+                    description: "Permanently removed from the system",
+                    duration: 3000,
+                    unstyled: true,
+                    classNames: {
+                        toast: "w-full flex items-start gap-3 bg-orange-500/10 border border-orange-200/60 dark:border-orange-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                        icon: "text-2xl mt-0.5 shrink-0",
+                        title: "font-semibold text-orange-800 dark:text-orange-200 text-sm",
+                        description: "text-xs text-orange-700/70 dark:text-orange-300/70 mt-0.5",
+                    },
+                }), 0)
             }
         } catch {
-            toast.error("Failed to delete booking")
+            setTimeout(() => toast("Something went wrong", {
+                icon: "⚠️",
+                description: "Failed to delete booking",
+                duration: 4000,
+                unstyled: true,
+                classNames: {
+                    toast: "w-full flex items-start gap-3 bg-red-500/10 border border-red-200/60 dark:border-red-500/20 rounded-xl p-4 shadow-lg backdrop-blur-sm",
+                    icon: "text-2xl mt-0.5 shrink-0",
+                    title: "font-semibold text-red-800 dark:text-red-200 text-sm",
+                    description: "text-xs text-red-700/70 dark:text-red-300/70 mt-0.5",
+                },
+            }), 0)
         } finally {
             setDeletingBooking(null)
         }
