@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ReadingNavigation } from "@/components/reading-navigation"
 import type { ReactNode } from "react"
 import { Clock, Users, Volume2, Cigarette, Dog, PartyPopper, Baby, ShieldCheck, Trash2, Key } from "lucide-react"
 import type { Metadata } from "next"
@@ -118,6 +119,14 @@ export default function HouseRulesPage() {
                             By booking House by AD, you agree to abide by these house rules. Violation of any rules may result in immediate termination of your stay without refund. If you have any questions about these rules, please don&apos;t hesitate to contact your host before booking.
                         </p>
                     </div>
+
+                    <ReadingNavigation
+                        prev={{
+                            href: "/cancellation-policy",
+                            title: "Cancellation Policy",
+                            description: "Need to review our refund and cancellation terms? Head back here.",
+                        }}
+                    />
                 </div>
             </div>
             <Footer />

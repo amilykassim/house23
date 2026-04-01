@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ReadingNavigation } from "@/components/reading-navigation"
 import { LogIn, LogOut, Clock, MessageSquare, Luggage, Info } from "lucide-react"
 import type { Metadata } from "next"
 
@@ -117,6 +118,14 @@ export default function CheckInCheckOutPage() {
                             If you have a late-night arrival or early-morning flight, let us know and we&apos;ll arrange for our security guard to assist you. Your comfort and safety are our priority.
                         </p>
                     </div>
+
+                    <ReadingNavigation
+                        next={{
+                            href: "/cancellation-policy",
+                            title: "Cancellation Policy",
+                            description: "Plans change — no worries! See our flexible cancellation options before you book.",
+                        }}
+                    />
                 </div>
             </div>
             <Footer />

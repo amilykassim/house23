@@ -1,5 +1,6 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
+import { ReadingNavigation } from "@/components/reading-navigation"
 import { ShieldCheck, Clock, AlertTriangle, CalendarX, RefreshCw } from "lucide-react"
 import type { Metadata } from "next"
 
@@ -121,6 +122,19 @@ export default function CancellationPolicyPage() {
                             Refunds are processed within 5–10 business days and returned to your original payment method. For bookings made through Airbnb, the platform&apos;s cancellation policy may also apply. If you have any questions, please contact your host directly.
                         </p>
                     </div>
+
+                    <ReadingNavigation
+                        prev={{
+                            href: "/check-in-check-out",
+                            title: "Check-in & Check-out",
+                            description: "Missed the arrival details? Head back for check-in times, instructions, and tips.",
+                        }}
+                        next={{
+                            href: "/house-rules",
+                            title: "House Rules",
+                            description: "A few simple guidelines to make sure everyone has a great stay.",
+                        }}
+                    />
                 </div>
             </div>
             <Footer />
