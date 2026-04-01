@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { format, addDays, addMonths, differenceInDays, isAfter, isBefore, isSameDay as isSameDayFn } from "date-fns"
 import { Calendar as CalendarIcon, Star, Users, Info, X, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react"
 import { motion, AnimatePresence } from "motion/react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarDayButton } from "@/components/ui/calendar"
@@ -49,6 +50,10 @@ export function BookingCard({
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set())
 
   const handleReserve = () => {
+    if (!dateRange?.from || !dateRange?.to) {
+      toast.error("Please select your check-in and check-out dates first.")
+      return
+    }
     const params = new URLSearchParams()
     if (dateRange?.from) params.set("checkIn", dateRange.from.toISOString())
     if (dateRange?.to) params.set("checkOut", dateRange.to.toISOString())

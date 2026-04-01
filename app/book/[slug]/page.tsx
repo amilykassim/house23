@@ -199,9 +199,37 @@ _Sent from House by AD website_`
         return encodeURIComponent(message)
     }
 
-    const sendToWhatsApp = () => {
+    const sendToWhatsApp = async () => {
+        // Save booking to database
+        try {
+            await fetch("/api/bookings", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    house: slug,
+                    houseName: house.name,
+                    guestName,
+                    guestPhone,
+                    checkIn: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : "",
+                    checkOut: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : "",
+                    nights,
+                    guests: Number(guests),
+                    pricePerNight,
+                    cleaningFee: applicableCleaningFee,
+                    serviceFee,
+                    total,
+                    totalRwf,
+                    momoTransactionId,
+                    specialRequests,
+                }),
+            })
+        } catch {
+            // Continue to WhatsApp even if save fails
+        }
+
         const message = buildWhatsAppMessage()
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank")
+        router.push("/check-in-check-out")
     }
 
     const slideVariants = {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Poppins, Inter, Playfair_Display, Cormorant_Garamond } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const poppins = Poppins({
@@ -60,6 +61,7 @@ export default function RootLayout({
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="theme">
           {children}
+          <Toaster position="top-right" toastOptions={{ className: '!bg-card !text-foreground !border-border' }} />
           <Analytics />
         </ThemeProvider>
       </body>

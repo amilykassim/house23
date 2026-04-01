@@ -1,0 +1,531 @@
+"use client"
+
+import { useState, useEffect, useMemo } from "react"
+import { format, parseISO } from "date-fns"
+import {
+    Search,
+    Filter,
+    ChevronDown,
+    Phone,
+    MessageSquare,
+    Check,
+    X,
+    Clock,
+    CheckCircle2,
+    XCircle,
+    AlertCircle,
+    MoreHorizontal,
+    ArrowUpDown,
+} from "lucide-react"
+import { toast } from "sonner"
+import { houses } from "@/lib/houses"
+
+interface Booking {
+    id: string
+    house: string
+    houseName: string
+    guestName: string
+    guestPhone: string
+    checkIn: string
+    checkOut: string
+    nights: number
+    guests: number
+    pricePerNight: number
+    cleaningFee: number
+    serviceFee: number
+    total: number
+    totalRwf: number
+    momoTransactionId: string
+    specialRequests: string
+    status: "pending" | "confirmed" | "completed" | "cancelled"
+    createdAt: string
+}
+
+const statusConfig: Record<
+    string,
+    { label: string; color: string; bg: string; icon: React.ElementType }
+> = {
+    pending: {
+        label: "Pending",
+        color: "text-amber-600 dark:text-amber-400",
+        bg: "bg-amber-500/10",
+        icon: Clock,
+    },
+    confirmed: {
+        label: "Confirmed",
+        color: "text-blue-600 dark:text-blue-400",
+        bg: "bg-blue-500/10",
+        icon: CheckCircle2,
+    },
+    completed: {
+        label: "Completed",
+        color: "text-green-600 dark:text-green-400",
+        bg: "bg-green-500/10",
+        icon: Check,
+    },
+    cancelled: {
+        label: "Cancelled",
+        color: "text-red-600 dark:text-red-400",
+        bg: "bg-red-500/10",
+        icon: XCircle,
+    },
+}
+
+const allStatuses = ["all", "pending", "confirmed", "completed", "cancelled"] as const
+
+export default function AdminBookingsPage() {
+    const [bookings, setBookings] = useState<Booking[]>([])
+    const [loading, setLoading] = useState(true)
+    const [search, setSearch] = useState("")
+    const [statusFilter, setStatusFilter] = useState<string>("all")
+    const [houseFilter, setHouseFilter] = useState<string>("all")
+    const [expandedBooking, setExpandedBooking] = useState<string | null>(null)
+    const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
+    const [deletingBooking, setDeletingBooking] = useState<string | null>(null)
+    const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+
+    const fetchBookings = () => {
+        setLoading(true)
+        fetch("/api/bookings")
+            .then((res) => res.json())
+            .then((data) => setBookings(data.bookings || []))
+            .catch(() => { })
+            .finally(() => setLoading(false))
+    }
+
+    useEffect(() => {
+        fetchBookings()
+    }, [])
+
+    const handleStatusChange = async (id: string, newStatus: Booking["status"]) => {
+        setUpdatingStatus(id)
+        try {
+            const res = await fetch("/api/bookings", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id, status: newStatus }),
+            })
+            if (res.ok) {
+                const booking = bookings.find((b) => b.id === id)
+                setBookings((prev) =>
+                    prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
+                )
+                if (newStatus === "confirmed") {
+                    toast.success(`Booking accepted — ${booking?.guestName}`, {
+                        description: `Dates ${booking?.checkIn} to ${booking?.checkOut} have been blocked on the calendar.`,
+                    })
+                } else if (newStatus === "cancelled") {
+                    toast.error(`Booking rejected — ${booking?.guestName}`)
+                } else {
+                    toast.success(`Status updated to ${newStatus}`)
+                }
+            }
+        } catch {
+            toast.error("Failed to update booking status")
+        } finally {
+            setUpdatingStatus(null)
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        setDeletingBooking(id)
+        try {
+            const res = await fetch(`/api/bookings?id=${id}`, {
+                method: "DELETE",
+            })
+            if (res.ok) {
+                setBookings((prev) => prev.filter((b) => b.id !== id))
+                setExpandedBooking(null)
+                setConfirmDelete(null)
+                toast.success("Booking deleted")
+            }
+        } catch {
+            toast.error("Failed to delete booking")
+        } finally {
+            setDeletingBooking(null)
+        }
+    }
+
+    const filtered = useMemo(() => {
+        return bookings.filter((b) => {
+            if (statusFilter !== "all" && b.status !== statusFilter) return false
+            if (houseFilter !== "all" && b.house !== houseFilter) return false
+            if (search) {
+                const q = search.toLowerCase()
+                return (
+                    b.guestName.toLowerCase().includes(q) ||
+                    b.guestPhone.includes(q) ||
+                    b.id.toLowerCase().includes(q) ||
+                    b.momoTransactionId.toLowerCase().includes(q)
+                )
+            }
+            return true
+        })
+    }, [bookings, statusFilter, houseFilter, search])
+
+    const totalRevenue = filtered
+        .filter((b) => b.status !== "cancelled")
+        .reduce((sum, b) => sum + b.total, 0)
+
+    return (
+        <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-6">
+                <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-1">
+                    Bookings
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                    Manage and track all bookings across your properties
+                </p>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-card rounded-2xl border border-border p-4 mb-6">
+                <div className="flex flex-col sm:flex-row gap-3">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search by name, phone, ID..."
+                            className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+                        />
+                    </div>
+
+                    {/* Status Filter */}
+                    <div className="flex gap-2">
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="h-10 px-3 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 cursor-pointer"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+
+                        <select
+                            value={houseFilter}
+                            onChange={(e) => setHouseFilter(e.target.value)}
+                            className="h-10 px-3 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 cursor-pointer"
+                        >
+                            <option value="all">All Properties</option>
+                            {houses.map((h) => (
+                                <option key={h.slug} value={h.slug}>
+                                    {h.name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {/* Quick stats */}
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
+                    <span>
+                        <strong className="text-foreground">{filtered.length}</strong> bookings
+                    </span>
+                    <span>·</span>
+                    <span>
+                        <strong className="text-foreground">${totalRevenue}</strong> revenue
+                    </span>
+                </div>
+            </div>
+
+            {/* Bookings List */}
+            {loading ? (
+                <div className="flex items-center justify-center py-20">
+                    <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+                </div>
+            ) : filtered.length === 0 ? (
+                <div className="bg-card rounded-2xl border border-border p-12 text-center">
+                    <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">No bookings found</p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {filtered.map((booking) => {
+                        const config = statusConfig[booking.status]
+                        const StatusIcon = config.icon
+                        const isExpanded = expandedBooking === booking.id
+
+                        return (
+                            <div
+                                key={booking.id}
+                                className="bg-card rounded-2xl border border-border overflow-hidden transition-all"
+                            >
+                                {/* Main row */}
+                                <button
+                                    onClick={() =>
+                                        setExpandedBooking(isExpanded ? null : booking.id)
+                                    }
+                                    className="w-full p-4 sm:p-5 flex items-center gap-4 text-left hover:bg-muted/30 transition-colors"
+                                >
+                                    {/* Avatar */}
+                                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                        <span className="text-xs font-semibold text-foreground">
+                                            {booking.guestName
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")
+                                                .slice(0, 2)}
+                                        </span>
+                                    </div>
+
+                                    {/* Info */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="text-sm font-semibold text-foreground truncate">
+                                                {booking.guestName}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground hidden sm:inline">
+                                                {booking.id}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <span>{booking.houseName}</span>
+                                            <span>·</span>
+                                            <span>
+                                                {format(parseISO(booking.checkIn), "MMM d")} →{" "}
+                                                {format(parseISO(booking.checkOut), "MMM d")}
+                                            </span>
+                                            <span className="hidden sm:inline">·</span>
+                                            <span className="hidden sm:inline">
+                                                {booking.nights} night{booking.nights > 1 ? "s" : ""}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Status & Amount */}
+                                    <div className="flex items-center gap-3 shrink-0">
+                                        <span
+                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${config.bg} ${config.color}`}
+                                        >
+                                            <StatusIcon className="h-3 w-3" />
+                                            <span className="hidden sm:inline">{config.label}</span>
+                                        </span>
+                                        <span className="text-sm font-bold text-foreground">
+                                            ${booking.total}
+                                        </span>
+                                        <ChevronDown
+                                            className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                        />
+                                    </div>
+                                </button>
+
+                                {/* Expanded details */}
+                                {isExpanded && (
+                                    <div className="px-4 sm:px-5 pb-5 border-t border-border pt-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            {/* Guest details */}
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                    Guest
+                                                </h4>
+                                                <div className="space-y-1.5">
+                                                    <p className="text-sm text-foreground">
+                                                        {booking.guestName}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                        <Phone className="h-3 w-3" />
+                                                        {booking.guestPhone}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {booking.guests} guest{booking.guests > 1 ? "s" : ""}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Stay details */}
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                    Stay
+                                                </h4>
+                                                <div className="space-y-1.5 text-sm">
+                                                    <p className="text-foreground">
+                                                        {format(parseISO(booking.checkIn), "EEE, MMM d, yyyy")}
+                                                    </p>
+                                                    <p className="text-muted-foreground">to</p>
+                                                    <p className="text-foreground">
+                                                        {format(parseISO(booking.checkOut), "EEE, MMM d, yyyy")}
+                                                    </p>
+                                                    <p className="text-muted-foreground">
+                                                        {booking.nights} night{booking.nights > 1 ? "s" : ""}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Payment details */}
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                    Payment
+                                                </h4>
+                                                <div className="space-y-1.5 text-sm">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-muted-foreground">
+                                                            ${booking.pricePerNight} × {booking.nights}
+                                                        </span>
+                                                        <span className="text-foreground">
+                                                            ${booking.pricePerNight * booking.nights}
+                                                        </span>
+                                                    </div>
+                                                    {booking.cleaningFee > 0 && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">
+                                                                Cleaning
+                                                            </span>
+                                                            <span className="text-foreground">
+                                                                ${booking.cleaningFee}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex justify-between font-semibold border-t border-border pt-1.5">
+                                                        <span className="text-foreground">Total</span>
+                                                        <span className="text-foreground">
+                                                            ${booking.total}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        ≈ {booking.totalRwf.toLocaleString()} RWF
+                                                    </p>
+                                                    {booking.momoTransactionId && (
+                                                        <p className="text-xs font-mono text-muted-foreground">
+                                                            MoMo: {booking.momoTransactionId}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Special requests */}
+                                        {booking.specialRequests && (
+                                            <div className="mt-4 p-3 rounded-xl bg-muted/40">
+                                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                                                    Special Requests
+                                                </p>
+                                                <p className="text-sm text-foreground">
+                                                    {booking.specialRequests}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {/* Review Actions for Pending */}
+                                        {booking.status === "pending" && (
+                                            <div className="mt-4 pt-4 border-t border-border">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <Clock className="h-4 w-4 text-amber-500" />
+                                                    <span className="text-sm font-semibold text-foreground">
+                                                        Awaiting Review
+                                                    </span>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground mb-4">
+                                                    Review the booking details and payment info above, then accept or reject.
+                                                </p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <button
+                                                        onClick={() => handleStatusChange(booking.id, "confirmed")}
+                                                        disabled={updatingStatus === booking.id}
+                                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                    >
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        Accept Booking
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleStatusChange(booking.id, "cancelled")}
+                                                        disabled={updatingStatus === booking.id}
+                                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                    >
+                                                        <XCircle className="h-4 w-4" />
+                                                        Reject Booking
+                                                    </button>
+                                                    <div className="ml-auto">
+                                                        {confirmDelete === booking.id ? (
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-xs text-red-500 font-medium">Delete permanently?</span>
+                                                                <button
+                                                                    onClick={() => handleDelete(booking.id)}
+                                                                    disabled={deletingBooking === booking.id}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setConfirmDelete(null)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setConfirmDelete(booking.id)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                                Delete
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Status Actions for non-pending */}
+                                        {booking.status !== "pending" && (
+                                            <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-2">
+                                                <span className="text-xs font-medium text-muted-foreground mr-2">
+                                                    Change status:
+                                                </span>
+                                                {(["confirmed", "completed", "cancelled"] as const).map(
+                                                    (s) => {
+                                                        const c = statusConfig[s]
+                                                        const Icon = c.icon
+                                                        const isActive = booking.status === s
+                                                        return (
+                                                            <button
+                                                                key={s}
+                                                                onClick={() =>
+                                                                    handleStatusChange(booking.id, s)
+                                                                }
+                                                                disabled={
+                                                                    isActive || updatingStatus === booking.id
+                                                                }
+                                                                className={`
+                                                                    inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                                                                    ${isActive
+                                                                        ? `${c.bg} ${c.color} ring-2 ring-current/20`
+                                                                        : "bg-muted text-muted-foreground hover:text-foreground"
+                                                                    }
+                                                                    disabled:opacity-50 disabled:cursor-not-allowed
+                                                                `}
+                                                            >
+                                                                <Icon className="h-3 w-3" />
+                                                                {c.label}
+                                                            </button>
+                                                        )
+                                                    }
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Booked at timestamp */}
+                                        <p className="text-[10px] text-muted-foreground mt-3">
+                                            Booked on{" "}
+                                            {format(
+                                                parseISO(booking.createdAt),
+                                                "MMM d, yyyy 'at' h:mm a"
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            )}
+        </div>
+    )
+}
