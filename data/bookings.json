@@ -236,7 +236,7 @@
     "totalRwf": 312440,
     "momoTransactionId": "asfasfafsasfas",
     "specialRequests": "earasra",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T09:00:52.487Z"
   },
   {
@@ -256,7 +256,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasfafs",
     "specialRequests": "aasfa",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T09:37:43.328Z"
   }
 ]

@@ -66,6 +66,7 @@ export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [expandedRecent, setExpandedRecent] = useState<string | null>(null)
+    const [expandedPending, setExpandedPending] = useState<string | null>(null)
 
     const today = startOfDay(new Date())
 
@@ -91,19 +92,25 @@ export default function AdminDashboardPage() {
             })
             if (res.ok) {
                 const booking = bookings.find((b) => b.id === id)
+                // Clear expanded states before updating bookings to avoid
+                // setState-during-render conflicts with toast/Sonner
+                setExpandedPending(null)
+                setExpandedRecent(null)
                 setBookings((prev) =>
                     prev.map((b) => (b.id === id ? { ...b, status: action } : b))
                 )
-                if (action === "confirmed") {
-                    toast.success(`Booking accepted — ${booking?.guestName}`, {
-                        description: `Dates ${booking?.checkIn} to ${booking?.checkOut} have been blocked on the calendar.`,
-                    })
-                } else {
-                    toast.error(`Booking rejected — ${booking?.guestName}`)
-                }
+                setTimeout(() => {
+                    if (action === "confirmed") {
+                        toast.success(`Booking accepted — ${booking?.guestName}`, {
+                            description: `Dates ${booking?.checkIn} to ${booking?.checkOut} have been blocked on the calendar.`,
+                        })
+                    } else {
+                        toast.error(`Booking rejected — ${booking?.guestName}`)
+                    }
+                }, 0)
             }
         } catch {
-            toast.error("Failed to update booking")
+            setTimeout(() => toast.error("Failed to update booking"), 0)
         }
         finally {
             setActionLoading(null)
@@ -465,59 +472,96 @@ export default function AdminDashboardPage() {
                                     {stats.pendingCount} awaiting
                                 </span>
                             </div>
-                            <div className="space-y-3">
+                            <div className="space-y-2">
                                 {bookings
                                     .filter((b) => b.status === "pending")
-                                    .map((b) => (
-                                        <div
-                                            key={b.id}
-                                            className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/10"
-                                        >
-                                            <div className="flex items-center justify-between mb-1">
-                                                <span className="text-sm font-medium text-foreground">
-                                                    {b.guestName}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {b.houseName}
-                                                </span>
-                                            </div>
-                                            <div className="text-xs text-muted-foreground mb-2.5">
-                                                {format(parseISO(b.checkIn), "MMM d")} →{" "}
-                                                {format(parseISO(b.checkOut), "MMM d")}
-                                                {" · "}
-                                                {b.nights} night{b.nights > 1 ? "s" : ""}
-                                                {" · "}
-                                                ${b.total}
-                                                {b.momoTransactionId && (
-                                                    <span className="ml-1 font-mono">· {b.momoTransactionId}</span>
+                                    .map((b) => {
+                                        const isPendingExpanded = expandedPending === b.id
+                                        return (
+                                            <div key={b.id} className="rounded-xl overflow-hidden bg-amber-500/5 border border-amber-500/10">
+                                                <button
+                                                    onClick={() => setExpandedPending(isPendingExpanded ? null : b.id)}
+                                                    className="w-full flex items-center gap-3 p-3 hover:bg-amber-500/10 transition-colors text-left"
+                                                >
+                                                    <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                                                        <span className="text-xs font-semibold text-foreground">
+                                                            {b.guestName
+                                                                .split(" ")
+                                                                .map((n) => n[0])
+                                                                .join("")
+                                                                .slice(0, 2)}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-foreground truncate">
+                                                            {b.guestName}
+                                                        </p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {b.houseName} ·{" "}
+                                                            {format(parseISO(b.checkIn), "MMM d")} →{" "}
+                                                            {format(parseISO(b.checkOut), "MMM d")}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <p className="text-sm font-semibold text-foreground">
+                                                            ${b.total}
+                                                        </p>
+                                                        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${isPendingExpanded ? "rotate-180" : ""}`} />
+                                                    </div>
+                                                </button>
+                                                {isPendingExpanded && (
+                                                    <div className="px-3 pb-3 pt-1 space-y-2.5">
+                                                        <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Phone</span>
+                                                                <span className="text-foreground flex items-center gap-1">
+                                                                    <Phone className="h-3 w-3" />
+                                                                    {b.guestPhone}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Guests</span>
+                                                                <span className="text-foreground">{b.guests}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Nights</span>
+                                                                <span className="text-foreground">{b.nights} night{b.nights > 1 ? "s" : ""}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">Total</span>
+                                                                <span className="text-foreground font-semibold">${b.total} · {b.totalRwf.toLocaleString()} RWF</span>
+                                                            </div>
+                                                            {b.momoTransactionId && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-muted-foreground">MoMo</span>
+                                                                    <span className="text-foreground font-mono">{b.momoTransactionId}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="flex flex-wrap items-center gap-1.5">
+                                                            <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
+                                                            <button
+                                                                onClick={() => handleReview(b.id, "confirmed")}
+                                                                disabled={actionLoading === b.id}
+                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <CheckCircle2 className="h-3 w-3" />
+                                                                Accept
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleReview(b.id, "cancelled")}
+                                                                disabled={actionLoading === b.id}
+                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                            >
+                                                                <XCircle className="h-3 w-3" />
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 )}
                                             </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => handleReview(b.id, "confirmed")}
-                                                    disabled={actionLoading === b.id}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                >
-                                                    <CheckCircle2 className="h-3 w-3" />
-                                                    Accept
-                                                </button>
-                                                <button
-                                                    onClick={() => handleReview(b.id, "cancelled")}
-                                                    disabled={actionLoading === b.id}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                >
-                                                    <XCircle className="h-3 w-3" />
-                                                    Reject
-                                                </button>
-                                                <Link
-                                                    href="/admin/bookings"
-                                                    className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                                >
-                                                    Details →
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    })}
                             </div>
                         </div>
                     )}
