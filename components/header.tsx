@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X, Home, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { AnimatedButton } from "@/components/animated-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { houses, DEFAULT_HOUSE_SLUG } from "@/lib/houses"
 import {
@@ -98,9 +99,10 @@ export function Header() {
           <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
             {!pathname.startsWith("/book/") && (
-              <Button
+              <AnimatedButton
                 size="lg"
                 className="rounded-full px-6"
+                hoverText="Let's go ✦"
                 onClick={() => {
                   const el = document.getElementById("booking")
                   if (el) {
@@ -109,7 +111,7 @@ export function Header() {
                 }}
               >
                 Book a stay
-              </Button>
+              </AnimatedButton>
             )}
           </div>
 
@@ -162,9 +164,10 @@ export function Header() {
 
             {!pathname.startsWith("/book/") && (
               <div className="pt-3">
-                <Button
+                <AnimatedButton
                   size="lg"
                   className="w-full rounded-full"
+                  hoverText="Let's go ✦"
                   onClick={() => {
                     setMobileMenuOpen(false)
                     const el = document.getElementById("booking")
@@ -174,7 +177,7 @@ export function Header() {
                   }}
                 >
                   Book a stay
-                </Button>
+                </AnimatedButton>
               </div>
             )}
           </div>

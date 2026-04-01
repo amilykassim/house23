@@ -7,6 +7,7 @@ import { Calendar as CalendarIcon, Star, Users, Info, X, ChevronLeft, ChevronRig
 import { motion, AnimatePresence } from "motion/react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { AnimatedButton } from "@/components/animated-button"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarDayButton } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -404,12 +405,13 @@ export function BookingCard({
       </div>
 
       {/* Reserve Button */}
-      <Button
+      <AnimatedButton
         className="w-full rounded-xl h-12 text-base font-semibold mb-4"
+        hoverText="Let's go ✦"
         onClick={handleReserve}
       >
         Reserve
-      </Button>
+      </AnimatedButton>
 
       <p className="text-center text-sm text-muted-foreground mb-6">
         {"You won't be charged yet"}
