@@ -504,9 +504,8 @@ export function ReviewsSection() {
             </DialogContent>
           </Dialog>
           <Button
-            variant="outline"
             size="lg"
-            className="rounded-full px-8 hover:bg-transparent hover:border-foreground hover:text-foreground"
+            className="rounded-full px-8"
             asChild
           >
             <a
