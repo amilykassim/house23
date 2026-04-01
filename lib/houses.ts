@@ -49,7 +49,7 @@ export const houses: HouseData[] = [
         heroImage: "/images/EMMA9964.jpg",
         location: "Kicukiro - Kigali, Rwanda",
         mapEmbed:
-            "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1062.1763704881878!2d30.122715354221366!3d-1.987933949009095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca70024a51111%3A0xdedd2366044e8c36!2sHouse%2023!5e0!3m2!1sen!2srw!4v1774850432549!5m2!1sen!2srw",
+            "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1062.1763704881878!2d30.122715354221366!3d-1.987933949009095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca70024a51111%3A0xdedd2366044e8c36!2sHouse%2023!5e1!3m2!1sen!2srw!4v1774850432549!5m2!1sen!2srw",
         rating: 4.95,
         reviewCount: 42,
         guests: 3,
@@ -126,7 +126,7 @@ export const houses: HouseData[] = [
         heroImage: "/images/EMMA9979.JPG",
         location: "Kicukiro - Kigali, Rwanda",
         mapEmbed:
-            "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1062.1763704881878!2d30.122715354221366!3d-1.987933949009095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca70024a51111%3A0xdedd2366044e8c36!2sHouse%2022!5e0!3m2!1sen!2srw!4v1774850432549!5m2!1sen!2srw",
+            "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1062.1763704881878!2d30.122715354221366!3d-1.987933949009095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca70024a51111%3A0xdedd2366044e8c36!2sHouse%2022!5e1!3m2!1sen!2srw!4v1774850432549!5m2!1sen!2srw",
         rating: 4.9,
         reviewCount: 28,
         guests: 4,

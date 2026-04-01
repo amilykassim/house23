@@ -107,7 +107,7 @@ export default async function HousePage({ params }: HousePageProps) {
                             </div>
 
                             {/* Booking Sidebar */}
-                            <div className="lg:col-span-1">
+                            <div id="booking" className="lg:col-span-1">
                                 <BookingCard
                                     pricePerNight={house.pricePerNight}
                                     cleaningFee={house.cleaningFee}

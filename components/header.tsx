@@ -98,7 +98,16 @@ export function Header() {
           <div className="hidden md:flex items-center gap-4">
             <ThemeToggle />
             {!pathname.startsWith("/book/") && (
-              <Button size="lg" className="rounded-full px-6">
+              <Button
+                size="lg"
+                className="rounded-full px-6"
+                onClick={() => {
+                  const el = document.getElementById("booking")
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                }}
+              >
                 Book a stay
               </Button>
             )}
@@ -153,7 +162,17 @@ export function Header() {
 
             {!pathname.startsWith("/book/") && (
               <div className="pt-3">
-                <Button size="lg" className="w-full rounded-full">
+                <Button
+                  size="lg"
+                  className="w-full rounded-full"
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    const el = document.getElementById("booking")
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth", block: "start" })
+                    }
+                  }}
+                >
                   Book a stay
                 </Button>
               </div>

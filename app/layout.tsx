@@ -58,7 +58,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${cormorant.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem storageKey="theme">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="theme">
           {children}
           <Analytics />
         </ThemeProvider>

@@ -57,11 +57,6 @@ export function BookingCard({
 
   useEffect(() => {
     setMounted(true)
-    const today = new Date()
-    setDateRange({
-      from: addDays(today, 7),
-      to: addDays(today, 10),
-    })
   }, [])
 
   const nights = useMemo(() => {
