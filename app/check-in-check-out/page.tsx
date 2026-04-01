@@ -121,9 +121,9 @@ export default function CheckInCheckOutPage() {
 
                     <ReadingNavigation
                         next={{
-                            href: "/cancellation-policy",
-                            title: "Cancellation Policy",
-                            description: "Plans change — no worries! See our flexible cancellation options before you book.",
+                            href: "/house-rules",
+                            title: "House Rules",
+                            description: "A few simple guidelines to make sure everyone has a great stay.",
                         }}
                     />
                 </div>

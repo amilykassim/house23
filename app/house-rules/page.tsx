@@ -122,9 +122,14 @@ export default function HouseRulesPage() {
 
                     <ReadingNavigation
                         prev={{
+                            href: "/check-in-check-out",
+                            title: "Check-in & Check-out",
+                            description: "Missed the arrival details? Head back for check-in times, instructions, and tips.",
+                        }}
+                        next={{
                             href: "/cancellation-policy",
                             title: "Cancellation Policy",
-                            description: "Need to review our refund and cancellation terms? Head back here.",
+                            description: "Plans change — no worries! See our flexible cancellation options before you book.",
                         }}
                     />
                 </div>
