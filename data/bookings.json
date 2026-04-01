@@ -196,7 +196,7 @@
     "totalRwf": 386900,
     "momoTransactionId": "123456789ofgshj",
     "specialRequests": "airport pickup",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T07:53:15.401Z"
   },
   {
@@ -216,7 +216,7 @@
     "totalRwf": 386900,
     "momoTransactionId": "123456789ofgshj",
     "specialRequests": "airport pickup",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T08:59:23.019Z"
   },
   {
@@ -361,7 +361,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "afasfasfafa",
     "specialRequests": "",
-    "status": "cancelled",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:41:43.204Z"
   },
   {
@@ -382,7 +382,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "afasfasfasf",
     "specialRequests": "",
-    "status": "cancelled",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:47:12.172Z"
   },
   {
@@ -403,7 +403,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasasfa",
     "specialRequests": "",
-    "status": "cancelled",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:48:11.653Z"
   },
   {
@@ -424,7 +424,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasfasf",
     "specialRequests": "",
-    "status": "cancelled",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:55:38.964Z"
   },
   {
@@ -445,7 +445,7 @@
     "totalRwf": 312440,
     "momoTransactionId": "Txid:3456726272772",
     "specialRequests": "I want a lot of drinks on my arrival",
-    "status": "confirmed",
+    "status": "cancelled",
     "createdAt": "2026-04-01T12:33:48.533Z"
   }
 ]

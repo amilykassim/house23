@@ -17,11 +17,11 @@ import {
     Bed,
     Star,
     CircleDot,
-    BookOpen,
     CheckCircle2,
     XCircle,
     Phone,
     Undo2,
+    AlertCircle,
 } from "lucide-react"
 import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
@@ -46,21 +46,19 @@ interface Booking {
     totalRwf: number
     momoTransactionId: string
     specialRequests: string
-    status: "pending" | "confirmed" | "completed" | "cancelled"
+    status: "pending" | "confirmed" | "cancelled"
     createdAt: string
 }
 
 const statusColors: Record<string, string> = {
     pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
     confirmed: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    completed: "bg-green-500/10 text-green-600 dark:text-green-400",
     cancelled: "bg-red-500/10 text-red-600 dark:text-red-400",
 }
 
 const statusDots: Record<string, string> = {
     pending: "bg-amber-500",
     confirmed: "bg-blue-500",
-    completed: "bg-green-500",
     cancelled: "bg-red-500",
 }
 
@@ -71,6 +69,7 @@ export default function AdminDashboardPage() {
     const [expandedRecent, setExpandedRecent] = useState<string | null>(null)
     const [expandedPending, setExpandedPending] = useState<string | null>(null)
     const [rejectingBooking, setRejectingBooking] = useState<string | null>(null)
+    const [confirmingBooking, setConfirmingBooking] = useState<string | null>(null)
     const [selectedReason, setSelectedReason] = useState<RejectionReason>("dates_unavailable")
 
     const today = startOfDay(new Date())
@@ -164,7 +163,6 @@ export default function AdminDashboardPage() {
         const totalGuests = activeBookings.reduce((sum, b) => sum + b.guests, 0)
         const pendingCount = bookings.filter((b) => b.status === "pending").length
         const confirmedCount = bookings.filter((b) => b.status === "confirmed").length
-        const completedCount = bookings.filter((b) => b.status === "completed").length
 
         // Upcoming bookings (check-in is in the future)
         const upcoming = activeBookings.filter((b) =>
@@ -233,7 +231,6 @@ export default function AdminDashboardPage() {
             totalGuests,
             pendingCount,
             confirmedCount,
-            completedCount,
             upcoming,
             currentlyHosting,
             revenueByHouse,
@@ -457,28 +454,11 @@ export default function AdminDashboardPage() {
                                     {stats.confirmedCount}
                                 </span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-green-600" />
-                                    <span className="text-sm text-foreground">Completed</span>
-                                </div>
-                                <span className="text-sm font-semibold text-foreground">
-                                    {stats.completedCount}
-                                </span>
-                            </div>
                         </div>
 
                         {/* Visual bar */}
                         {stats.totalBookings > 0 && (
                             <div className="mt-4 flex h-2 rounded-full overflow-hidden gap-0.5">
-                                {stats.completedCount > 0 && (
-                                    <div
-                                        className="bg-green-600 rounded-full"
-                                        style={{
-                                            width: `${(stats.completedCount / stats.totalBookings) * 100}%`,
-                                        }}
-                                    />
-                                )}
                                 {stats.confirmedCount > 0 && (
                                     <div
                                         className="bg-blue-500 rounded-full"
@@ -626,8 +606,8 @@ export default function AdminDashboardPage() {
                                                                                             key={reason}
                                                                                             onClick={() => setSelectedReason(reason)}
                                                                                             className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
-                                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                                ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                                : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
                                                                                                 }`}
                                                                                         >
                                                                                             {selectedReason === reason && <span className="mr-1">&#10003;</span>}
@@ -794,55 +774,64 @@ export default function AdminDashboardPage() {
                                                         {/* Quick status change */}
                                                         <div className="flex flex-wrap items-center gap-1.5">
                                                             <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
-                                                            {booking.status === "confirmed" && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                        setSelectedReason("dates_unavailable")
-                                                                    }}
-                                                                    disabled={actionLoading === booking.id}
-                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <Undo2 className="h-3 w-3" />
-                                                                    Undo Accept
-                                                                </button>
-                                                            )}
-                                                            {booking.status === "cancelled" && (
-                                                                <button
-                                                                    onClick={() => handleReview(booking.id, "confirmed")}
-                                                                    disabled={actionLoading === booking.id}
-                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <Undo2 className="h-3 w-3" />
-                                                                    Undo Reject
-                                                                </button>
-                                                            )}
-                                                            {booking.status === "pending" && (
-                                                                <>
-                                                                    <button
-                                                                        onClick={() => handleReview(booking.id, "confirmed")}
-                                                                        disabled={actionLoading === booking.id}
-                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <CheckCircle2 className="h-3 w-3" />
-                                                                        Accept
-                                                                    </button>
+                                                            {isAfter(new Date(), parseISO(booking.checkOut)) ? (
+                                                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                                    <AlertCircle className="h-3 w-3" />
+                                                                    Check-out passed — no actions
+                                                                </span>
+                                                            ) : (<>
+                                                                {booking.status === "confirmed" && (
                                                                     <button
                                                                         onClick={() => {
+                                                                            setConfirmingBooking(null)
                                                                             setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
                                                                             setSelectedReason("dates_unavailable")
                                                                         }}
                                                                         disabled={actionLoading === booking.id}
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                                     >
-                                                                        <XCircle className="h-3 w-3" />
-                                                                        Reject
+                                                                        <Undo2 className="h-3 w-3" />
+                                                                        Undo Accept
                                                                     </button>
-                                                                </>
-                                                            )}
-                                                            {booking.status === "completed" && (
-                                                                <span className="text-[11px] text-muted-foreground">No actions available</span>
-                                                            )}
+                                                                )}
+                                                                {booking.status === "cancelled" && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            setRejectingBooking(null)
+                                                                            setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
+                                                                        }}
+                                                                        disabled={actionLoading === booking.id}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <Undo2 className="h-3 w-3" />
+                                                                        Undo Reject
+                                                                    </button>
+                                                                )}
+                                                                {booking.status === "pending" && (
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => handleReview(booking.id, "confirmed")}
+                                                                            disabled={actionLoading === booking.id}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                                        >
+                                                                            <CheckCircle2 className="h-3 w-3" />
+                                                                            Accept
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setConfirmingBooking(null)
+                                                                                setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                                setSelectedReason("dates_unavailable")
+                                                                            }}
+                                                                            disabled={actionLoading === booking.id}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                        >
+                                                                            <XCircle className="h-3 w-3" />
+                                                                            Reject
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </>)}
                                                             <Link
                                                                 href="/admin/bookings"
                                                                 className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
@@ -850,6 +839,48 @@ export default function AdminDashboardPage() {
                                                                 Full details →
                                                             </Link>
                                                         </div>
+                                                        <AnimatePresence initial={false}>
+                                                            {confirmingBooking === booking.id && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="mt-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-2.5">
+                                                                        <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                                                                            <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                                                            <div className="space-y-0.5">
+                                                                                <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before confirming</p>
+                                                                                <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
+                                                                                    This will send a confirmation email to <strong>{booking.guestName}</strong> and block the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 pt-1">
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setConfirmingBooking(null)
+                                                                                    handleReview(booking.id, "confirmed")
+                                                                                }}
+                                                                                disabled={actionLoading === booking.id}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
+                                                                            >
+                                                                                <CheckCircle2 className="h-3 w-3" />
+                                                                                Proceed
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setConfirmingBooking(null)}
+                                                                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                         <AnimatePresence initial={false}>
                                                             {rejectingBooking === booking.id && (
                                                                 <motion.div
@@ -860,6 +891,17 @@ export default function AdminDashboardPage() {
                                                                     className="overflow-hidden"
                                                                 >
                                                                     <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
+                                                                        {booking.status === "confirmed" && (
+                                                                            <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                                                                                <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                                                                <div className="space-y-0.5">
+                                                                                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before cancelling</p>
+                                                                                    <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
+                                                                                        This will send a cancellation email to <strong>{booking.guestName}</strong> and unblock the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                         <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
                                                                         <div className="space-y-1">
                                                                             {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
@@ -867,8 +909,8 @@ export default function AdminDashboardPage() {
                                                                                     key={reason}
                                                                                     onClick={() => setSelectedReason(reason)}
                                                                                     className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
-                                                                                            ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                            : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                        ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                        : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
                                                                                         }`}
                                                                                 >
                                                                                     {selectedReason === reason && <span className="mr-1">&#10003;</span>}
@@ -903,49 +945,6 @@ export default function AdminDashboardPage() {
                                     </div>
                                 )
                             })}
-                        </div>
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="bg-card rounded-2xl border border-border p-5">
-                        <h2 className="text-base font-semibold text-foreground mb-4">
-                            Quick Actions
-                        </h2>
-                        <div className="space-y-2">
-                            <Link
-                                href="/admin/calendar"
-                                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group"
-                            >
-                                <div className="w-9 h-9 rounded-lg bg-foreground/5 flex items-center justify-center">
-                                    <CalendarCheck className="h-4 w-4 text-foreground/60" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-foreground">
-                                        Manage Calendar
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        Block or unblock dates
-                                    </p>
-                                </div>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            </Link>
-                            <Link
-                                href="/admin/bookings"
-                                className="flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors group"
-                            >
-                                <div className="w-9 h-9 rounded-lg bg-foreground/5 flex items-center justify-center">
-                                    <BookOpen className="h-4 w-4 text-foreground/60" />
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-foreground">
-                                        All Bookings
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        View & manage bookings
-                                    </p>
-                                </div>
-                                <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
-                            </Link>
                         </div>
                     </div>
                 </div>

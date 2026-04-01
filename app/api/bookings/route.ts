@@ -24,7 +24,7 @@ export interface Booking {
     totalRwf: number
     momoTransactionId: string
     specialRequests: string
-    status: "pending" | "confirmed" | "completed" | "cancelled"
+    status: "pending" | "confirmed" | "cancelled"
     createdAt: string
 }
 

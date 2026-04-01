@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { format, parseISO } from "date-fns"
+import { format, parseISO, isAfter } from "date-fns"
 import {
     Search,
     Filter,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Phone,
     Mail,
     MessageSquare,
-    Check,
     X,
     Clock,
     CheckCircle2,
@@ -41,7 +42,7 @@ interface Booking {
     totalRwf: number
     momoTransactionId: string
     specialRequests: string
-    status: "pending" | "confirmed" | "completed" | "cancelled"
+    status: "pending" | "confirmed" | "cancelled"
     createdAt: string
 }
 
@@ -61,12 +62,6 @@ const statusConfig: Record<
         bg: "bg-blue-500/10",
         icon: CheckCircle2,
     },
-    completed: {
-        label: "Completed",
-        color: "text-green-600 dark:text-green-400",
-        bg: "bg-green-500/10",
-        icon: Check,
-    },
     cancelled: {
         label: "Cancelled",
         color: "text-red-600 dark:text-red-400",
@@ -75,7 +70,8 @@ const statusConfig: Record<
     },
 }
 
-const allStatuses = ["all", "pending", "confirmed", "completed", "cancelled"] as const
+const allStatuses = ["all", "pending", "confirmed", "cancelled"] as const
+const ITEMS_PER_PAGE = 10
 
 export default function AdminBookingsPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -83,11 +79,13 @@ export default function AdminBookingsPage() {
     const [search, setSearch] = useState("")
     const [statusFilter, setStatusFilter] = useState<string>("all")
     const [houseFilter, setHouseFilter] = useState<string>("all")
+    const [currentPage, setCurrentPage] = useState(1)
     const [expandedBooking, setExpandedBooking] = useState<string | null>(null)
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
     const [deletingBooking, setDeletingBooking] = useState<string | null>(null)
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
     const [rejectingBooking, setRejectingBooking] = useState<string | null>(null)
+    const [confirmingBooking, setConfirmingBooking] = useState<string | null>(null)
     const [selectedReason, setSelectedReason] = useState<RejectionReason>("dates_unavailable")
 
     const fetchBookings = () => {
@@ -220,21 +218,34 @@ export default function AdminBookingsPage() {
     }
 
     const filtered = useMemo(() => {
-        return bookings.filter((b) => {
-            if (statusFilter !== "all" && b.status !== statusFilter) return false
-            if (houseFilter !== "all" && b.house !== houseFilter) return false
-            if (search) {
-                const q = search.toLowerCase()
-                return (
-                    b.guestName.toLowerCase().includes(q) ||
-                    b.guestPhone.includes(q) ||
-                    b.id.toLowerCase().includes(q) ||
-                    b.momoTransactionId.toLowerCase().includes(q)
-                )
-            }
-            return true
-        })
+        return bookings
+            .filter((b) => {
+                if (statusFilter !== "all" && b.status !== statusFilter) return false
+                if (houseFilter !== "all" && b.house !== houseFilter) return false
+                if (search) {
+                    const q = search.toLowerCase()
+                    return (
+                        b.guestName.toLowerCase().includes(q) ||
+                        b.guestPhone.includes(q) ||
+                        b.id.toLowerCase().includes(q) ||
+                        b.momoTransactionId.toLowerCase().includes(q)
+                    )
+                }
+                return true
+            })
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     }, [bookings, statusFilter, houseFilter, search])
+
+    // Reset to page 1 when filters change
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [statusFilter, houseFilter, search])
+
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+    const paginatedBookings = useMemo(() => {
+        const start = (currentPage - 1) * ITEMS_PER_PAGE
+        return filtered.slice(start, start + ITEMS_PER_PAGE)
+    }, [filtered, currentPage])
 
     const totalRevenue = filtered
         .filter((b) => b.status !== "cancelled")
@@ -262,7 +273,7 @@ export default function AdminBookingsPage() {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name, phone, ID..."
+                            placeholder="Search by name or phone..."
                             className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
                         />
                     </div>
@@ -277,7 +288,6 @@ export default function AdminBookingsPage() {
                             <option value="all">All Status</option>
                             <option value="pending">Pending</option>
                             <option value="confirmed">Confirmed</option>
-                            <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                         </select>
 
@@ -320,10 +330,11 @@ export default function AdminBookingsPage() {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {filtered.map((booking) => {
+                    {paginatedBookings.map((booking) => {
                         const config = statusConfig[booking.status]
                         const StatusIcon = config.icon
                         const isExpanded = expandedBooking === booking.id
+                        const checkOutPassed = isAfter(new Date(), parseISO(booking.checkOut))
 
                         return (
                             <div
@@ -384,327 +395,448 @@ export default function AdminBookingsPage() {
                                             ${booking.total}
                                         </span>
                                         <ChevronDown
-                                            className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                                            className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
                                         />
                                     </div>
                                 </button>
 
                                 {/* Expanded details */}
-                                {isExpanded && (
-                                    <div className="px-4 sm:px-5 pb-5 border-t border-border pt-4">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {/* Guest details */}
-                                            <div className="space-y-2">
-                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                    Guest
-                                                </h4>
-                                                <div className="space-y-1.5">
-                                                    <p className="text-sm text-foreground">
-                                                        {booking.guestName}
-                                                    </p>
-                                                    {booking.guestEmail && (
-                                                        <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                                            <Mail className="h-3 w-3" />
-                                                            {booking.guestEmail}
-                                                        </p>
-                                                    )}
-                                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                                        <Phone className="h-3 w-3" />
-                                                        {booking.guestPhone}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {booking.guests} guest{booking.guests > 1 ? "s" : ""}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Stay details */}
-                                            <div className="space-y-2">
-                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                    Stay
-                                                </h4>
-                                                <div className="space-y-1.5 text-sm">
-                                                    <p className="text-foreground">
-                                                        {format(parseISO(booking.checkIn), "EEE, MMM d, yyyy")}
-                                                    </p>
-                                                    <p className="text-muted-foreground">to</p>
-                                                    <p className="text-foreground">
-                                                        {format(parseISO(booking.checkOut), "EEE, MMM d, yyyy")}
-                                                    </p>
-                                                    <p className="text-muted-foreground">
-                                                        {booking.nights} night{booking.nights > 1 ? "s" : ""}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Payment details */}
-                                            <div className="space-y-2">
-                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                    Payment
-                                                </h4>
-                                                <div className="space-y-1.5 text-sm">
-                                                    <div className="flex justify-between">
-                                                        <span className="text-muted-foreground">
-                                                            ${booking.pricePerNight} × {booking.nights}
-                                                        </span>
-                                                        <span className="text-foreground">
-                                                            ${booking.pricePerNight * booking.nights}
-                                                        </span>
-                                                    </div>
-                                                    {booking.cleaningFee > 0 && (
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">
-                                                                Cleaning
-                                                            </span>
-                                                            <span className="text-foreground">
-                                                                ${booking.cleaningFee}
-                                                            </span>
+                                <AnimatePresence initial={false}>
+                                    {isExpanded && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="px-4 sm:px-5 pb-5 border-t border-border pt-4">
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                                    {/* Guest details */}
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                            Guest
+                                                        </h4>
+                                                        <div className="space-y-1.5">
+                                                            <p className="text-sm text-foreground">
+                                                                {booking.guestName}
+                                                            </p>
+                                                            {booking.guestEmail && (
+                                                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                                    <Mail className="h-3 w-3" />
+                                                                    {booking.guestEmail}
+                                                                </p>
+                                                            )}
+                                                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                                <Phone className="h-3 w-3" />
+                                                                {booking.guestPhone}
+                                                            </p>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {booking.guests} guest{booking.guests > 1 ? "s" : ""}
+                                                            </p>
                                                         </div>
-                                                    )}
-                                                    <div className="flex justify-between font-semibold border-t border-border pt-1.5">
-                                                        <span className="text-foreground">Total</span>
-                                                        <span className="text-foreground">
-                                                            ${booking.total}
-                                                        </span>
                                                     </div>
-                                                    <p className="text-xs text-muted-foreground">
-                                                        ≈ {booking.totalRwf.toLocaleString()} RWF
-                                                    </p>
-                                                    {booking.momoTransactionId && (
-                                                        <p className="text-xs font-mono text-muted-foreground">
-                                                            MoMo: {booking.momoTransactionId}
+
+                                                    {/* Stay details */}
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                            Stay
+                                                        </h4>
+                                                        <div className="space-y-1.5 text-sm">
+                                                            <p className="text-foreground">
+                                                                {format(parseISO(booking.checkIn), "EEE, MMM d, yyyy")}
+                                                            </p>
+                                                            <p className="text-muted-foreground">to</p>
+                                                            <p className="text-foreground">
+                                                                {format(parseISO(booking.checkOut), "EEE, MMM d, yyyy")}
+                                                            </p>
+                                                            <p className="text-muted-foreground">
+                                                                {booking.nights} night{booking.nights > 1 ? "s" : ""}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Payment details */}
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                                            Payment
+                                                        </h4>
+                                                        <div className="space-y-1.5 text-sm">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">
+                                                                    ${booking.pricePerNight} × {booking.nights}
+                                                                </span>
+                                                                <span className="text-foreground">
+                                                                    ${booking.pricePerNight * booking.nights}
+                                                                </span>
+                                                            </div>
+                                                            {booking.cleaningFee > 0 && (
+                                                                <div className="flex justify-between">
+                                                                    <span className="text-muted-foreground">
+                                                                        Cleaning
+                                                                    </span>
+                                                                    <span className="text-foreground">
+                                                                        ${booking.cleaningFee}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between font-semibold border-t border-border pt-1.5">
+                                                                <span className="text-foreground">Total</span>
+                                                                <span className="text-foreground">
+                                                                    ${booking.total}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                ≈ {booking.totalRwf.toLocaleString()} RWF
+                                                            </p>
+                                                            {booking.momoTransactionId && (
+                                                                <p className="text-xs font-mono text-muted-foreground">
+                                                                    MoMo: {booking.momoTransactionId}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Special requests */}
+                                                {booking.specialRequests && (
+                                                    <div className="mt-4 p-3 rounded-xl bg-muted/40">
+                                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                                                            Special Requests
                                                         </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Special requests */}
-                                        {booking.specialRequests && (
-                                            <div className="mt-4 p-3 rounded-xl bg-muted/40">
-                                                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                                    Special Requests
-                                                </p>
-                                                <p className="text-sm text-foreground">
-                                                    {booking.specialRequests}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Review Actions for Pending */}
-                                        {booking.status === "pending" && (
-                                            <div className="mt-4 pt-4 border-t border-border">
-                                                <div className="flex items-center gap-2 mb-3">
-                                                    <Clock className="h-4 w-4 text-amber-500" />
-                                                    <span className="text-sm font-semibold text-foreground">
-                                                        Awaiting Review
-                                                    </span>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mb-4">
-                                                    Review the booking details and payment info above, then accept or reject.
-                                                </p>
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <button
-                                                        onClick={() => handleStatusChange(booking.id, "confirmed")}
-                                                        disabled={updatingStatus === booking.id}
-                                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                    >
-                                                        <CheckCircle2 className="h-4 w-4" />
-                                                        Accept Booking
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                            setSelectedReason("dates_unavailable")
-                                                        }}
-                                                        disabled={updatingStatus === booking.id}
-                                                        className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                    >
-                                                        <XCircle className="h-4 w-4" />
-                                                        Reject Booking
-                                                    </button>
-                                                    <div className="ml-auto">
-                                                        {confirmDelete === booking.id ? (
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-xs text-red-500 font-medium">Delete permanently?</span>
-                                                                <button
-                                                                    onClick={() => handleDelete(booking.id)}
-                                                                    disabled={deletingBooking === booking.id}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setConfirmDelete(null)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                            </div>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => setConfirmDelete(booking.id)}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                                Delete
-                                                            </button>
-                                                        )}
+                                                        <p className="text-sm text-foreground">
+                                                            {booking.specialRequests}
+                                                        </p>
                                                     </div>
-                                                </div>
-                                                <AnimatePresence initial={false}>
-                                                    {rejectingBooking === booking.id && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                            className="overflow-hidden"
-                                                        >
-                                                            <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
-                                                                <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                <div className="space-y-1">
-                                                                    {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                )}
+
+                                                {/* Review Actions for Pending */}
+                                                {booking.status === "pending" && (
+                                                    <div className="mt-4 pt-4 border-t border-border">
+                                                        {checkOutPassed ? (
+                                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                                                <AlertCircle className="h-3.5 w-3.5" />
+                                                                Check-out date has passed — no actions available
+                                                            </p>
+                                                        ) : (<>
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                                <Clock className="h-4 w-4 text-amber-500" />
+                                                                <span className="text-sm font-semibold text-foreground">
+                                                                    Awaiting Review
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs text-muted-foreground mb-4">
+                                                                Review the booking details and payment info above, then accept or reject.
+                                                            </p>
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleStatusChange(booking.id, "confirmed")}
+                                                                    disabled={updatingStatus === booking.id}
+                                                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <CheckCircle2 className="h-4 w-4" />
+                                                                    Accept Booking
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                        setSelectedReason("dates_unavailable")
+                                                                    }}
+                                                                    disabled={updatingStatus === booking.id}
+                                                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <XCircle className="h-4 w-4" />
+                                                                    Reject Booking
+                                                                </button>
+                                                                <div className="ml-auto">
+                                                                    {confirmDelete === booking.id ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-xs text-red-500 font-medium">Delete permanently?</span>
+                                                                            <button
+                                                                                onClick={() => handleDelete(booking.id)}
+                                                                                disabled={deletingBooking === booking.id}
+                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                            >
+                                                                                {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setConfirmDelete(null)}
+                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
+                                                                    ) : (
                                                                         <button
-                                                                            key={reason}
-                                                                            onClick={() => setSelectedReason(reason)}
-                                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
-                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                }`}
+                                                                            onClick={() => setConfirmDelete(booking.id)}
+                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
                                                                         >
-                                                                            {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
-                                                                            {REJECTION_REASONS[reason].label}
+                                                                            <X className="h-3 w-3" />
+                                                                            Delete
                                                                         </button>
-                                                                    ))}
-                                                                </div>
-                                                                <div className="flex items-center gap-2 pt-1">
-                                                                    <button
-                                                                        onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
-                                                                        disabled={updatingStatus === booking.id}
-                                                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <XCircle className="h-3.5 w-3.5" />
-                                                                        Confirm Rejection
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setRejectingBooking(null)}
-                                                                        className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                    >
-                                                                        Cancel
-                                                                    </button>
+                                                                    )}
                                                                 </div>
                                                             </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                        )}
+                                                            <AnimatePresence initial={false}>
+                                                                {rejectingBooking === booking.id && (
+                                                                    <motion.div
+                                                                        initial={{ height: 0, opacity: 0 }}
+                                                                        animate={{ height: "auto", opacity: 1 }}
+                                                                        exit={{ height: 0, opacity: 0 }}
+                                                                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                        className="overflow-hidden"
+                                                                    >
+                                                                        <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
+                                                                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                            <div className="space-y-1">
+                                                                                {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                                                    <button
+                                                                                        key={reason}
+                                                                                        onClick={() => setSelectedReason(reason)}
+                                                                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
+                                                                                            ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                            : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                            }`}
+                                                                                    >
+                                                                                        {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
+                                                                                        {REJECTION_REASONS[reason].label}
+                                                                                    </button>
+                                                                                ))}
+                                                                            </div>
+                                                                            <div className="flex items-center gap-2 pt-1">
+                                                                                <button
+                                                                                    onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
+                                                                                    disabled={updatingStatus === booking.id}
+                                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                                >
+                                                                                    <XCircle className="h-3.5 w-3.5" />
+                                                                                    Confirm Rejection
+                                                                                </button>
+                                                                                <button
+                                                                                    onClick={() => setRejectingBooking(null)}
+                                                                                    className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                                >
+                                                                                    Cancel
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </>)}
+                                                    </div>
+                                                )}
 
-                                        {/* Status Actions for non-pending */}
-                                        {booking.status !== "pending" && (
-                                            <div className="mt-4 pt-4 border-t border-border">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <span className="text-xs font-medium text-muted-foreground mr-2">
-                                                        Change status:
-                                                    </span>
-                                                    {(["confirmed", "completed", "cancelled"] as const).map(
-                                                        (s) => {
-                                                            const c = statusConfig[s]
-                                                            const Icon = c.icon
-                                                            const isActive = booking.status === s
-                                                            return (
-                                                                <button
-                                                                    key={s}
-                                                                    onClick={() => {
-                                                                        if (s === "cancelled") {
-                                                                            setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                            setSelectedReason("dates_unavailable")
-                                                                        } else {
-                                                                            handleStatusChange(booking.id, s)
-                                                                        }
-                                                                    }}
-                                                                    disabled={
-                                                                        isActive || updatingStatus === booking.id
-                                                                    }
-                                                                    className={`
+                                                {/* Status Actions for non-pending */}
+                                                {booking.status !== "pending" && !checkOutPassed && (
+                                                    <div className="mt-4 pt-4 border-t border-border">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <span className="text-xs font-medium text-muted-foreground mr-2">
+                                                                Change status:
+                                                            </span>
+                                                            {(["confirmed", "cancelled"] as const).map(
+                                                                (s) => {
+                                                                    const c = statusConfig[s]
+                                                                    const Icon = c.icon
+                                                                    const isActive = booking.status === s
+                                                                    return (
+                                                                        <button
+                                                                            key={s}
+                                                                            onClick={() => {
+                                                                                if (s === "cancelled") {
+                                                                                    setConfirmingBooking(null)
+                                                                                    setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                                    setSelectedReason("dates_unavailable")
+                                                                                } else if (s === "confirmed" && booking.status === "cancelled") {
+                                                                                    setRejectingBooking(null)
+                                                                                    setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
+                                                                                } else {
+                                                                                    handleStatusChange(booking.id, s)
+                                                                                }
+                                                                            }}
+                                                                            disabled={
+                                                                                isActive || updatingStatus === booking.id
+                                                                            }
+                                                                            className={`
                                                                         inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
                                                                         ${isActive
-                                                                            ? `${c.bg} ${c.color} ring-2 ring-current/20`
-                                                                            : "bg-muted text-muted-foreground hover:text-foreground"
-                                                                        }
+                                                                                    ? `${c.bg} ${c.color} ring-2 ring-current/20`
+                                                                                    : "bg-muted text-muted-foreground hover:text-foreground"
+                                                                                }
                                                                         disabled:opacity-50 disabled:cursor-not-allowed
                                                                     `}
-                                                                >
-                                                                    <Icon className="h-3 w-3" />
-                                                                    {c.label}
-                                                                </button>
-                                                            )
-                                                        }
-                                                    )}
-                                                </div>
-                                                <AnimatePresence initial={false}>
-                                                    {rejectingBooking === booking.id && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                            className="overflow-hidden"
-                                                        >
-                                                            <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
-                                                                <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                <div className="space-y-1">
-                                                                    {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
-                                                                        <button
-                                                                            key={reason}
-                                                                            onClick={() => setSelectedReason(reason)}
-                                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
-                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                }`}
                                                                         >
-                                                                            {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
-                                                                            {REJECTION_REASONS[reason].label}
+                                                                            <Icon className="h-3 w-3" />
+                                                                            {c.label}
                                                                         </button>
-                                                                    ))}
-                                                                </div>
-                                                                <div className="flex items-center gap-2 pt-1">
-                                                                    <button
-                                                                        onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
-                                                                        disabled={updatingStatus === booking.id}
-                                                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <XCircle className="h-3.5 w-3.5" />
-                                                                        Confirm Rejection
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => setRejectingBooking(null)}
-                                                                        className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                    >
-                                                                        Cancel
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                        )}
+                                                                    )
+                                                                }
+                                                            )}
+                                                        </div>
+                                                        <AnimatePresence initial={false}>
+                                                            {confirmingBooking === booking.id && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="mt-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-3">
+                                                                        <div className="flex gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                                                            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                                                            <div className="space-y-1">
+                                                                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Double-check before confirming</p>
+                                                                                <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
+                                                                                    This will send a confirmation email to <strong>{booking.guestName}</strong> and block the dates ({booking.checkIn} → {booking.checkOut}) on the calendar, preventing new bookings.
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 pt-1">
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setConfirmingBooking(null)
+                                                                                    handleStatusChange(booking.id, "confirmed")
+                                                                                }}
+                                                                                disabled={updatingStatus === booking.id}
+                                                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
+                                                                            >
+                                                                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                                                                Proceed
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setConfirmingBooking(null)}
+                                                                                className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                        <AnimatePresence initial={false}>
+                                                            {rejectingBooking === booking.id && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
+                                                                        {booking.status === "confirmed" && (
+                                                                            <div className="flex gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                                                                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                                                                <div className="space-y-1">
+                                                                                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Double-check before cancelling</p>
+                                                                                    <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
+                                                                                        This will send a cancellation email to <strong>{booking.guestName}</strong> and unblock the dates ({booking.checkIn} → {booking.checkOut}) on the calendar, making them available again.
+                                                                                    </p>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                        <div className="space-y-1">
+                                                                            {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                                                <button
+                                                                                    key={reason}
+                                                                                    onClick={() => setSelectedReason(reason)}
+                                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
+                                                                                        ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                        : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                        }`}
+                                                                                >
+                                                                                    {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
+                                                                                    {REJECTION_REASONS[reason].label}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-2 pt-1">
+                                                                            <button
+                                                                                onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
+                                                                                disabled={updatingStatus === booking.id}
+                                                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                            >
+                                                                                <XCircle className="h-3.5 w-3.5" />
+                                                                                Confirm Rejection
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setRejectingBooking(null)}
+                                                                                className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </div>
+                                                )}
 
-                                        {/* Booked at timestamp */}
-                                        <p className="text-[10px] text-muted-foreground mt-3">
-                                            Booked on{" "}
-                                            {format(
-                                                parseISO(booking.createdAt),
-                                                "MMM d, yyyy 'at' h:mm a"
-                                            )}
-                                        </p>
-                                    </div>
-                                )}
+                                                {/* Past checkout notice for non-pending */}
+                                                {booking.status !== "pending" && checkOutPassed && (
+                                                    <div className="mt-4 pt-4 border-t border-border">
+                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                                            <AlertCircle className="h-3.5 w-3.5" />
+                                                            Check-out date has passed — no actions available
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                {/* Booked at timestamp */}
+                                                <p className="text-[10px] text-muted-foreground mt-3">
+                                                    Booked on{" "}
+                                                    {format(
+                                                        parseISO(booking.createdAt),
+                                                        "MMM d, yyyy 'at' h:mm a"
+                                                    )}
+                                                </p>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         )
                     })}
+                </div>
+            )}
+
+            {/* Pagination */}
+            {!loading && filtered.length > ITEMS_PER_PAGE && (
+                <div className="flex items-center justify-between mt-6 bg-card rounded-2xl border border-border px-4 py-3">
+                    <p className="text-xs text-muted-foreground">
+                        Showing <strong className="text-foreground">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong>–<strong className="text-foreground">{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</strong> of <strong className="text-foreground">{filtered.length}</strong>
+                    </p>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                                key={page}
+                                onClick={() => setCurrentPage(page)}
+                                className={`inline-flex items-center justify-center h-8 min-w-8 rounded-lg text-xs font-medium transition-colors ${page === currentPage
+                                        ? "bg-foreground text-background"
+                                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    }`}
+                            >
+                                {page}
+                            </button>
+                        ))}
+                        <button
+                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

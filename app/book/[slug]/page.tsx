@@ -276,7 +276,7 @@ _Sent from House by AD website_`
                             Complete Your Booking
                         </h1>
                         <p className="text-sm text-muted-foreground mb-5">
-                            House by AD {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
+                            House by AD <span className="mx-1"> | </span> {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
                         </p>
 
                         {/* Step Indicator */}
