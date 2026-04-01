@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { format, addDays, addMonths, differenceInDays, isAfter, isBefore, isSameDay as isSameDayFn } from "date-fns"
 import { Calendar as CalendarIcon, Star, Users, Info, X, ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react"
@@ -46,6 +46,7 @@ export function BookingCard({
   const [hoveredDate, setHoveredDate] = useState<Date | null>(null)
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right')
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set())
 
   const handleReserve = () => {
     const params = new URLSearchParams()
@@ -58,6 +59,25 @@ export function BookingCard({
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    fetch(`/api/blocked-dates?house=${slug}`)
+      .then((res) => res.json())
+      .then((data) => setBlockedDates(new Set(data.dates || [])))
+      .catch(() => { })
+  }, [slug])
+
+  const isDateBlocked = useCallback(
+    (date: Date) => blockedDates.has(format(date, "yyyy-MM-dd")),
+    [blockedDates]
+  )
+
+  const disabledDates = useMemo(() => {
+    return [
+      { before: new Date() },
+      (date: Date) => isDateBlocked(date),
+    ] as any
+  }, [isDateBlocked])
 
   const nights = useMemo(() => {
     if (dateRange?.from && dateRange?.to) {
@@ -264,7 +284,7 @@ export function BookingCard({
                       onSelect={handleDateSelect}
                       numberOfMonths={2}
                       showOutsideDays={false}
-                      disabled={{ before: new Date() }}
+                      disabled={disabledDates}
                       classNames={{
                         months: "flex gap-8 flex-col md:flex-row",
                         month: "space-y-4",
