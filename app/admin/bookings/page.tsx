@@ -20,6 +20,8 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
+import { AnimatePresence, motion } from "motion/react"
+import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
 
 interface Booking {
     id: string
@@ -85,6 +87,8 @@ export default function AdminBookingsPage() {
     const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
     const [deletingBooking, setDeletingBooking] = useState<string | null>(null)
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+    const [rejectingBooking, setRejectingBooking] = useState<string | null>(null)
+    const [selectedReason, setSelectedReason] = useState<RejectionReason>("dates_unavailable")
 
     const fetchBookings = () => {
         setLoading(true)
@@ -99,16 +103,17 @@ export default function AdminBookingsPage() {
         fetchBookings()
     }, [])
 
-    const handleStatusChange = async (id: string, newStatus: Booking["status"]) => {
+    const handleStatusChange = async (id: string, newStatus: Booking["status"], rejectionReason?: RejectionReason) => {
         setUpdatingStatus(id)
         try {
             const res = await fetch("/api/bookings", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, status: newStatus }),
+                body: JSON.stringify({ id, status: newStatus, ...(rejectionReason ? { rejectionReason } : {}) }),
             })
             if (res.ok) {
                 const booking = bookings.find((b) => b.id === id)
+                setRejectingBooking(null)
                 setBookings((prev) =>
                     prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
                 )
@@ -508,7 +513,10 @@ export default function AdminBookingsPage() {
                                                         Accept Booking
                                                     </button>
                                                     <button
-                                                        onClick={() => handleStatusChange(booking.id, "cancelled")}
+                                                        onClick={() => {
+                                                            setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                            setSelectedReason("dates_unavailable")
+                                                        }}
                                                         disabled={updatingStatus === booking.id}
                                                         className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                     >
@@ -544,44 +552,143 @@ export default function AdminBookingsPage() {
                                                         )}
                                                     </div>
                                                 </div>
+                                                <AnimatePresence initial={false}>
+                                                    {rejectingBooking === booking.id && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
+                                                                <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                <div className="space-y-1">
+                                                                    {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                                        <button
+                                                                            key={reason}
+                                                                            onClick={() => setSelectedReason(reason)}
+                                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
+                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                }`}
+                                                                        >
+                                                                            {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
+                                                                            {REJECTION_REASONS[reason].label}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 pt-1">
+                                                                    <button
+                                                                        onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
+                                                                        disabled={updatingStatus === booking.id}
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <XCircle className="h-3.5 w-3.5" />
+                                                                        Confirm Rejection
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setRejectingBooking(null)}
+                                                                        className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         )}
 
                                         {/* Status Actions for non-pending */}
                                         {booking.status !== "pending" && (
-                                            <div className="mt-4 pt-4 border-t border-border flex flex-wrap items-center gap-2">
-                                                <span className="text-xs font-medium text-muted-foreground mr-2">
-                                                    Change status:
-                                                </span>
-                                                {(["confirmed", "completed", "cancelled"] as const).map(
-                                                    (s) => {
-                                                        const c = statusConfig[s]
-                                                        const Icon = c.icon
-                                                        const isActive = booking.status === s
-                                                        return (
-                                                            <button
-                                                                key={s}
-                                                                onClick={() =>
-                                                                    handleStatusChange(booking.id, s)
-                                                                }
-                                                                disabled={
-                                                                    isActive || updatingStatus === booking.id
-                                                                }
-                                                                className={`
-                                                                    inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                                                                    ${isActive
-                                                                        ? `${c.bg} ${c.color} ring-2 ring-current/20`
-                                                                        : "bg-muted text-muted-foreground hover:text-foreground"
+                                            <div className="mt-4 pt-4 border-t border-border">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-xs font-medium text-muted-foreground mr-2">
+                                                        Change status:
+                                                    </span>
+                                                    {(["confirmed", "completed", "cancelled"] as const).map(
+                                                        (s) => {
+                                                            const c = statusConfig[s]
+                                                            const Icon = c.icon
+                                                            const isActive = booking.status === s
+                                                            return (
+                                                                <button
+                                                                    key={s}
+                                                                    onClick={() => {
+                                                                        if (s === "cancelled") {
+                                                                            setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                            setSelectedReason("dates_unavailable")
+                                                                        } else {
+                                                                            handleStatusChange(booking.id, s)
+                                                                        }
+                                                                    }}
+                                                                    disabled={
+                                                                        isActive || updatingStatus === booking.id
                                                                     }
-                                                                    disabled:opacity-50 disabled:cursor-not-allowed
-                                                                `}
-                                                            >
-                                                                <Icon className="h-3 w-3" />
-                                                                {c.label}
-                                                            </button>
-                                                        )
-                                                    }
-                                                )}
+                                                                    className={`
+                                                                        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
+                                                                        ${isActive
+                                                                            ? `${c.bg} ${c.color} ring-2 ring-current/20`
+                                                                            : "bg-muted text-muted-foreground hover:text-foreground"
+                                                                        }
+                                                                        disabled:opacity-50 disabled:cursor-not-allowed
+                                                                    `}
+                                                                >
+                                                                    <Icon className="h-3 w-3" />
+                                                                    {c.label}
+                                                                </button>
+                                                            )
+                                                        }
+                                                    )}
+                                                </div>
+                                                <AnimatePresence initial={false}>
+                                                    {rejectingBooking === booking.id && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
+                                                                <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                <div className="space-y-1">
+                                                                    {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                                        <button
+                                                                            key={reason}
+                                                                            onClick={() => setSelectedReason(reason)}
+                                                                            className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
+                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                }`}
+                                                                        >
+                                                                            {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
+                                                                            {REJECTION_REASONS[reason].label}
+                                                                        </button>
+                                                                    ))}
+                                                                </div>
+                                                                <div className="flex items-center gap-2 pt-1">
+                                                                    <button
+                                                                        onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
+                                                                        disabled={updatingStatus === booking.id}
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <XCircle className="h-3.5 w-3.5" />
+                                                                        Confirm Rejection
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setRejectingBooking(null)}
+                                                                        className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                    >
+                                                                        Cancel
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         )}
 

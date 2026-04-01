@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
+import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
 
 interface Booking {
     id: string
@@ -69,6 +70,8 @@ export default function AdminDashboardPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [expandedRecent, setExpandedRecent] = useState<string | null>(null)
     const [expandedPending, setExpandedPending] = useState<string | null>(null)
+    const [rejectingBooking, setRejectingBooking] = useState<string | null>(null)
+    const [selectedReason, setSelectedReason] = useState<RejectionReason>("dates_unavailable")
 
     const today = startOfDay(new Date())
 
@@ -84,13 +87,13 @@ export default function AdminDashboardPage() {
         fetchBookings()
     }, [])
 
-    const handleReview = async (id: string, action: "confirmed" | "cancelled") => {
+    const handleReview = async (id: string, action: "confirmed" | "cancelled", rejectionReason?: RejectionReason) => {
         setActionLoading(id)
         try {
             const res = await fetch("/api/bookings", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ id, status: action }),
+                body: JSON.stringify({ id, status: action, ...(rejectionReason ? { rejectionReason } : {}) }),
             })
             if (res.ok) {
                 const booking = bookings.find((b) => b.id === id)
@@ -98,6 +101,7 @@ export default function AdminDashboardPage() {
                 // setState-during-render conflicts with toast/Sonner
                 setExpandedPending(null)
                 setExpandedRecent(null)
+                setRejectingBooking(null)
                 setBookings((prev) =>
                     prev.map((b) => (b.id === id ? { ...b, status: action } : b))
                 )
@@ -594,7 +598,10 @@ export default function AdminDashboardPage() {
                                                                         Accept
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleReview(b.id, "cancelled")}
+                                                                        onClick={() => {
+                                                                            setRejectingBooking(rejectingBooking === b.id ? null : b.id)
+                                                                            setSelectedReason("dates_unavailable")
+                                                                        }}
                                                                         disabled={actionLoading === b.id}
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                                     >
@@ -602,6 +609,52 @@ export default function AdminDashboardPage() {
                                                                         Reject
                                                                     </button>
                                                                 </div>
+                                                                <AnimatePresence initial={false}>
+                                                                    {rejectingBooking === b.id && (
+                                                                        <motion.div
+                                                                            initial={{ height: 0, opacity: 0 }}
+                                                                            animate={{ height: "auto", opacity: 1 }}
+                                                                            exit={{ height: 0, opacity: 0 }}
+                                                                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                            className="overflow-hidden"
+                                                                        >
+                                                                            <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
+                                                                                <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                                <div className="space-y-1">
+                                                                                    {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                                                        <button
+                                                                                            key={reason}
+                                                                                            onClick={() => setSelectedReason(reason)}
+                                                                                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
+                                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                                }`}
+                                                                                        >
+                                                                                            {selectedReason === reason && <span className="mr-1">&#10003;</span>}
+                                                                                            {REJECTION_REASONS[reason].label}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-1.5 pt-1">
+                                                                                    <button
+                                                                                        onClick={() => handleReview(b.id, "cancelled", selectedReason)}
+                                                                                        disabled={actionLoading === b.id}
+                                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                                    >
+                                                                                        <XCircle className="h-3 w-3" />
+                                                                                        Confirm Rejection
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={() => setRejectingBooking(null)}
+                                                                                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                                    >
+                                                                                        Cancel
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </motion.div>
+                                                                    )}
+                                                                </AnimatePresence>
                                                             </div>
                                                         </motion.div>
                                                     )}
@@ -743,7 +796,10 @@ export default function AdminDashboardPage() {
                                                             <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
                                                             {booking.status === "confirmed" && (
                                                                 <button
-                                                                    onClick={() => handleReview(booking.id, "cancelled")}
+                                                                    onClick={() => {
+                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                        setSelectedReason("dates_unavailable")
+                                                                    }}
                                                                     disabled={actionLoading === booking.id}
                                                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                                 >
@@ -772,7 +828,10 @@ export default function AdminDashboardPage() {
                                                                         Accept
                                                                     </button>
                                                                     <button
-                                                                        onClick={() => handleReview(booking.id, "cancelled")}
+                                                                        onClick={() => {
+                                                                            setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                            setSelectedReason("dates_unavailable")
+                                                                        }}
                                                                         disabled={actionLoading === booking.id}
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                                     >
@@ -791,6 +850,52 @@ export default function AdminDashboardPage() {
                                                                 Full details →
                                                             </Link>
                                                         </div>
+                                                        <AnimatePresence initial={false}>
+                                                            {rejectingBooking === booking.id && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                    className="overflow-hidden"
+                                                                >
+                                                                    <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
+                                                                        <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                        <div className="space-y-1">
+                                                                            {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
+                                                                                <button
+                                                                                    key={reason}
+                                                                                    onClick={() => setSelectedReason(reason)}
+                                                                                    className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
+                                                                                            ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                            : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                        }`}
+                                                                                >
+                                                                                    {selectedReason === reason && <span className="mr-1">&#10003;</span>}
+                                                                                    {REJECTION_REASONS[reason].label}
+                                                                                </button>
+                                                                            ))}
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1.5 pt-1">
+                                                                            <button
+                                                                                onClick={() => handleReview(booking.id, "cancelled", selectedReason)}
+                                                                                disabled={actionLoading === booking.id}
+                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                            >
+                                                                                <XCircle className="h-3 w-3" />
+                                                                                Confirm Rejection
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => setRejectingBooking(null)}
+                                                                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                            >
+                                                                                Cancel
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
                                                     </div>
                                                 </motion.div>
                                             )}

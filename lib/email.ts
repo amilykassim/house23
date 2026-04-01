@@ -1,8 +1,9 @@
 import { Resend } from "resend"
+import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
 
 // ⚠️ TEMPORARY: Email sending disabled during development
 // Set to false to re-enable email sending
-const EMAILS_DISABLED = true
+const EMAILS_DISABLED = false
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -22,6 +23,7 @@ interface BookingEmailData {
     momoTransactionId: string
     specialRequests?: string
     bookingId: string
+    rejectionReason?: RejectionReason
 }
 
 export async function sendBookingAcknowledgment(data: BookingEmailData) {
@@ -123,7 +125,7 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
                         ⏳ Status: Pending Review
                     </p>
                     <p style="color:#92400e;font-size:12px;margin:4px 0 0;opacity:0.8;">
-                        We'll confirm your booking within 24 hours.
+                        We'll confirm your booking within 1 hour.
                     </p>
                 </div>
             </div>
@@ -249,7 +251,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
                 </div>
 
                 <p style="color:#52525b;font-size:13px;line-height:1.6;margin:0;">
-                    If you have any questions about your stay, feel free to reach out via WhatsApp at <strong>+250 788 459 885</strong>.
+                    If you have any questions about your stay, feel free to contact us directly at <strong>+250 788 459 885</strong>.
                 </p>
             </div>
 
@@ -306,23 +308,26 @@ export async function sendBookingCancellation(data: BookingEmailData) {
                     Hi <strong>${data.guestName}</strong>,
                 </p>
                 <p style="color:#52525b;font-size:14px;line-height:1.6;margin:0 0 20px;">
-                    Unfortunately, we were unable to confirm your booking for
+                    ${data.rejectionReason && REJECTION_REASONS[data.rejectionReason]
+                    ? REJECTION_REASONS[data.rejectionReason].guestMessage
+                    : `Unfortunately, we were unable to confirm your booking for
                     <strong>House by AD ${data.houseName}</strong> (${data.checkIn} → ${data.checkOut}).
-                    This could be due to a scheduling conflict or other availability issue.
+                    For more details, please contact us directly at <strong>+250 788 459 885</strong>.`}
                 </p>
 
                 <div style="background:#fef2f2;border-radius:12px;padding:16px;margin:0 0 20px;">
                     <p style="color:#991b1b;font-size:13px;margin:0;font-weight:600;">
                         Booking ID: ${data.bookingId}
                     </p>
-                    <p style="color:#991b1b;font-size:12px;margin:4px 0 0;opacity:0.8;">
+                    ${data.rejectionReason && data.rejectionReason !== "policy_violation" ? `<p style="color:#991b1b;font-size:12px;margin:4px 0 0;opacity:0.8;">
                         If you made a payment, we will arrange a full refund.
-                    </p>
+                    </p>` : `<p style="color:#991b1b;font-size:12px;margin:4px 0 0;opacity:0.8;">
+                        Please contact us if you have any questions.
+                    </p>`}
                 </div>
 
                 <p style="color:#52525b;font-size:13px;line-height:1.6;margin:0;">
-                    We'd love to host you on different dates! Feel free to check availability on our website
-                    or contact us directly at <strong>+250 788 459 885</strong>.
+                    For more details, please contact us directly at <strong>+250 788 459 885</strong>.
                 </p>
             </div>
 

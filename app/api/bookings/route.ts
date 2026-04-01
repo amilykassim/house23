@@ -194,7 +194,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
     const body = await request.json()
-    const { id, status } = body as { id: string; status: Booking["status"] }
+    const { id, status, rejectionReason } = body as { id: string; status: Booking["status"]; rejectionReason?: string }
 
     if (!id || !status) {
         return NextResponse.json(
@@ -244,7 +244,7 @@ export async function PATCH(request: NextRequest) {
         if (status === "confirmed") {
             sendBookingConfirmation(emailData).catch(() => { })
         } else if (status === "cancelled") {
-            sendBookingCancellation(emailData).catch(() => { })
+            sendBookingCancellation({ ...emailData, rejectionReason: rejectionReason as any }).catch(() => { })
         }
     }
 
