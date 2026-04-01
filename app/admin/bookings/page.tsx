@@ -7,6 +7,7 @@ import {
     Filter,
     ChevronDown,
     Phone,
+    Mail,
     MessageSquare,
     Check,
     X,
@@ -25,6 +26,7 @@ interface Booking {
     house: string
     houseName: string
     guestName: string
+    guestEmail: string
     guestPhone: string
     checkIn: string
     checkOut: string
@@ -329,6 +331,12 @@ export default function AdminBookingsPage() {
                                                     <p className="text-sm text-foreground">
                                                         {booking.guestName}
                                                     </p>
+                                                    {booking.guestEmail && (
+                                                        <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                            <Mail className="h-3 w-3" />
+                                                            {booking.guestEmail}
+                                                        </p>
+                                                    )}
                                                     <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                                                         <Phone className="h-3 w-3" />
                                                         {booking.guestPhone}

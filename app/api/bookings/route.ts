@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import fs from "fs"
 import path from "path"
+import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
 
 const DATA_FILE = path.join(process.cwd(), "data", "bookings.json")
 const BLOCKED_DATES_FILE = path.join(process.cwd(), "data", "blocked-dates.json")
@@ -10,6 +11,7 @@ export interface Booking {
     house: string
     houseName: string
     guestName: string
+    guestEmail: string
     guestPhone: string
     checkIn: string
     checkOut: string
@@ -119,6 +121,7 @@ export async function POST(request: NextRequest) {
         house,
         houseName,
         guestName,
+        guestEmail,
         guestPhone,
         checkIn,
         checkOut,
@@ -146,6 +149,7 @@ export async function POST(request: NextRequest) {
         house,
         houseName: houseName || house,
         guestName,
+        guestEmail: guestEmail || "",
         guestPhone: guestPhone || "",
         checkIn,
         checkOut,
@@ -164,6 +168,26 @@ export async function POST(request: NextRequest) {
 
     bookings.push(newBooking)
     writeBookings(bookings)
+
+    // Send emails (non-blocking)
+    const emailData = {
+        guestName: newBooking.guestName,
+        guestEmail: newBooking.guestEmail,
+        houseName: newBooking.houseName,
+        checkIn: newBooking.checkIn,
+        checkOut: newBooking.checkOut,
+        nights: newBooking.nights,
+        guests: newBooking.guests,
+        total: newBooking.total,
+        totalRwf: newBooking.totalRwf,
+        momoTransactionId: newBooking.momoTransactionId,
+        specialRequests: newBooking.specialRequests,
+        bookingId: newBooking.id,
+    }
+    if (newBooking.guestEmail) {
+        sendBookingAcknowledgment(emailData).catch(() => { })
+    }
+    sendAdminNewBookingNotification(emailData).catch(() => { })
 
     return NextResponse.json({ booking: newBooking }, { status: 201 })
 }
@@ -199,6 +223,29 @@ export async function PATCH(request: NextRequest) {
         blockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
     } else if (status !== "confirmed" && previousStatus === "confirmed") {
         unblockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
+    }
+
+    // Send email notifications (non-blocking)
+    if (booking.guestEmail) {
+        const emailData = {
+            guestName: booking.guestName,
+            guestEmail: booking.guestEmail,
+            houseName: booking.houseName,
+            checkIn: booking.checkIn,
+            checkOut: booking.checkOut,
+            nights: booking.nights,
+            guests: booking.guests,
+            total: booking.total,
+            totalRwf: booking.totalRwf,
+            momoTransactionId: booking.momoTransactionId,
+            specialRequests: booking.specialRequests,
+            bookingId: booking.id,
+        }
+        if (status === "confirmed") {
+            sendBookingConfirmation(emailData).catch(() => { })
+        } else if (status === "cancelled") {
+            sendBookingCancellation(emailData).catch(() => { })
+        }
     }
 
     return NextResponse.json({ booking: bookings[index] })

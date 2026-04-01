@@ -31,6 +31,7 @@ interface Booking {
     house: string
     houseName: string
     guestName: string
+    guestEmail: string
     guestPhone: string
     checkIn: string
     checkOut: string

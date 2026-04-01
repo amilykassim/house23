@@ -8,6 +8,7 @@ import {
     Users,
     User,
     Phone,
+    Mail,
     CreditCard,
     CheckCircle2,
     ArrowRight,
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getHouseBySlug } from "@/lib/houses"
 import type { DateRange } from "react-day-picker"
 
@@ -56,9 +58,13 @@ export default function BookPage() {
 
     // Guest info
     const [guestName, setGuestName] = useState("")
+    const [guestEmail, setGuestEmail] = useState("")
     const [guestPhone, setGuestPhone] = useState("")
     const [specialRequests, setSpecialRequests] = useState("")
     const [momoTransactionId, setMomoTransactionId] = useState("")
+    const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
+    const [bookingSubmitting, setBookingSubmitting] = useState(false)
+    const [bookingConfirmed, setBookingConfirmed] = useState(false)
 
     // Validation errors
     const [errors, setErrors] = useState<Record<string, string>>({})
@@ -128,6 +134,9 @@ export default function BookPage() {
         if (currentStep === 2) {
             const newErrors: Record<string, string> = {}
             if (!guestName.trim()) newErrors.name = "Name is required"
+            if (guestEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())) {
+                newErrors.email = "Enter a valid email address"
+            }
             if (!guestPhone.trim()) {
                 newErrors.phone = "Phone number is required"
             } else if (!/^(?:\+?250|0)?7[2389]\d{7}$/.test(guestPhone.replace(/\s/g, ""))) {
@@ -199,8 +208,8 @@ _Sent from House by AD website_`
         return encodeURIComponent(message)
     }
 
-    const sendToWhatsApp = async () => {
-        // Save booking to database
+    const confirmBooking = async () => {
+        setBookingSubmitting(true)
         try {
             await fetch("/api/bookings", {
                 method: "POST",
@@ -209,6 +218,7 @@ _Sent from House by AD website_`
                     house: slug,
                     houseName: house.name,
                     guestName,
+                    guestEmail,
                     guestPhone,
                     checkIn: dateRange?.from ? format(dateRange.from, "yyyy-MM-dd") : "",
                     checkOut: dateRange?.to ? format(dateRange.to, "yyyy-MM-dd") : "",
@@ -224,11 +234,17 @@ _Sent from House by AD website_`
                 }),
             })
         } catch {
-            // Continue to WhatsApp even if save fails
+            // Continue even if save fails
         }
+        setBookingSubmitting(false)
+        setBookingConfirmed(true)
+        setShowWhatsAppModal(true)
+    }
 
+    const openWhatsApp = () => {
         const message = buildWhatsAppMessage()
         window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, "_blank")
+        setShowWhatsAppModal(false)
         router.push("/check-in-check-out")
     }
 
@@ -460,6 +476,30 @@ _Sent from House by AD website_`
                                                 )}
                                             </div>
 
+                                            {/* Email */}
+                                            <div>
+                                                <label className="text-sm font-medium text-foreground mb-1.5 block">
+                                                    Email Address{" "}
+                                                    <span className="text-muted-foreground text-xs">(for booking updates)</span>
+                                                </label>
+                                                <div className="relative">
+                                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                    <Input
+                                                        value={guestEmail}
+                                                        onChange={(e) => {
+                                                            setGuestEmail(e.target.value)
+                                                            if (errors.email) setErrors((p) => ({ ...p, email: "" }))
+                                                        }}
+                                                        placeholder="you@example.com"
+                                                        type="email"
+                                                        className={`pl-10 h-11 rounded-xl ${errors.email ? "border-red-500" : ""}`}
+                                                    />
+                                                </div>
+                                                {errors.email && (
+                                                    <p className="text-xs text-red-500 mt-1">{errors.email}</p>
+                                                )}
+                                            </div>
+
                                             {/* Phone */}
                                             <div>
                                                 <label className="text-sm font-medium text-foreground mb-1.5 block">
@@ -646,7 +686,7 @@ _Sent from House by AD website_`
                                                 Almost There!
                                             </h2>
                                             <p className="text-sm text-muted-foreground">
-                                                Review your summary, then send it to the host via WhatsApp.
+                                                Review your summary and confirm your booking.
                                             </p>
                                         </div>
 
@@ -678,6 +718,12 @@ _Sent from House by AD website_`
                                                 <span className="text-muted-foreground">Guest</span>
                                                 <span className="text-foreground font-medium">{guestName}</span>
                                             </div>
+                                            {guestEmail && (
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-muted-foreground">Email</span>
+                                                    <span className="text-foreground font-medium">{guestEmail}</span>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between items-center">
                                                 <span className="text-muted-foreground">Phone</span>
                                                 <span className="text-foreground font-medium">{guestPhone}</span>
@@ -700,24 +746,86 @@ _Sent from House by AD website_`
                                             </div>
                                         </div>
 
-                                        {/* WhatsApp Send Button */}
+                                        {/* Confirm Booking Button */}
                                         <Button
-                                            onClick={sendToWhatsApp}
-                                            className="w-full h-12 rounded-xl text-base font-semibold bg-[#075E54] hover:bg-[#064E45] text-white gap-2"
+                                            onClick={confirmBooking}
+                                            disabled={bookingSubmitting || bookingConfirmed}
+                                            className="w-full h-12 rounded-xl text-base font-semibold gap-2"
                                         >
-                                            <Send className="h-5 w-5" />
-                                            Send Booking Confirmation
+                                            {bookingSubmitting ? (
+                                                <>
+                                                    <div className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                                                    Submitting...
+                                                </>
+                                            ) : bookingConfirmed ? (
+                                                <>
+                                                    <CheckCircle2 className="h-5 w-5" />
+                                                    Booking Confirmed!
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <CheckCircle2 className="h-5 w-5" />
+                                                    Confirm Booking
+                                                </>
+                                            )}
                                         </Button>
 
-                                        <p className="text-xs text-center text-muted-foreground mt-2">
-                                            This will open WhatsApp with your booking details pre-filled.
-                                        </p>
+                                        {!bookingConfirmed && (
+                                            <p className="text-xs text-center text-muted-foreground mt-2">
+                                                Your booking will be submitted for review.
+                                            </p>
+                                        )}
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
                     </div>
                 </div>
+
+                {/* WhatsApp Suggestion Modal */}
+                <Dialog open={showWhatsAppModal} onOpenChange={(open) => {
+                    setShowWhatsAppModal(open)
+                    if (!open) router.push("/check-in-check-out")
+                }}>
+                    <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden border-0 [&>button]:hidden">
+                        <DialogTitle className="sr-only">Booking Submitted</DialogTitle>
+                        <div className="bg-green-50 dark:bg-green-500/10 px-6 pt-8 pb-5 text-center">
+                            <div className="w-16 h-16 rounded-full bg-[#075E54] flex items-center justify-center mx-auto mb-4">
+                                <svg viewBox="0 0 24 24" className="h-8 w-8 text-white fill-current">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                                    <path d="M12 2C6.477 2 2 6.477 2 12c0 1.89.525 3.66 1.438 5.168L2 22l4.832-1.438A9.955 9.955 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a7.96 7.96 0 01-4.11-1.14L4 20l1.14-3.89A7.96 7.96 0 014 12c0-4.411 3.589-8 8-8s8 3.589 8 8-3.589 8-8 8z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-semibold text-foreground mb-1">
+                                Booking Submitted!
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                Thank you for your booking with us! We'll confirm your booking within 1 hour.
+                                If you provided an email, you'll receive a confirmation email once your booking is approved.
+                                For faster approval, send your booking details directly to the host on WhatsApp.
+                            </p>
+                        </div>
+                        <div className="px-6 pb-6 pt-4 space-y-3">
+                            <Button
+                                onClick={openWhatsApp}
+                                className="w-full h-12 rounded-xl text-base font-semibold bg-[#075E54] hover:bg-[#064E45] text-white gap-2"
+                            >
+                                <Send className="h-5 w-5" />
+                                Send via WhatsApp
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                onClick={() => {
+                                    setShowWhatsAppModal(false)
+                                    router.push("/check-in-check-out")
+                                }}
+                                className="w-full rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-green-500/10"
+                            >
+                                Skip for now
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
 
                 {/* Navigation Buttons — pinned at bottom */}
                 <div className="shrink-0 border-t border-border bg-background px-4 sm:px-6 lg:px-8">
@@ -738,16 +846,6 @@ _Sent from House by AD website_`
                             >
                                 {currentStep === 3 ? "Review & Confirm" : "Continue"}
                                 <ArrowRight className="h-4 w-4" />
-                            </Button>
-                        )}
-
-                        {currentStep === 4 && (
-                            <Button
-                                variant="outline"
-                                onClick={() => router.push("/check-in-check-out")}
-                                className="rounded-xl"
-                            >
-                                Check-in & Check-out Info
                             </Button>
                         )}
                     </div>
