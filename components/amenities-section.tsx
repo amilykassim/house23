@@ -160,10 +160,10 @@ const amenityCategories = [
 ]
 
 const featuredAmenities = [
-  { icon: Car, label: "Free private parking" },
   { icon: Wind, label: "Self check-in" },
-  { icon: Mountain, label: "Lush green view" },
   { icon: Mountain, label: "Dedicated workspace" },
+  { icon: Car, label: "Free private parking" },
+  { icon: Mountain, label: "Lush green view" },
   { icon: Wifi, label: "WiFi" },
   { icon: Utensils, label: "Kitchen" },
   { icon: Coffee, label: "Coffe machine" },
