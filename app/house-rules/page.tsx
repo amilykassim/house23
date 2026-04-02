@@ -122,9 +122,9 @@ export default function HouseRulesPage() {
 
                     <ReadingNavigation
                         prev={{
-                            href: "/check-in-check-out",
-                            title: "Check-in & Check-out",
-                            description: "Missed the arrival details? Head back for check-in times, instructions, and tips.",
+                            href: "/house-guide",
+                            title: "House Guide",
+                            description: "How to use the TV, oven, mirrors, Wi-Fi and more — your complete home manual.",
                         }}
                         next={{
                             href: "/cancellation-policy",

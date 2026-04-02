@@ -25,6 +25,7 @@ const footerLinks = [
     title: "Policies",
     links: [
       { label: "Check-in / Check-out", href: "/check-in-check-out" },
+      { label: "House Guide", href: "/house-guide" },
       { label: "House Rules", href: "/house-rules" },
       { label: "Cancellation Policy", href: "/cancellation-policy" },
     ],

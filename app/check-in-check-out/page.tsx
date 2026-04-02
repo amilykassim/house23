@@ -121,9 +121,9 @@ export default function CheckInCheckOutPage() {
 
                     <ReadingNavigation
                         next={{
-                            href: "/house-rules",
-                            title: "House Rules",
-                            description: "A few simple guidelines to make sure everyone has a great stay.",
+                            href: "/house-guide",
+                            title: "House Guide",
+                            description: "How to use the TV, oven, mirrors, Wi-Fi and more — your complete home manual.",
                         }}
                     />
                 </div>

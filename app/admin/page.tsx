@@ -324,7 +324,7 @@ export default function AdminDashboardPage() {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left: Revenue Chart + House Performance */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-24 lg:self-start">
                     {/* Revenue Chart */}
                     <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
                         <div className="flex items-center justify-between mb-6">
@@ -646,141 +646,182 @@ export default function AdminDashboardPage() {
                         </div>
                     )}
 
-                    {/* Currently Hosting */}
-                    {stats.currentlyHosting.length > 0 && (
-                        <div className="bg-card rounded-2xl border border-border p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <h2 className="text-base font-semibold text-foreground">
-                                    Currently Hosting
-                                </h2>
-                            </div>
-                            <div className="space-y-3">
-                                {stats.currentlyHosting.map((b) => (
-                                    <div
-                                        key={b.id}
-                                        className="p-3 rounded-xl bg-green-500/5 border border-green-500/10"
-                                    >
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-sm font-medium text-foreground">
-                                                {b.guestName}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {b.houseName}
-                                            </span>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Checks out{" "}
-                                            {format(parseISO(b.checkOut), "MMM d")}
-                                            {" · "}
-                                            {b.guests} guest{b.guests > 1 ? "s" : ""}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                </div>
+            </div>
 
-                    {/* Recent Bookings */}
+            {/* Full-width section: Currently Hosting + Recent Bookings */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                {/* Currently Hosting */}
+                {stats.currentlyHosting.length > 0 && (
                     <div className="bg-card rounded-2xl border border-border p-5">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                             <h2 className="text-base font-semibold text-foreground">
-                                Recent Bookings
+                                Currently Hosting
                             </h2>
-                            <Link
-                                href="/admin/bookings"
-                                className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                            >
-                                View all
-                                <ChevronRight className="h-3 w-3" />
-                            </Link>
                         </div>
-                        <div className="space-y-2">
-                            {bookings.slice(0, 5).map((booking) => {
-                                const isExpanded = expandedRecent === booking.id
-                                return (
-                                    <div key={booking.id} className="rounded-xl overflow-hidden">
-                                        <button
-                                            onClick={() => setExpandedRecent(isExpanded ? null : booking.id)}
-                                            className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
-                                        >
-                                            <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                                <span className="text-xs font-semibold text-foreground">
-                                                    {booking.guestName
-                                                        .split(" ")
-                                                        .map((n) => n[0])
-                                                        .join("")
-                                                        .slice(0, 2)}
+                        <div className="space-y-3">
+                            {stats.currentlyHosting.map((b) => (
+                                <div
+                                    key={b.id}
+                                    className="p-3 rounded-xl bg-green-500/5 border border-green-500/10"
+                                >
+                                    <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-medium text-foreground">
+                                            {b.guestName}
+                                        </span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {b.houseName}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                        Checks out{" "}
+                                        {format(parseISO(b.checkOut), "MMM d")}
+                                        {" · "}
+                                        {b.guests} guest{b.guests > 1 ? "s" : ""}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Recent Bookings - moved to full width */}
+                <div className={`bg-card rounded-2xl border border-border p-5 ${stats.currentlyHosting.length === 0 ? "lg:col-span-2" : ""}`}>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-base font-semibold text-foreground">
+                            Recent Bookings
+                        </h2>
+                        <Link
+                            href="/admin/bookings"
+                            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                        >
+                            View all
+                            <ChevronRight className="h-3 w-3" />
+                        </Link>
+                    </div>
+                    <div className="space-y-2">
+                        {bookings.slice(0, 5).map((booking) => {
+                            const isExpanded = expandedRecent === booking.id
+                            return (
+                                <div key={booking.id} className="rounded-xl overflow-hidden">
+                                    <button
+                                        onClick={() => setExpandedRecent(isExpanded ? null : booking.id)}
+                                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
+                                    >
+                                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                            <span className="text-xs font-semibold text-foreground">
+                                                {booking.guestName
+                                                    .split(" ")
+                                                    .map((n) => n[0])
+                                                    .join("")
+                                                    .slice(0, 2)}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-foreground truncate">
+                                                {booking.guestName}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {booking.houseName} ·{" "}
+                                                {format(parseISO(booking.checkIn), "MMM d")} →{" "}
+                                                {format(parseISO(booking.checkOut), "MMM d")}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 shrink-0">
+                                            <div className="text-right">
+                                                <p className="text-sm font-semibold text-foreground">
+                                                    ${booking.total}
+                                                </p>
+                                                <span
+                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${statusColors[booking.status]}`}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${statusDots[booking.status]}`} />
+                                                    {booking.status}
                                                 </span>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-foreground truncate">
-                                                    {booking.guestName}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {booking.houseName} ·{" "}
-                                                    {format(parseISO(booking.checkIn), "MMM d")} →{" "}
-                                                    {format(parseISO(booking.checkOut), "MMM d")}
-                                                </p>
-                                            </div>
-                                            <div className="flex items-center gap-2 shrink-0">
-                                                <div className="text-right">
-                                                    <p className="text-sm font-semibold text-foreground">
-                                                        ${booking.total}
-                                                    </p>
-                                                    <span
-                                                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${statusColors[booking.status]}`}
-                                                    >
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${statusDots[booking.status]}`} />
-                                                        {booking.status}
-                                                    </span>
-                                                </div>
-                                                <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                                            </div>
-                                        </button>
-                                        <AnimatePresence initial={false}>
-                                            {isExpanded && (
-                                                <motion.div
-                                                    initial={{ height: 0, opacity: 0 }}
-                                                    animate={{ height: "auto", opacity: 1 }}
-                                                    exit={{ height: 0, opacity: 0 }}
-                                                    transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                                                    className="overflow-hidden"
-                                                >
-                                                    <div className="px-3 pb-3 pt-1 space-y-2.5">
-                                                        <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Phone</span>
-                                                                <span className="text-foreground flex items-center gap-1">
-                                                                    <Phone className="h-3 w-3" />
-                                                                    {booking.guestPhone}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Guests</span>
-                                                                <span className="text-foreground">{booking.guests}</span>
-                                                            </div>
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">Total</span>
-                                                                <span className="text-foreground font-semibold">${booking.total} · {booking.totalRwf.toLocaleString()} RWF</span>
-                                                            </div>
-                                                            {booking.momoTransactionId && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-muted-foreground">MoMo</span>
-                                                                    <span className="text-foreground font-mono">{booking.momoTransactionId}</span>
-                                                                </div>
-                                                            )}
+                                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                                        </div>
+                                    </button>
+                                    <AnimatePresence initial={false}>
+                                        {isExpanded && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                                                className="overflow-hidden"
+                                            >
+                                                <div className="px-3 pb-3 pt-1 space-y-2.5">
+                                                    <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Phone</span>
+                                                            <span className="text-foreground flex items-center gap-1">
+                                                                <Phone className="h-3 w-3" />
+                                                                {booking.guestPhone}
+                                                            </span>
                                                         </div>
-                                                        {/* Quick status change */}
-                                                        <div className="flex flex-wrap items-center gap-1.5">
-                                                            <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
-                                                            {isAfter(new Date(), parseISO(booking.checkOut)) ? (
-                                                                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                                                    <AlertCircle className="h-3 w-3" />
-                                                                    Check-out passed — no actions
-                                                                </span>
-                                                            ) : (<>
-                                                                {booking.status === "confirmed" && (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Guests</span>
+                                                            <span className="text-foreground">{booking.guests}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">Total</span>
+                                                            <span className="text-foreground font-semibold">${booking.total} · {booking.totalRwf.toLocaleString()} RWF</span>
+                                                        </div>
+                                                        {booking.momoTransactionId && (
+                                                            <div className="flex justify-between">
+                                                                <span className="text-muted-foreground">MoMo</span>
+                                                                <span className="text-foreground font-mono">{booking.momoTransactionId}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    {/* Quick status change */}
+                                                    <div className="flex flex-wrap items-center gap-1.5">
+                                                        <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
+                                                        {isAfter(new Date(), parseISO(booking.checkOut)) ? (
+                                                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                                                                <AlertCircle className="h-3 w-3" />
+                                                                Check-out passed — no actions
+                                                            </span>
+                                                        ) : (<>
+                                                            {booking.status === "confirmed" && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setConfirmingBooking(null)
+                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                        setSelectedReason("dates_unavailable")
+                                                                    }}
+                                                                    disabled={actionLoading === booking.id}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <Undo2 className="h-3 w-3" />
+                                                                    Undo Accept
+                                                                </button>
+                                                            )}
+                                                            {booking.status === "cancelled" && (
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setRejectingBooking(null)
+                                                                        setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
+                                                                    }}
+                                                                    disabled={actionLoading === booking.id}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    <Undo2 className="h-3 w-3" />
+                                                                    Undo Reject
+                                                                </button>
+                                                            )}
+                                                            {booking.status === "pending" && (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => handleReview(booking.id, "confirmed")}
+                                                                        disabled={actionLoading === booking.id}
+                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                                                                    >
+                                                                        <CheckCircle2 className="h-3 w-3" />
+                                                                        Accept
+                                                                    </button>
                                                                     <button
                                                                         onClick={() => {
                                                                             setConfirmingBooking(null)
@@ -790,162 +831,125 @@ export default function AdminDashboardPage() {
                                                                         disabled={actionLoading === booking.id}
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                                     >
-                                                                        <Undo2 className="h-3 w-3" />
-                                                                        Undo Accept
+                                                                        <XCircle className="h-3 w-3" />
+                                                                        Reject
                                                                     </button>
-                                                                )}
-                                                                {booking.status === "cancelled" && (
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setRejectingBooking(null)
-                                                                            setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
-                                                                        }}
-                                                                        disabled={actionLoading === booking.id}
-                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <Undo2 className="h-3 w-3" />
-                                                                        Undo Reject
-                                                                    </button>
-                                                                )}
-                                                                {booking.status === "pending" && (
-                                                                    <>
-                                                                        <button
-                                                                            onClick={() => handleReview(booking.id, "confirmed")}
-                                                                            disabled={actionLoading === booking.id}
-                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                                        >
-                                                                            <CheckCircle2 className="h-3 w-3" />
-                                                                            Accept
-                                                                        </button>
+                                                                </>
+                                                            )}
+                                                        </>)}
+                                                        <Link
+                                                            href="/admin/bookings"
+                                                            className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                                                        >
+                                                            Full details →
+                                                        </Link>
+                                                    </div>
+                                                    <AnimatePresence initial={false}>
+                                                        {confirmingBooking === booking.id && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="mt-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-2.5">
+                                                                    <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
+                                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                                                                        <div className="space-y-0.5">
+                                                                            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before confirming</p>
+                                                                            <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
+                                                                                This will send a confirmation email to <strong>{booking.guestName}</strong> and block the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="flex items-center gap-1.5 pt-1">
                                                                         <button
                                                                             onClick={() => {
                                                                                 setConfirmingBooking(null)
-                                                                                setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                                setSelectedReason("dates_unavailable")
+                                                                                handleReview(booking.id, "confirmed")
                                                                             }}
                                                                             disabled={actionLoading === booking.id}
-                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
                                                                         >
-                                                                            <XCircle className="h-3 w-3" />
-                                                                            Reject
+                                                                            <CheckCircle2 className="h-3 w-3" />
+                                                                            Proceed
                                                                         </button>
-                                                                    </>
-                                                                )}
-                                                            </>)}
-                                                            <Link
-                                                                href="/admin/bookings"
-                                                                className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                                                                        <button
+                                                                            onClick={() => setConfirmingBooking(null)}
+                                                                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                    <AnimatePresence initial={false}>
+                                                        {rejectingBooking === booking.id && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: "auto", opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                                                                className="overflow-hidden"
                                                             >
-                                                                Full details →
-                                                            </Link>
-                                                        </div>
-                                                        <AnimatePresence initial={false}>
-                                                            {confirmingBooking === booking.id && (
-                                                                <motion.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: "auto", opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                    className="overflow-hidden"
-                                                                >
-                                                                    <div className="mt-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-2.5">
+                                                                <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
+                                                                    {booking.status === "confirmed" && (
                                                                         <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
                                                                             <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
                                                                             <div className="space-y-0.5">
-                                                                                <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before confirming</p>
+                                                                                <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before cancelling</p>
                                                                                 <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-                                                                                    This will send a confirmation email to <strong>{booking.guestName}</strong> and block the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
+                                                                                    This will send a cancellation email to <strong>{booking.guestName}</strong> and unblock the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
                                                                                 </p>
                                                                             </div>
                                                                         </div>
-                                                                        <div className="flex items-center gap-1.5 pt-1">
+                                                                    )}
+                                                                    <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
+                                                                    <div className="space-y-1">
+                                                                        {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
                                                                             <button
-                                                                                onClick={() => {
-                                                                                    setConfirmingBooking(null)
-                                                                                    handleReview(booking.id, "confirmed")
-                                                                                }}
-                                                                                disabled={actionLoading === booking.id}
-                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
+                                                                                key={reason}
+                                                                                onClick={() => setSelectedReason(reason)}
+                                                                                className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
+                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
+                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
+                                                                                    }`}
                                                                             >
-                                                                                <CheckCircle2 className="h-3 w-3" />
-                                                                                Proceed
+                                                                                {selectedReason === reason && <span className="mr-1">&#10003;</span>}
+                                                                                {REJECTION_REASONS[reason].label}
                                                                             </button>
-                                                                            <button
-                                                                                onClick={() => setConfirmingBooking(null)}
-                                                                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-                                                                        </div>
+                                                                        ))}
                                                                     </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                        <AnimatePresence initial={false}>
-                                                            {rejectingBooking === booking.id && (
-                                                                <motion.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: "auto", opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                    className="overflow-hidden"
-                                                                >
-                                                                    <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
-                                                                        {booking.status === "confirmed" && (
-                                                                            <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                                                                                <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                                                                <div className="space-y-0.5">
-                                                                                    <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before cancelling</p>
-                                                                                    <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-                                                                                        This will send a cancellation email to <strong>{booking.guestName}</strong> and unblock the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                        <div className="space-y-1">
-                                                                            {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
-                                                                                <button
-                                                                                    key={reason}
-                                                                                    onClick={() => setSelectedReason(reason)}
-                                                                                    className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
-                                                                                        ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                        : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                        }`}
-                                                                                >
-                                                                                    {selectedReason === reason && <span className="mr-1">&#10003;</span>}
-                                                                                    {REJECTION_REASONS[reason].label}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                        <div className="flex items-center gap-1.5 pt-1">
-                                                                            <button
-                                                                                onClick={() => handleReview(booking.id, "cancelled", selectedReason)}
-                                                                                disabled={actionLoading === booking.id}
-                                                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                            >
-                                                                                <XCircle className="h-3 w-3" />
-                                                                                Confirm Rejection
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setRejectingBooking(null)}
-                                                                                className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-                                                                        </div>
+                                                                    <div className="flex items-center gap-1.5 pt-1">
+                                                                        <button
+                                                                            onClick={() => handleReview(booking.id, "cancelled", selectedReason)}
+                                                                            disabled={actionLoading === booking.id}
+                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                        >
+                                                                            <XCircle className="h-3 w-3" />
+                                                                            Confirm Rejection
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setRejectingBooking(null)}
+                                                                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                                                        >
+                                                                            Cancel
+                                                                        </button>
                                                                     </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                )
-                            })}
-                        </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             </div>
