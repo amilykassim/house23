@@ -111,7 +111,7 @@ export function Footer() {
               <Mail className="h-4 w-4" />
               <span className="text-sm">hello@House by AD.com</span>
             </a>
-            <a href="tel:+1-310-555-0123" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
+            <a href="tel:+250788459885" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
               <Phone className="h-4 w-4" />
               <span className="text-sm">+(250) 788-459-885</span>
             </a>

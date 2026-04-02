@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 import { cva, type VariantProps } from "class-variance-authority"
 
 const animatedButtonVariants = cva(
-    "group/btn relative inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] overflow-hidden cursor-pointer",
+    "group/btn relative inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] overflow-hidden cursor-pointer touch-manipulation",
     {
         variants: {
             variant: {
@@ -60,10 +60,10 @@ export function AnimatedButton({
             {...props}
         >
             <div className="relative overflow-hidden h-[1lh] w-full flex items-center justify-center">
-                <span className="flex items-center justify-center w-full transition-transform duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] group-hover/btn:-translate-y-full">
+                <span className="flex items-center justify-center w-full transition-transform duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] group-hover/btn:-translate-y-full group-active/btn:-translate-y-full">
                     {children}
                 </span>
-                <span className="absolute top-full left-0 flex items-center justify-center w-full transition-transform duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] group-hover/btn:-translate-y-full">
+                <span className="absolute top-full left-0 flex items-center justify-center w-full transition-transform duration-300 ease-[cubic-bezier(0.77,0,0.175,1)] group-hover/btn:-translate-y-full group-active/btn:-translate-y-full">
                     {hoverText}
                 </span>
             </div>

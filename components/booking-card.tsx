@@ -168,7 +168,7 @@ export function BookingCard({
           }
         }}>
           <PopoverTrigger asChild>
-            <button className="w-full grid grid-cols-2 divide-x divide-border text-left">
+            <button className="w-full grid grid-cols-2 divide-x divide-border text-left touch-manipulation">
               <div className={`p-3 transition-colors ${selectingStart && calendarOpen ? 'bg-muted' : 'hover:bg-muted/50'}`}>
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-foreground mb-0.5">
                   Check-in
@@ -318,7 +318,7 @@ export function BookingCard({
                         weekdays: "flex mb-2",
                         weekday: "text-muted-foreground rounded-md w-10 font-medium text-xs",
                         week: "flex w-full",
-                        day: "h-10 w-10 text-center text-sm p-0 relative focus-within:relative focus-within:z-20 rounded-full",
+                        day: "h-10 w-10 text-center text-sm p-0 relative focus-within:relative focus-within:z-20 rounded-full touch-manipulation",
                         range_start: "rounded-full",
                         range_end: "rounded-full",
                         range_middle: "bg-muted/50 rounded-none",
@@ -339,13 +339,17 @@ export function BookingCard({
 
                           return (
                             <div
-                              onMouseEnter={() => setHoveredDate(dayDate)}
-                              onMouseLeave={() => setHoveredDate(null)}
+                              onPointerEnter={(e) => {
+                                if (e.pointerType === 'mouse') setHoveredDate(dayDate)
+                              }}
+                              onPointerLeave={(e) => {
+                                if (e.pointerType === 'mouse') setHoveredDate(null)
+                              }}
                               className={isInHoverRange ? 'bg-primary/5' : ''}
                             >
                               <CalendarDayButton
                                 {...props}
-                                className="hover:bg-transparent hover:text-foreground hover:border hover:border-foreground/30 hover:rounded-full data-[range-start=true]:bg-transparent data-[range-start=true]:text-foreground data-[range-start=true]:border-2 data-[range-start=true]:border-foreground data-[range-start=true]:rounded-full data-[range-end=true]:bg-transparent data-[range-end=true]:text-foreground data-[range-end=true]:border-2 data-[range-end=true]:border-foreground data-[range-end=true]:rounded-full data-[selected-single=true]:bg-transparent data-[selected-single=true]:text-foreground data-[selected-single=true]:border-2 data-[selected-single=true]:border-foreground data-[selected-single=true]:rounded-full data-[range-middle=true]:bg-transparent data-[range-middle=true]:text-foreground data-[range-middle=true]:rounded-none dark:hover:text-foreground"
+                                className="touch-manipulation hover:bg-transparent hover:text-foreground hover:border hover:border-foreground/30 hover:rounded-full data-[range-start=true]:bg-transparent data-[range-start=true]:text-foreground data-[range-start=true]:border-2 data-[range-start=true]:border-foreground data-[range-start=true]:rounded-full data-[range-end=true]:bg-transparent data-[range-end=true]:text-foreground data-[range-end=true]:border-2 data-[range-end=true]:border-foreground data-[range-end=true]:rounded-full data-[selected-single=true]:bg-transparent data-[selected-single=true]:text-foreground data-[selected-single=true]:border-2 data-[selected-single=true]:border-foreground data-[selected-single=true]:rounded-full data-[range-middle=true]:bg-transparent data-[range-middle=true]:text-foreground data-[range-middle=true]:rounded-none dark:hover:text-foreground"
                               />
                             </div>
                           )
