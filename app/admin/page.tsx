@@ -27,6 +27,7 @@ import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
+import { broadcastCalendarRefresh } from "@/lib/calendar-events"
 
 interface Booking {
     id: string
@@ -104,6 +105,8 @@ export default function AdminDashboardPage() {
                 setBookings((prev) =>
                     prev.map((b) => (b.id === id ? { ...b, status: action } : b))
                 )
+                // Notify other tabs (booking card) to refresh their calendar
+                broadcastCalendarRefresh(booking?.house)
                 setTimeout(() => {
                     if (action === "confirmed") {
                         toast("Booking Confirmed!", {

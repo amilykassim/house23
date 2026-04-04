@@ -136,7 +136,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "TxId:27034012567",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-03-31T19:45:00Z"
   },
   {
@@ -319,7 +319,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "fasfasfasfasfa",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "cancelled",
     "createdAt": "2026-04-01T11:11:54.199Z"
   },
   {
@@ -340,7 +340,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "asfasfasfa",
     "specialRequests": "",
-    "status": "cancelled",
+    "status": "confirmed",
     "createdAt": "2026-04-01T11:34:28.338Z"
   },
   {
@@ -361,7 +361,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "afasfasfafa",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "cancelled",
     "createdAt": "2026-04-01T11:41:43.204Z"
   },
   {
@@ -424,7 +424,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "asfasfasfasf",
     "specialRequests": "",
-    "status": "confirmed",
+    "status": "cancelled",
     "createdAt": "2026-04-01T11:55:38.964Z"
   },
   {

@@ -13,6 +13,7 @@ import { CalendarDayButton } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { DateRange } from "react-day-picker"
+import { onCalendarRefresh } from "@/lib/calendar-events"
 
 const DISCOUNT_AMOUNT = 10
 
@@ -68,27 +69,39 @@ export function BookingCard({
     setMounted(true)
   }, [])
 
-  useEffect(() => {
+  const fetchBlockedDates = useCallback(() => {
     // Fetch manually blocked dates
     fetch(`/api/blocked-dates?house=${slug}`)
       .then((res) => res.json())
-      .then((data) => setBlockedDates(new Set(data.dates || [])))
-      .catch(() => { })
-
-    // Fetch Airbnb booked dates
-    fetch(`/api/airbnb-sync?house=${slug}`)
-      .then((res) => res.json())
       .then((data) => {
-        if (data.dates?.length) {
-          setBlockedDates((prev) => {
-            const merged = new Set(prev)
-            data.dates.forEach((d: string) => merged.add(d))
-            return merged
+        const dates = new Set<string>(data.dates || [])
+        // Also fetch Airbnb booked dates and merge
+        fetch(`/api/airbnb-sync?house=${slug}`)
+          .then((res) => res.json())
+          .then((airbnb) => {
+            if (airbnb.dates?.length) {
+              airbnb.dates.forEach((d: string) => dates.add(d))
+            }
+            setBlockedDates(dates)
           })
-        }
+          .catch(() => setBlockedDates(dates))
       })
       .catch(() => { })
   }, [slug])
+
+  useEffect(() => {
+    fetchBlockedDates()
+  }, [fetchBlockedDates])
+
+  // Listen for cross-tab calendar refresh events from admin actions
+  useEffect(() => {
+    return onCalendarRefresh((house) => {
+      // Refresh if the event is for this house or no house specified
+      if (!house || house === slug) {
+        fetchBlockedDates()
+      }
+    })
+  }, [slug, fetchBlockedDates])
 
   const isDateBlocked = useCallback(
     (date: Date) => blockedDates.has(format(date, "yyyy-MM-dd")),
