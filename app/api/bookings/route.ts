@@ -86,19 +86,28 @@ export async function GET(request: NextRequest) {
     const house = searchParams.get("house")
     const status = searchParams.get("status")
 
-    let bookings = await readBookings()
+    console.log(`[bookings GET] Fetching bookings, house=${house}, status=${status}`)
 
-    if (house) {
-        bookings = bookings.filter((b) => b.house === house)
+    try {
+        let bookings = await readBookings()
+        console.log(`[bookings GET] Raw bookings count: ${bookings.length}`)
+
+        if (house) {
+            bookings = bookings.filter((b) => b.house === house)
+        }
+        if (status) {
+            bookings = bookings.filter((b) => b.status === status)
+        }
+
+        // Sort by createdAt descending
+        bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+        console.log(`[bookings GET] Returning ${bookings.length} bookings`)
+        return NextResponse.json({ bookings })
+    } catch (error) {
+        console.error(`[bookings GET] ERROR:`, error)
+        return NextResponse.json({ bookings: [], error: String(error) }, { status: 500 })
     }
-    if (status) {
-        bookings = bookings.filter((b) => b.status === status)
-    }
-
-    // Sort by createdAt descending
-    bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-    return NextResponse.json({ bookings })
 }
 
 export async function POST(request: NextRequest) {
