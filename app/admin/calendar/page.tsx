@@ -18,7 +18,6 @@ import {
 import { ChevronLeft, ChevronRight, Lock, Unlock, Loader2, RefreshCw, Copy, Check, ExternalLink, Link2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { houses } from "@/lib/houses"
-import { broadcastCalendarRefresh } from "@/lib/calendar-events"
 
 interface AirbnbEvent {
     start: string
@@ -130,7 +129,6 @@ export default function AdminCalendarPage() {
             setBlockedDates(new Set(data.dates || []))
             setSelectedDates(new Set())
             setMessage({ type: "success", text: `${selectedDates.size} date(s) blocked` })
-            broadcastCalendarRefresh(selectedHouse)
         } catch {
             setMessage({ type: "error", text: "Failed to block dates" })
         } finally {
@@ -156,7 +154,6 @@ export default function AdminCalendarPage() {
             setBlockedDates(new Set(data.dates || []))
             setSelectedDates(new Set())
             setMessage({ type: "success", text: `${selectedDates.size} date(s) unblocked` })
-            broadcastCalendarRefresh(selectedHouse)
         } catch {
             setMessage({ type: "error", text: "Failed to unblock dates" })
         } finally {
