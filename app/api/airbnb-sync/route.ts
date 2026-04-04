@@ -1,24 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
-
-const CONFIG_FILE = path.join(process.cwd(), "data", "calendar-config.json")
+import { readData, writeData } from "@/lib/storage"
 
 interface CalendarConfig {
     airbnbIcalUrl: string
-}
-
-function readConfig(): Record<string, CalendarConfig> {
-    try {
-        const raw = fs.readFileSync(CONFIG_FILE, "utf-8")
-        return JSON.parse(raw)
-    } catch {
-        return {}
-    }
-}
-
-function writeConfig(data: Record<string, CalendarConfig>) {
-    fs.writeFileSync(CONFIG_FILE, JSON.stringify(data, null, 2))
 }
 
 // Parse iCal data to extract booked date ranges
@@ -89,7 +73,7 @@ export async function GET(request: NextRequest) {
         )
     }
 
-    const config = readConfig()
+    const config = await readData<Record<string, CalendarConfig>>("calendar-config.json", {})
     const houseConfig = config[house]
 
     if (!houseConfig?.airbnbIcalUrl) {
@@ -150,12 +134,12 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const config = readConfig()
+    const config = await readData<Record<string, CalendarConfig>>("calendar-config.json", {})
     config[house] = {
         ...config[house],
         airbnbIcalUrl: airbnbIcalUrl || "",
     }
-    writeConfig(config)
+    await writeData("calendar-config.json", config)
 
     return NextResponse.json({ success: true, config: config[house] })
 }

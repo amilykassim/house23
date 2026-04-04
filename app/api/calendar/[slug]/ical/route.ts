@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
-
-const DATA_FILE = path.join(process.cwd(), "data", "blocked-dates.json")
-
-function readBlockedDates(): Record<string, string[]> {
-    try {
-        const raw = fs.readFileSync(DATA_FILE, "utf-8")
-        return JSON.parse(raw)
-    } catch {
-        return {}
-    }
-}
+import { readData } from "@/lib/storage"
 
 function formatICalDate(dateStr: string): string {
     // dateStr is "yyyy-MM-dd", convert to "YYYYMMDD"
@@ -32,7 +20,7 @@ export async function GET(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     const { slug } = await params
-    const data = readBlockedDates()
+    const data = await readData<Record<string, string[]>>("blocked-dates.json", {})
     const dates = (data[slug] || []).sort()
 
     // Group consecutive dates into ranges for cleaner iCal output

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import fs from "fs"
-import path from "path"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
-
-const DATA_FILE = path.join(process.cwd(), "data", "bookings.json")
-const BLOCKED_DATES_FILE = path.join(process.cwd(), "data", "blocked-dates.json")
+import { readData, writeData } from "@/lib/storage"
 
 export interface Booking {
     id: string
@@ -28,30 +24,20 @@ export interface Booking {
     createdAt: string
 }
 
-function readBookings(): Booking[] {
-    try {
-        const raw = fs.readFileSync(DATA_FILE, "utf-8")
-        return JSON.parse(raw)
-    } catch {
-        return []
-    }
+async function readBookings(): Promise<Booking[]> {
+    return readData<Booking[]>("bookings.json", [])
 }
 
-function writeBookings(data: Booking[]) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2))
+async function writeBookings(data: Booking[]): Promise<void> {
+    await writeData("bookings.json", data)
 }
 
-function readBlockedDates(): Record<string, string[]> {
-    try {
-        const raw = fs.readFileSync(BLOCKED_DATES_FILE, "utf-8")
-        return JSON.parse(raw)
-    } catch {
-        return {}
-    }
+async function readBlockedDates(): Promise<Record<string, string[]>> {
+    return readData<Record<string, string[]>>("blocked-dates.json", {})
 }
 
-function writeBlockedDates(data: Record<string, string[]>) {
-    fs.writeFileSync(BLOCKED_DATES_FILE, JSON.stringify(data, null, 2))
+async function writeBlockedDates(data: Record<string, string[]>): Promise<void> {
+    await writeData("blocked-dates.json", data)
 }
 
 function getDatesBetween(checkIn: string, checkOut: string): string[] {
@@ -68,26 +54,26 @@ function getDatesBetween(checkIn: string, checkOut: string): string[] {
     return dates
 }
 
-function blockDatesForBooking(house: string, checkIn: string, checkOut: string) {
-    const blockedDates = readBlockedDates()
+async function blockDatesForBooking(house: string, checkIn: string, checkOut: string) {
+    const blockedDates = await readBlockedDates()
     const current = new Set(blockedDates[house] || [])
     const dates = getDatesBetween(checkIn, checkOut)
     dates.forEach((d) => current.add(d))
     blockedDates[house] = Array.from(current).sort()
-    writeBlockedDates(blockedDates)
+    await writeBlockedDates(blockedDates)
 }
 
-function unblockDatesForBooking(house: string, checkIn: string, checkOut: string) {
-    const blockedDates = readBlockedDates()
+async function unblockDatesForBooking(house: string, checkIn: string, checkOut: string) {
+    const blockedDates = await readBlockedDates()
     const current = new Set(blockedDates[house] || [])
     const dates = getDatesBetween(checkIn, checkOut)
     dates.forEach((d) => current.delete(d))
     blockedDates[house] = Array.from(current).sort()
-    writeBlockedDates(blockedDates)
+    await writeBlockedDates(blockedDates)
 }
 
-function generateId(): string {
-    const bookings = readBookings()
+async function generateId(): Promise<string> {
+    const bookings = await readBookings()
     const maxNum = bookings.reduce((max, b) => {
         const num = parseInt(b.id.replace("BK-", ""), 10)
         return num > max ? num : max
@@ -100,7 +86,7 @@ export async function GET(request: NextRequest) {
     const house = searchParams.get("house")
     const status = searchParams.get("status")
 
-    let bookings = readBookings()
+    let bookings = await readBookings()
 
     if (house) {
         bookings = bookings.filter((b) => b.house === house)
@@ -143,9 +129,9 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const bookings = readBookings()
+    const bookings = await readBookings()
     const newBooking: Booking = {
-        id: generateId(),
+        id: await generateId(),
         house,
         houseName: houseName || house,
         guestName,
@@ -167,7 +153,7 @@ export async function POST(request: NextRequest) {
     }
 
     bookings.push(newBooking)
-    writeBookings(bookings)
+    await writeBookings(bookings)
 
     // Send emails (non-blocking)
     const emailData = {
@@ -203,7 +189,7 @@ export async function PATCH(request: NextRequest) {
         )
     }
 
-    const bookings = readBookings()
+    const bookings = await readBookings()
     const index = bookings.findIndex((b) => b.id === id)
 
     if (index === -1) {
@@ -215,14 +201,14 @@ export async function PATCH(request: NextRequest) {
 
     const previousStatus = bookings[index].status
     bookings[index].status = status
-    writeBookings(bookings)
+    await writeBookings(bookings)
 
     // Auto-block dates when confirming, unblock when moving away from confirmed
     const booking = bookings[index]
     if (status === "confirmed" && previousStatus !== "confirmed") {
-        blockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
+        await blockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
     } else if (status !== "confirmed" && previousStatus === "confirmed") {
-        unblockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
+        await unblockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
     }
 
     // Send email notifications (non-blocking)
@@ -262,7 +248,7 @@ export async function DELETE(request: NextRequest) {
         )
     }
 
-    const bookings = readBookings()
+    const bookings = await readBookings()
     const index = bookings.findIndex((b) => b.id === id)
 
     if (index === -1) {
@@ -280,7 +266,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     bookings.splice(index, 1)
-    writeBookings(bookings)
+    await writeBookings(bookings)
 
     return NextResponse.json({ success: true })
 }
