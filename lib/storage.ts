@@ -6,7 +6,7 @@ import path from "path"
  * Set to true  → use Vercel Blob everywhere (local dev + production).
  * Set to false → use local filesystem in dev, Vercel Blob only on Vercel.
  */
-const USE_BLOBS_LOCALLY = false
+const USE_BLOBS_LOCALLY = true
 
 const isVercel = !!process.env.VERCEL
 const useBlob = isVercel || USE_BLOBS_LOCALLY
@@ -15,8 +15,12 @@ const useBlob = isVercel || USE_BLOBS_LOCALLY
 
 async function readBlob<T>(key: string): Promise<T | null> {
     try {
-        const result = await get(key, { access: "private", token: process.env.BLOB_READ_WRITE_TOKEN })
-        if (!result || result.statusCode !== 200 || !result.stream) {
+        const result = await get(key, {
+            access: "private",
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+            useCache: false, // always fetch fresh content, never 304
+        })
+        if (!result || !result.stream) {
             return null
         }
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { readData, writeData } from "@/lib/storage"
 
+export const dynamic = "force-dynamic"
+
 interface CalendarConfig {
     airbnbIcalUrl: string
 }

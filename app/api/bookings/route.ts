@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
 import { readData, writeData } from "@/lib/storage"
 
+export const dynamic = "force-dynamic"
+
 export interface Booking {
     id: string
     house: string
