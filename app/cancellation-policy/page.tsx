@@ -5,8 +5,8 @@ import { ShieldCheck, Clock, AlertTriangle, CalendarX, RefreshCw } from "lucide-
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "Cancellation Policy | House by AD",
-    description: "Cancellation policy for bookings at House by AD.",
+    title: "Cancellation Policy | Velstays",
+    description: "Cancellation policy for bookings at Velstays.",
 }
 
 const policies = [

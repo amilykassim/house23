@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         {/* Logo */}
                         <Link href="/admin" className="flex items-center gap-2">
                             <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
-                                House by AD
+                                Velstays
                             </span>
                         </Link>
 

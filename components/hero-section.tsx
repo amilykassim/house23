@@ -27,7 +27,7 @@ export function HeroSection({ house }: HeroSectionProps) {
       <motion.div className="absolute inset-0 pt-16" style={{ y: imageY }}>
         <Image
           src={house.heroImage}
-          alt={`${house.name} - Luxury vacation home exterior`}
+          alt={`${house.name} - vacation home exterior`}
           fill
           className="object-cover"
           priority
@@ -65,7 +65,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               transition={{ duration: 0.7, delay: 0.35, ease: [0.21, 0.47, 0.32, 0.98] }}
               className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-white/90 leading-tight mb-4 drop-shadow-lg text-balance"
             >
-              {house.name}
+             Velstays · {house.name}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}

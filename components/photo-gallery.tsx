@@ -14,7 +14,7 @@ interface PhotoGalleryProps {
   houseName?: string
 }
 
-export function PhotoGallery({ photos, allPhotos, houseName = "House by AD" }: PhotoGalleryProps) {
+export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: PhotoGalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [showAllPhotos, setShowAllPhotos] = useState(false)

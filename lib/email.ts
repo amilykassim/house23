@@ -7,7 +7,7 @@ const EMAILS_DISABLED = false
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM_EMAIL = process.env.FROM_EMAIL || "House by AD <bookings@resend.dev>"
+const FROM_EMAIL = process.env.FROM_EMAIL || "Velstays <bookings@resend.dev>"
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "amilykassim012@gmail.com"
 
 interface BookingEmailData {
@@ -40,7 +40,7 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: data.guestEmail,
-            subject: `Booking Received — House by AD ${data.houseName}`,
+            subject: `Booking Received — Velstays ${data.houseName}`,
             html: `
 <!DOCTYPE html>
 <html>
@@ -53,7 +53,7 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
         <div style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
             <!-- Header -->
             <div style="background:#18181b;padding:32px 24px;text-align:center;">
-                <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">🏠 House by AD</h1>
+                <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">🏠 Velstays</h1>
                 <p style="color:#a1a1aa;font-size:13px;margin:0;">Booking Request Received</p>
             </div>
 
@@ -79,7 +79,7 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
                         </tr>
                         <tr>
                             <td style="color:#71717a;font-size:13px;padding:4px 0;">Property</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">House by AD ${data.houseName}</td>
+                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">Velstays ${data.houseName}</td>
                         </tr>
                         <tr>
                             <td style="color:#71717a;font-size:13px;padding:4px 0;">Check-in</td>
@@ -133,7 +133,7 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
             <!-- Footer -->
             <div style="padding:20px 24px;border-top:1px solid #e5e7eb;text-align:center;">
                 <p style="color:#a1a1aa;font-size:11px;margin:0;">
-                    House by AD · Kigali, Rwanda
+                    Velstays · Kigali, Rwanda
                 </p>
             </div>
         </div>
@@ -163,7 +163,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: data.guestEmail,
-            subject: `Booking Confirmed! — House by AD ${data.houseName}`,
+            subject: `Booking Confirmed! — Velstays ${data.houseName}`,
             html: `
 <!DOCTYPE html>
 <html>
@@ -177,7 +177,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
             <!-- Header -->
             <div style="background:#166534;padding:32px 24px;text-align:center;">
                 <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">✅ Booking Confirmed!</h1>
-                <p style="color:#bbf7d0;font-size:13px;margin:0;">House by AD ${data.houseName}</p>
+                <p style="color:#bbf7d0;font-size:13px;margin:0;">Velstays ${data.houseName}</p>
             </div>
 
             <!-- Body -->
@@ -207,7 +207,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
                     <table style="width:100%;border-collapse:collapse;">
                         <tr>
                             <td style="color:#71717a;font-size:13px;padding:4px 0;">Property</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">House by AD ${data.houseName}</td>
+                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">Velstays ${data.houseName}</td>
                         </tr>
                         <tr>
                             <td style="color:#71717a;font-size:13px;padding:4px 0;">Check-in</td>
@@ -258,7 +258,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
             <!-- Footer -->
             <div style="padding:20px 24px;border-top:1px solid #e5e7eb;text-align:center;">
                 <p style="color:#a1a1aa;font-size:11px;margin:0;">
-                    House by AD · Kigali, Rwanda
+                    Velstays · Kigali, Rwanda
                 </p>
             </div>
         </div>
@@ -285,7 +285,7 @@ export async function sendBookingCancellation(data: BookingEmailData) {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: data.guestEmail,
-            subject: `Booking Update — House by AD ${data.houseName}`,
+            subject: `Booking Update — Velstays ${data.houseName}`,
             html: `
 <!DOCTYPE html>
 <html>
@@ -299,7 +299,7 @@ export async function sendBookingCancellation(data: BookingEmailData) {
             <!-- Header -->
             <div style="background:#991b1b;padding:32px 24px;text-align:center;">
                 <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">Booking Not Confirmed</h1>
-                <p style="color:#fecaca;font-size:13px;margin:0;">House by AD ${data.houseName}</p>
+                <p style="color:#fecaca;font-size:13px;margin:0;">Velstays ${data.houseName}</p>
             </div>
 
             <!-- Body -->
@@ -311,7 +311,7 @@ export async function sendBookingCancellation(data: BookingEmailData) {
                     ${data.rejectionReason && REJECTION_REASONS[data.rejectionReason]
                     ? REJECTION_REASONS[data.rejectionReason].guestMessage
                     : `Unfortunately, we were unable to confirm your booking for
-                    <strong>House by AD ${data.houseName}</strong> (${data.checkIn} → ${data.checkOut}).
+                    <strong>Velstays ${data.houseName}</strong> (${data.checkIn} → ${data.checkOut}).
                     For more details, please contact us directly at <strong>+250 788 459 885</strong>.`}
                 </p>
 
@@ -334,7 +334,7 @@ export async function sendBookingCancellation(data: BookingEmailData) {
             <!-- Footer -->
             <div style="padding:20px 24px;border-top:1px solid #e5e7eb;text-align:center;">
                 <p style="color:#a1a1aa;font-size:11px;margin:0;">
-                    House by AD · Kigali, Rwanda
+                    Velstays · Kigali, Rwanda
                 </p>
             </div>
         </div>
@@ -375,7 +375,7 @@ export async function sendAdminNewBookingNotification(data: BookingEmailData) {
             <!-- Header -->
             <div style="background:#18181b;padding:32px 24px;text-align:center;">
                 <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">🔔 New Booking Request</h1>
-                <p style="color:#a1a1aa;font-size:13px;margin:0;">${data.bookingId} · House by AD ${data.houseName}</p>
+                <p style="color:#a1a1aa;font-size:13px;margin:0;">${data.bookingId} · Velstays ${data.houseName}</p>
             </div>
 
             <!-- Body -->
@@ -405,7 +405,7 @@ export async function sendAdminNewBookingNotification(data: BookingEmailData) {
                     <table style="width:100%;border-collapse:collapse;">
                         <tr>
                             <td style="color:#71717a;font-size:13px;padding:4px 0;">Property</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">House by AD ${data.houseName}</td>
+                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">Velstays ${data.houseName}</td>
                         </tr>
                         <tr>
                             <td style="color:#71717a;font-size:13px;padding:4px 0;">Check-in</td>
@@ -456,7 +456,7 @@ export async function sendAdminNewBookingNotification(data: BookingEmailData) {
 
             <!-- Footer -->
             <div style="padding:20px 24px;border-top:1px solid #e5e7eb;text-align:center;">
-                <p style="color:#a1a1aa;font-size:11px;margin:0;">House by AD · Kigali, Rwanda</p>
+                <p style="color:#a1a1aa;font-size:11px;margin:0;">Velstays · Kigali, Rwanda</p>
             </div>
         </div>
     </div>

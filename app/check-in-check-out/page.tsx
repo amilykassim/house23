@@ -5,8 +5,8 @@ import { LogIn, LogOut, Clock, MessageSquare, Luggage, Info } from "lucide-react
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-    title: "Check-in & Check-out | House by AD",
-    description: "Everything you need to know about checking in and out of House by AD.",
+    title: "Check-in & Check-out | Velstays",
+    description: "Everything you need to know about checking in and out of Velstays.",
 }
 
 export default function CheckInCheckOutPage() {
@@ -19,7 +19,7 @@ export default function CheckInCheckOutPage() {
                         Check-in & Check-out
                     </h1>
                     <p className="text-muted-foreground text-lg mb-12">
-                        Everything you need for a smooth arrival and departure at House by AD.
+                        Everything you need for a smooth arrival and departure at Velstays.
                     </p>
 
                     {/* Check-in Section */}

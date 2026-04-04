@@ -53,7 +53,7 @@ export function Header() {
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
             <span className="font-serif text-2xl font-semibold tracking-tight text-foreground">
-              House by AD
+              Velstays
             </span>
           </Link>
 

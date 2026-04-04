@@ -55,7 +55,7 @@ export async function GET(
         String(now.getSeconds()).padStart(2, "0") +
         "Z"
 
-    let ical = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//House by AD//Calendar//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:House by AD - ${slug}\r\n`
+    let ical = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Velstays//Calendar//EN\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:Velstays - ${slug}\r\n`
 
     ranges.forEach((range, idx) => {
         const dtstart = formatICalDate(range.start)
@@ -66,8 +66,8 @@ export async function GET(
         ical += `DTEND;VALUE=DATE:${dtend}\r\n`
         ical += `DTSTAMP:${timestamp}\r\n`
         ical += `UID:blocked-${slug}-${range.start}-${idx}@housebyadcasa\r\n`
-        ical += `SUMMARY:Blocked - House by AD\r\n`
-        ical += `DESCRIPTION:Dates blocked via House by AD calendar management\r\n`
+        ical += `SUMMARY:Blocked - Velstays\r\n`
+        ical += `DESCRIPTION:Dates blocked via Velstays calendar management\r\n`
         ical += `STATUS:CONFIRMED\r\n`
         ical += `END:VEVENT\r\n`
     })

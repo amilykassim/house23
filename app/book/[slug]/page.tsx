@@ -183,7 +183,7 @@ export default function BookPage() {
         const checkIn = dateRange?.from ? format(dateRange.from, "EEE, MMM d, yyyy") : "N/A"
         const checkOut = dateRange?.to ? format(dateRange.to, "EEE, MMM d, yyyy") : "N/A"
 
-        const message = `🏠 *New Booking Request - House by AD ${house.name}*
+        const message = `🏠 *New Booking Request - Velstays ${house.name}*
 
 👤 *Guest Details*
 • Name: ${guestName}
@@ -202,7 +202,7 @@ export default function BookPage() {
 📱 *MoMo Transaction ID:* ${momoTransactionId}
 ${specialRequests ? `\n📝 *Special Requests:*\n${specialRequests}` : ""}
 
-_Sent from House by AD website_`
+_Sent from Velstays website_`
 
         return encodeURIComponent(message)
     }
@@ -276,7 +276,7 @@ _Sent from House by AD website_`
                             Complete Your Booking
                         </h1>
                         <p className="text-sm text-muted-foreground mb-5">
-                            House by AD <span className="mx-1"> | </span> {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
+                            Velstays <span className="mx-1"> | </span> {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
                         </p>
 
                         {/* Step Indicator */}
@@ -349,7 +349,7 @@ _Sent from House by AD website_`
                                                     <span className="text-lg">🏠</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-foreground">House by AD {house.name}</p>
+                                                    <p className="text-sm font-medium text-foreground">Velstays | {house.name}</p>
                                                     <p className="text-xs text-muted-foreground">{house.location}</p>
                                                 </div>
                                             </div>
@@ -693,7 +693,7 @@ _Sent from House by AD website_`
                                         <div className="rounded-xl border border-border p-4 space-y-2 mb-4 bg-muted/30 text-sm">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-muted-foreground">Property</span>
-                                                <span className="text-foreground font-medium">House by AD {house.name}</span>
+                                                <span className="text-foreground font-medium">Velstays | {house.name}</span>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-muted-foreground">Dates</span>
@@ -798,7 +798,7 @@ _Sent from House by AD website_`
                                 Booking Submitted!
                             </h3>
                             <p className="text-sm text-muted-foreground leading-relaxed">
-                                Hi <span className="font-semibold text-foreground">{guestName.split(" ")[0]}</span>, thank you for choosing House by AD! Your booking request has been received and we&apos;ll confirm it within 1 hour.
+                                Hi <span className="font-semibold text-foreground">{guestName.split(" ")[0]}</span>, thank you for choosing Velstays! Your booking request has been received and we&apos;ll confirm it within 1 hour.
                             </p>
                         </div>
 

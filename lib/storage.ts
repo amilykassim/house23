@@ -6,7 +6,7 @@ import path from "path"
  * Set to true  → use Vercel Blob everywhere (local dev + production).
  * Set to false → use local filesystem in dev, Vercel Blob only on Vercel.
  */
-const USE_BLOBS_LOCALLY = true
+const USE_BLOBS_LOCALLY = false
 
 const isVercel = !!process.env.VERCEL
 const useBlob = isVercel || USE_BLOBS_LOCALLY

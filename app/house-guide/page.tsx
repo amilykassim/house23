@@ -622,26 +622,10 @@ const zones: RoomZone[] = [
                 steps: [
                     { label: "Grab the remote", detail: "On the coffee table or TV stand — the sleek black one!", icon: <CircleDot className="h-4 w-4 text-blue-500" /> },
                     { label: "Power on", detail: "Big button at the top. The TV wakes up with a gentle glow.", icon: <Power className="h-4 w-4 text-blue-500" /> },
-                    { label: "Pick your app", detail: "Navigate with the d-pad. Netflix, YouTube, Disney+ — all pre-installed.", icon: <Tv className="h-4 w-4 text-blue-500" /> },
-                    { label: "Adjust volume", detail: "Volume buttons on the side. Or say \"Hey Google\" if it's a Google TV!", icon: <Volume2 className="h-4 w-4 text-blue-500" /> },
+                    { label: "Wi-Fi setup", detail: "Disconnect from Wi-Fi and reconnect to refresh your connection.", icon: <Tv className="h-4 w-4 text-blue-500" /> },
+                    { label: "Pick your favorite app", detail: "Netflix, YouTube, Disney+ — all pre-installed.", icon: <Tv className="h-4 w-4 text-blue-500" /> },
                 ],
                 tip: "You can cast from your phone! Connect to the same Wi-Fi and look for the cast icon in your apps.",
-            },
-            {
-                id: "ac",
-                icon: <AirVent className="h-6 w-6 sm:h-7 sm:w-7 text-cyan-600 dark:text-cyan-400" />,
-                emoji: "🌡️",
-                title: "Air Conditioning",
-                subtitle: "Your personal climate control",
-                color: "text-cyan-600 dark:text-cyan-400",
-                bgColor: "bg-cyan-50 dark:bg-cyan-950/40",
-                steps: [
-                    { label: "Find the remote", detail: "Bedside table or mounted near the AC unit on the wall.", icon: <CircleDot className="h-4 w-4 text-cyan-500" /> },
-                    { label: "Power on", detail: "Press ON/OFF — a beep confirms it's started.", icon: <Power className="h-4 w-4 text-cyan-500" /> },
-                    { label: "Set temperature", detail: "▲▼ buttons. We recommend 22-24°C for sleeping.", icon: <Wind className="h-4 w-4 text-cyan-500" /> },
-                    { label: "Choose a mode", detail: "COOL for hot days, FAN for a breeze, AUTO to let it decide.", icon: <AirVent className="h-4 w-4 text-cyan-500" /> },
-                ],
-                tip: "Set to 22°C COOL mode 30 min before bed for the best sleep. Turn off when leaving to save energy 🌍",
             },
             {
                 id: "lights",
@@ -654,7 +638,7 @@ const zones: RoomZone[] = [
                 steps: [
                     { label: "Wall switches", detail: "Near each room entrance. Up = on, down = off. Classic!", icon: <Lightbulb className="h-4 w-4 text-yellow-500" /> },
                     { label: "Outdoor lights", detail: "Controlled by switches near front & back doors.", icon: <Sun className="h-4 w-4 text-yellow-500" /> },
-                    { label: "Bedside lamps", detail: "Touch bases — tap the metal part to cycle: off → low → medium → high.", icon: <Moon className="h-4 w-4 text-yellow-500" /> },
+
                 ],
                 tip: "Turn off all lights when leaving. The outdoor security lights are on automatic timers — they handle themselves!",
             },
@@ -677,10 +661,9 @@ const zones: RoomZone[] = [
                 color: "text-purple-600 dark:text-purple-400",
                 bgColor: "bg-purple-50 dark:bg-purple-950/40",
                 steps: [
-                    { label: "Find the sensor", detail: "Small touch area on the mirror's edge (bottom center or right side).", icon: <CircleDot className="h-4 w-4 text-purple-500" /> },
-                    { label: "Tap to toggle", detail: "Single tap = on/off. LEDs glow with a soft, warm light.", icon: <Sun className="h-4 w-4 text-purple-500" /> },
-                    { label: "Adjust brightness", detail: "Long-press the sensor — release at your perfect level.", icon: <Lightbulb className="h-4 w-4 text-purple-500" /> },
-                    { label: "Change temperature", detail: "Second sensor switches between warm (golden) and cool (daylight).", icon: <Moon className="h-4 w-4 text-purple-500" /> },
+                    { label: "Find the sensor", detail: "Small touch area that glows on top of the mirror.", icon: <CircleDot className="h-4 w-4 text-purple-500" /> },
+                    { label: "Tap to toggle", detail: "Multiple taps to change the light mode. LEDs glow with a soft, warm light.", icon: <Sun className="h-4 w-4 text-purple-500" /> },
+                    { label: "Switch on/off the light sensor", detail: "Behind the bed on the side of the door, there's a switch to turn on/off the light sensor for the mirror lights.", icon: <Moon className="h-4 w-4 text-purple-500" /> },
                 ],
                 tip: "Perfect for skincare routines and selfies! Remember to turn them off when leaving the bathroom.",
             },
@@ -704,9 +687,9 @@ const zones: RoomZone[] = [
                 bgColor: "bg-teal-50 dark:bg-teal-950/40",
                 steps: [
                     { label: "Flip the heater switch", detail: "Toggle switch on the bathroom wall near the shower.", icon: <Zap className="h-4 w-4 text-teal-500" /> },
-                    { label: "Wait a moment", detail: "Indicator light glows = heating. ~10-15 min for optimal hot water.", icon: <Flame className="h-4 w-4 text-teal-500" /> },
-                    { label: "Adjust the mixer", detail: "Left = hot, right = cold. Find your sweet spot!", icon: <Droplets className="h-4 w-4 text-teal-500" /> },
-                    { label: "After your shower", detail: "Turn off the heater switch to save energy — heats up fast next time!", icon: <Power className="h-4 w-4 text-teal-500" /> },
+                    { label: "Wait a moment", detail: "Indicator light glows = heating. Run the water for like ~3-5 min for optimal hot water.", icon: <Flame className="h-4 w-4 text-teal-500" /> },
+                    { label: "Adjust the mixer", detail: "Left = cold, right = hot. Find your sweet spot!", icon: <Droplets className="h-4 w-4 text-teal-500" /> },
+                    { label: "After your shower", detail: "Turn off the heater — heats up fast next time!", icon: <Power className="h-4 w-4 text-teal-500" /> },
                 ],
                 tip: "It heats up fast! If lukewarm, reduce flow — less water = hotter temperature.",
             },
@@ -826,7 +809,7 @@ export default function HouseGuidePage() {
 
                     <FadeIn direction="up" delay={0.1}>
                         <p className="text-muted-foreground text-lg leading-relaxed max-w-xl mb-8">
-                            From the TV remote to the coffee maker, from LED mirrors to the AC — tap through each room to master everything.
+                            From the TV remote to the coffee maker, from LED mirrors to the Microwave — tap through each room to master everything.
                         </p>
                     </FadeIn>
 
@@ -908,13 +891,13 @@ export default function HouseGuidePage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                     <div>
                                         <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1.5">Network name</p>
-                                        <p className="font-mono text-lg font-medium">House by AD</p>
+                                        <p className="font-mono text-lg font-medium">Velstays</p>
                                     </div>
                                     <div>
                                         <p className="text-white/50 text-xs font-semibold uppercase tracking-widest mb-1.5">Password</p>
                                         <div className="flex items-center gap-3 flex-wrap">
-                                            <p className="font-mono text-lg font-medium">welcome2024</p>
-                                            <CopyButton text="welcome2024" />
+                                            <p className="font-mono text-lg font-medium">Loveandchill</p>
+                                            <CopyButton text="Loveandchill" />
                                         </div>
                                     </div>
                                 </div>

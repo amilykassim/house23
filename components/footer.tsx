@@ -42,7 +42,7 @@ const footerLinks = [
 const socialLinks = [
   { icon: Instagram, href: "#", label: "Instagram" },
   { icon: TikTokIcon, href: "#", label: "TikTok" },
-  { icon: Mail, href: "mailto:hello@House by AD.com", label: "Email" },
+  { icon: Mail, href: "mailto:hello@velstays.com", label: "Email" },
 ]
 
 export function Footer() {
@@ -52,9 +52,9 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <h3 className="font-serif text-2xl font-semibold mb-4">House by AD</h3>
+            <h3 className="font-serif text-2xl font-semibold mb-4">Velstays</h3>
             <p className="text-muted-foreground dark:text-card-foreground/70 text-sm leading-relaxed mb-6">
-              Your private home in Kigali. Experience luxury, comfort, and breathtaking views.
+              Your private home in Kigali. Experience comfort, and lush green views.
             </p>
             <div className="flex gap-4">
               {socialLinks.map((social) => (
@@ -107,9 +107,9 @@ export function Footer() {
         {/* Contact Bar */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-8 border-t border-foreground/10 dark:border-card-foreground/10 mb-8">
           <div className="flex items-center gap-6">
-            <a href="mailto:hello@House by AD.com" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
+            <a href="mailto:hello@velstays.com" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
               <Mail className="h-4 w-4" />
-              <span className="text-sm">hello@House by AD.com</span>
+              <span className="text-sm">hello@velstays.com</span>
             </a>
             <a href="tel:+250788459885" className="flex items-center gap-2 text-muted-foreground dark:text-card-foreground/70 hover:text-foreground dark:hover:text-card-foreground transition-colors">
               <Phone className="h-4 w-4" />
@@ -121,7 +121,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-foreground/10 dark:border-card-foreground/10">
           <p className="text-muted-foreground/60 dark:text-card-foreground/60 text-sm">
-            2026 House by AD. All rights reserved.
+            © 2026 Velstays. All rights reserved.
           </p>
           <div className="flex gap-6">
             <Link href="/privacy-policy" className="text-muted-foreground/60 dark:text-card-foreground/60 hover:text-muted-foreground dark:hover:text-card-foreground transition-colors text-sm">

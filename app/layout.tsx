@@ -18,8 +18,8 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: 'House by AD | Luxury Vacation Rental',
-  description: 'Experience House by AD - Designed for privacy, calm and peace, our modern home is the perfect getaway for relaxation and good vibes. Wake up to birdsong, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴',
+  title: 'Velstays | Vacation Rental',
+  description: 'Experience Velstays - Designed for privacy, calm and peace, our modern home is the perfect getaway for relaxation and good vibes. Wake up to birdsong, enjoy morning walks or jogs in our safe neighborhood, and unwind in a space that feels like peace. 🌴',
   generator: 'v0.app',
   icons: {
     icon: [
