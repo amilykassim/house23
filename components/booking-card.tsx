@@ -95,7 +95,7 @@ export function BookingCard({
   // Poll for blocked-date changes every 3s while calendar is open (cross-device support)
   useEffect(() => {
     if (!calendarOpen) return
-    const interval = setInterval(fetchBlockedDates, 3_000)
+    const interval = setInterval(fetchBlockedDates, 1_000)
     return () => clearInterval(interval)
   }, [calendarOpen, fetchBlockedDates])
 
