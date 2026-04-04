@@ -49,12 +49,14 @@ export function BookingCard({
   const [calendarMonth, setCalendarMonth] = useState(new Date())
   const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right')
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set())
+  const [isReserving, setIsReserving] = useState(false)
 
   const handleReserve = () => {
     if (!dateRange?.from || !dateRange?.to) {
       toast.error("Please select your check-in and check-out dates first.")
       return
     }
+    setIsReserving(true)
     const params = new URLSearchParams()
     if (dateRange?.from) params.set("checkIn", dateRange.from.toISOString())
     if (dateRange?.to) params.set("checkOut", dateRange.to.toISOString())
@@ -413,6 +415,7 @@ export function BookingCard({
         className="w-full rounded-xl h-12 text-base font-semibold mb-4"
         hoverText="Let's go ✦"
         onClick={handleReserve}
+        loading={isReserving}
       >
         Reserve
       </AnimatedButton>

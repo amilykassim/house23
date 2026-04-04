@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { cva, type VariantProps } from "class-variance-authority"
 
@@ -33,20 +34,37 @@ interface AnimatedButtonProps
     children: React.ReactNode
     /** Secondary label that slides in on hover */
     hoverText?: string
+    /** Show a loading spinner */
+    loading?: boolean
 }
 
 export function AnimatedButton({
     children,
     hoverText,
+    loading,
     className,
     variant,
     size,
+    disabled,
     ...props
 }: AnimatedButtonProps) {
+    if (loading) {
+        return (
+            <button
+                className={cn(animatedButtonVariants({ variant, size, className }))}
+                disabled
+                {...props}
+            >
+                <Loader2 className="h-5 w-5 animate-spin" />
+            </button>
+        )
+    }
+
     if (!hoverText) {
         return (
             <button
                 className={cn(animatedButtonVariants({ variant, size, className }))}
+                disabled={disabled}
                 {...props}
             >
                 {children}
@@ -57,6 +75,7 @@ export function AnimatedButton({
     return (
         <button
             className={cn(animatedButtonVariants({ variant, size, className }))}
+            disabled={disabled}
             {...props}
         >
             <div className="relative overflow-hidden h-[1lh] w-full flex items-center justify-center">
