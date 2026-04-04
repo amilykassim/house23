@@ -20,7 +20,7 @@ async function readBlob<T>(key: string): Promise<T | null> {
 
 async function writeBlob<T>(key: string, data: T): Promise<void> {
     await put(key, JSON.stringify(data, null, 2), {
-        access: "public",
+        access: "private",
         addRandomSuffix: false,
         contentType: "application/json",
     })
