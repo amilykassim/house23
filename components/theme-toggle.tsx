@@ -18,7 +18,7 @@ export function ThemeToggle() {
     const isDark = theme === 'dark'
 
     return (
-        <div className="flex items-center gap-2 px-2 py-1 rounded-full border border-border bg-muted/30">
+        <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full border border-border bg-muted/30 w-max">
             <Sun className="h-4 w-4 text-muted-foreground" />
             <Switch
                 checked={isDark}

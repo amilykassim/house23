@@ -163,6 +163,8 @@ export default function AdminDashboardPage() {
         const totalGuests = activeBookings.reduce((sum, b) => sum + b.guests, 0)
         const pendingCount = bookings.filter((b) => b.status === "pending").length
         const confirmedCount = bookings.filter((b) => b.status === "confirmed").length
+        const cancelledCount = bookings.filter((b) => b.status === "cancelled").length
+        const totalBookingsAll = bookings.length
 
         // Upcoming bookings (check-in is in the future)
         const upcoming = activeBookings.filter((b) =>
@@ -231,6 +233,8 @@ export default function AdminDashboardPage() {
             totalGuests,
             pendingCount,
             confirmedCount,
+            cancelledCount,
+            totalBookingsAll,
             upcoming,
             currentlyHosting,
             revenueByHouse,
@@ -454,16 +458,25 @@ export default function AdminDashboardPage() {
                                     {stats.confirmedCount}
                                 </span>
                             </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                                        <span className="text-sm text-foreground">Cancelled</span>
+                                    </div>
+                                    <span className="text-sm font-semibold text-foreground">
+                                        {stats.cancelledCount}
+                                    </span>
+                                </div>
                         </div>
 
                         {/* Visual bar */}
-                        {stats.totalBookings > 0 && (
+                        {stats.totalBookingsAll > 0 && (
                             <div className="mt-4 flex h-2 rounded-full overflow-hidden gap-0.5">
                                 {stats.confirmedCount > 0 && (
                                     <div
                                         className="bg-blue-500 rounded-full"
                                         style={{
-                                            width: `${(stats.confirmedCount / stats.totalBookings) * 100}%`,
+                                            width: `${(stats.confirmedCount / stats.totalBookingsAll) * 100}%`,
                                         }}
                                     />
                                 )}
@@ -471,7 +484,15 @@ export default function AdminDashboardPage() {
                                     <div
                                         className="bg-amber-500 rounded-full"
                                         style={{
-                                            width: `${(stats.pendingCount / stats.totalBookings) * 100}%`,
+                                            width: `${(stats.pendingCount / stats.totalBookingsAll) * 100}%`,
+                                        }}
+                                    />
+                                )}
+                                {stats.cancelledCount > 0 && (
+                                    <div
+                                        className="bg-red-500 rounded-full"
+                                        style={{
+                                            width: `${(stats.cancelledCount / stats.totalBookingsAll) * 100}%`,
                                         }}
                                     />
                                 )}

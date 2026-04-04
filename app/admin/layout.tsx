@@ -123,7 +123,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 )
                             })}
 
-                            <div className="border-t border-border my-3" />
+                                {/* Theme toggle for mobile */}
+                                <div className="px-2 pt-2">
+                                    <ThemeToggle />
+                                </div>
+
+                                <div className="border-t border-border my-3" />
 
                             <Link
                                 href="/"

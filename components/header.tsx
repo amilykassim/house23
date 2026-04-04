@@ -162,6 +162,11 @@ export function Header() {
               </Link>
             ))}
 
+            {/* Theme toggle for mobile */}
+            <div className="px-2 pt-2">
+              <ThemeToggle />
+            </div>
+
             {!pathname.startsWith("/book/") && (
               <div className="pt-3">
                 <AnimatedButton
