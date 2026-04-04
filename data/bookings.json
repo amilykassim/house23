@@ -16,7 +16,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "TxId:27033141149",
     "specialRequests": "Early check-in if possible",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-03-08T14:30:00Z"
   },
   {
@@ -36,7 +36,7 @@
     "totalRwf": 211700,
     "momoTransactionId": "TxId:27033298712",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-03-12T09:15:00Z"
   },
   {
@@ -56,7 +56,7 @@
     "totalRwf": 148920,
     "momoTransactionId": "TxId:27033455213",
     "specialRequests": "Airport pickup needed",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-03-18T16:45:00Z"
   },
   {
@@ -76,7 +76,7 @@
     "totalRwf": 277400,
     "momoTransactionId": "TxId:27033612841",
     "specialRequests": "Extra towels please",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-03-22T11:20:00Z"
   },
   {
@@ -96,7 +96,7 @@
     "totalRwf": 237980,
     "momoTransactionId": "TxId:27033789345",
     "specialRequests": "",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-03-28T08:00:00Z"
   },
   {
@@ -176,7 +176,7 @@
     "totalRwf": 386900,
     "momoTransactionId": "123456789ofgshj",
     "specialRequests": "airport pickup",
-    "status": "pending",
+    "status": "confirmed",
     "createdAt": "2026-04-01T07:49:48.858Z"
   },
   {

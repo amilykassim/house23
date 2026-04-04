@@ -646,48 +646,45 @@ export default function AdminDashboardPage() {
                         </div>
                     )}
 
+                    {/* Currently Hosting (moved from full-width section) */}
+                    {stats.currentlyHosting.length > 0 && (
+                        <div className="bg-card rounded-2xl border border-border p-5">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <h2 className="text-base font-semibold text-foreground">
+                                    Currently Hosting
+                                </h2>
+                            </div>
+                            <div className="space-y-3">
+                                {stats.currentlyHosting.map((b) => (
+                                    <div
+                                        key={b.id}
+                                        className="p-3 rounded-xl bg-green-500/5 border border-green-500/10"
+                                    >
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-medium text-foreground">
+                                                {b.guestName}
+                                            </span>
+                                            <span className="text-xs text-muted-foreground">
+                                                {b.houseName}
+                                            </span>
+                                        </div>
+                                        <div className="text-xs text-muted-foreground">
+                                            Checks out {format(parseISO(b.checkOut), "MMM d")} · {b.guests} guest{b.guests > 1 ? "s" : ""}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                 </div>
             </div>
 
-            {/* Full-width section: Currently Hosting + Recent Bookings */}
+            {/* Full-width section: Recent Bookings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                {/* Currently Hosting */}
-                {stats.currentlyHosting.length > 0 && (
-                    <div className="bg-card rounded-2xl border border-border p-5">
-                        <div className="flex items-center gap-2 mb-4">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                            <h2 className="text-base font-semibold text-foreground">
-                                Currently Hosting
-                            </h2>
-                        </div>
-                        <div className="space-y-3">
-                            {stats.currentlyHosting.map((b) => (
-                                <div
-                                    key={b.id}
-                                    className="p-3 rounded-xl bg-green-500/5 border border-green-500/10"
-                                >
-                                    <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium text-foreground">
-                                            {b.guestName}
-                                        </span>
-                                        <span className="text-xs text-muted-foreground">
-                                            {b.houseName}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                        Checks out{" "}
-                                        {format(parseISO(b.checkOut), "MMM d")}
-                                        {" · "}
-                                        {b.guests} guest{b.guests > 1 ? "s" : ""}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Recent Bookings - moved to full width */}
-                <div className={`bg-card rounded-2xl border border-border p-5 ${stats.currentlyHosting.length === 0 ? "lg:col-span-2" : ""}`}>
+                {/* Recent Bookings - spans both columns */}
+                <div className="bg-card rounded-2xl border border-border p-5 lg:col-span-2">
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-base font-semibold text-foreground">
                             Recent Bookings
