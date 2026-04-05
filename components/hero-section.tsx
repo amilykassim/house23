@@ -4,6 +4,7 @@ import Image from "next/image"
 import { Star, MapPin, Users, Bed, Bath } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, useScroll, useTransform } from "motion/react"
+import { VelstaysBrand } from "@/components/velstays-brand"
 import { useRef } from "react"
 import type { HouseData } from "@/lib/houses"
 
@@ -65,7 +66,7 @@ export function HeroSection({ house }: HeroSectionProps) {
               transition={{ duration: 0.7, delay: 0.35, ease: [0.21, 0.47, 0.32, 0.98] }}
               className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-white/90 leading-tight mb-4 drop-shadow-lg text-balance"
             >
-             Velstays · {house.name}
+             <VelstaysBrand variant="light" delay={0.6} /> · {house.name}
             </motion.h1>
             <motion.p
               initial={{ opacity: 0, y: 20 }}

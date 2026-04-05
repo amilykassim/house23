@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { Instagram, Mail, Phone } from "lucide-react"
+import { VelstaysBrand } from "@/components/velstays-brand"
 
 function TikTokIcon({ className }: { className?: string }) {
   return (
@@ -52,7 +53,7 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <h3 className="font-serif text-2xl font-semibold mb-4">Velstays</h3>
+            <h3 className="font-serif text-2xl font-semibold mb-4"><VelstaysBrand delay={0.3} /></h3>
             <p className="text-muted-foreground dark:text-card-foreground/70 text-sm leading-relaxed mb-6">
               Your private home in Kigali. Experience comfort, and lush green views.
             </p>
