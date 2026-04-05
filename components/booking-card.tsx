@@ -13,7 +13,6 @@ import { CalendarDayButton } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { DateRange } from "react-day-picker"
-import { onCalendarRefresh } from "@/lib/calendar-events"
 
 const DISCOUNT_AMOUNT = 10
 
@@ -92,16 +91,6 @@ export function BookingCard({
   useEffect(() => {
     fetchBlockedDates()
   }, [fetchBlockedDates])
-
-  // Listen for cross-tab calendar refresh events from admin actions
-  useEffect(() => {
-    return onCalendarRefresh((house) => {
-      // Refresh if the event is for this house or no house specified
-      if (!house || house === slug) {
-        fetchBlockedDates()
-      }
-    })
-  }, [slug, fetchBlockedDates])
 
   const isDateBlocked = useCallback(
     (date: Date) => blockedDates.has(format(date, "yyyy-MM-dd")),
