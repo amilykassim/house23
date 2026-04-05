@@ -18,12 +18,12 @@ import {
     AlertCircle,
     MoreHorizontal,
     ArrowUpDown,
-    Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { AnimatePresence, motion } from "motion/react"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
+import { broadcastCalendarRefresh } from "@/lib/calendar-events"
 
 interface Booking {
     id: string
@@ -116,6 +116,8 @@ export default function AdminBookingsPage() {
                 setBookings((prev) =>
                     prev.map((b) => (b.id === id ? { ...b, status: newStatus } : b))
                 )
+                // Notify other tabs (booking card) to refresh their calendar
+                broadcastCalendarRefresh(booking?.house)
                 setTimeout(() => {
                     if (newStatus === "confirmed") {
                         toast("Booking Confirmed!", {
@@ -535,7 +537,7 @@ export default function AdminBookingsPage() {
                                                                     disabled={updatingStatus === booking.id}
                                                                     className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
                                                                 >
-                                                                    {updatingStatus === booking.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                                                                    <CheckCircle2 className="h-4 w-4" />
                                                                     Accept Booking
                                                                 </button>
                                                                 <button
@@ -610,7 +612,7 @@ export default function AdminBookingsPage() {
                                                                                     disabled={updatingStatus === booking.id}
                                                                                     className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                                                                                 >
-                                                                                    {updatingStatus === booking.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                                                                                    <XCircle className="h-3.5 w-3.5" />
                                                                                     Confirm Rejection
                                                                                 </button>
                                                                                 <button
@@ -702,7 +704,7 @@ export default function AdminBookingsPage() {
                                                                                 disabled={updatingStatus === booking.id}
                                                                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
                                                                             >
-                                                                                {updatingStatus === booking.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                                                                                <CheckCircle2 className="h-3.5 w-3.5" />
                                                                                 Proceed
                                                                             </button>
                                                                             <button
@@ -759,7 +761,7 @@ export default function AdminBookingsPage() {
                                                                                 disabled={updatingStatus === booking.id}
                                                                                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                                                                             >
-                                                                                {updatingStatus === booking.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <XCircle className="h-3.5 w-3.5" />}
+                                                                                <XCircle className="h-3.5 w-3.5" />
                                                                                 Confirm Rejection
                                                                             </button>
                                                                             <button

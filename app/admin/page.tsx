@@ -22,7 +22,6 @@ import {
     Phone,
     Undo2,
     AlertCircle,
-    Loader2,
 } from "lucide-react"
 import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
@@ -596,7 +595,7 @@ export default function AdminDashboardPage() {
                                                                         disabled={actionLoading === b.id}
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
                                                                     >
-                                                                        {actionLoading === b.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                                                                        <CheckCircle2 className="h-3 w-3" />
                                                                         Accept
                                                                     </button>
                                                                     <button
@@ -643,7 +642,7 @@ export default function AdminDashboardPage() {
                                                                                         disabled={actionLoading === b.id}
                                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                                                                                     >
-                                                                                        {actionLoading === b.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                                                                                        <XCircle className="h-3 w-3" />
                                                                                         Confirm Rejection
                                                                                     </button>
                                                                                     <button
@@ -814,7 +813,7 @@ export default function AdminDashboardPage() {
                                                                     disabled={actionLoading === booking.id}
                                                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                                                                 >
-                                                                    {actionLoading === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                                                                    <Undo2 className="h-3 w-3" />
                                                                     Undo Accept
                                                                 </button>
                                                             )}
@@ -827,7 +826,7 @@ export default function AdminDashboardPage() {
                                                                     disabled={actionLoading === booking.id}
                                                                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
                                                                 >
-                                                                    {actionLoading === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                                                                    <Undo2 className="h-3 w-3" />
                                                                     Undo Reject
                                                                 </button>
                                                             )}
@@ -838,7 +837,7 @@ export default function AdminDashboardPage() {
                                                                         disabled={actionLoading === booking.id}
                                                                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
                                                                     >
-                                                                        {actionLoading === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                                                                        <CheckCircle2 className="h-3 w-3" />
                                                                         Accept
                                                                     </button>
                                                                     <button
@@ -891,7 +890,7 @@ export default function AdminDashboardPage() {
                                                                             disabled={actionLoading === booking.id}
                                                                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
                                                                         >
-                                                                            {actionLoading === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                                                                            <CheckCircle2 className="h-3 w-3" />
                                                                             Proceed
                                                                         </button>
                                                                         <button
@@ -948,7 +947,7 @@ export default function AdminDashboardPage() {
                                                                             disabled={actionLoading === booking.id}
                                                                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                                                                         >
-                                                                            {actionLoading === booking.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                                                                            <XCircle className="h-3 w-3" />
                                                                             Confirm Rejection
                                                                         </button>
                                                                         <button

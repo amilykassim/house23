@@ -137,7 +137,13 @@ function StepCard({ item, onComplete, completed }: { item: ApplianceItem; onComp
     return (
         <motion.div
             layout
-            className={`group relative rounded-3xl border border-border/80 bg-card overflow-hidden transition-all duration-500 ${active ? "shadow-xl ring-2 ring-primary/20" : "shadow-sm hover:shadow-md"}`}
+            style={{
+                boxShadow: active
+                    ? "0 4px 24px -4px rgba(0,0,0,0.08), 0 1px 4px -1px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.02)"
+                    : "0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.03)",
+            }}
+            whileHover={!active ? { boxShadow: "0 8px 32px -8px rgba(0,0,0,0.10), 0 2px 8px -2px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)" } : undefined}
+            className={`group relative rounded-3xl border bg-card overflow-hidden transition-all duration-500 ${active ? "border-border/60 ring-1 ring-primary/10" : "border-border/40 hover:border-border/60"}`}
         >
             {/* Header — always visible */}
             <button
@@ -969,7 +975,7 @@ export default function HouseGuidePage() {
                                 <div className="flex items-center gap-3 mb-2">
                                     <span className="text-2xl">{zone.emoji}</span>
                                     <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground">
-                                        {zone.label}
+                                        {zone.label} hello
                                     </h2>
                                 </div>
                                 <p className="text-muted-foreground text-sm mb-6 pl-10">
