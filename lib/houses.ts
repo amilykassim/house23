@@ -138,18 +138,21 @@ export const houses: HouseData[] = [
         serviceFee: 0,
         photos: [
             { src: "/images/EMMA9979.JPG", alt: "House 22 exterior", label: "House 22" },
-            { src: "/images/house22-19.JPG", alt: "Living area", label: "Living Room" },
-            { src: "/images/house22-21.JPG", alt: "Kitchen area", label: "Kitchen" },
-            { src: "/images/house22-24.JPG", alt: "Bedroom", label: "Bedroom" },
-            { src: "/images/house22-4.JPG", alt: "Bathroom", label: "Bathroom" },
+            { src: "/images/house22-19.JPG", alt: "Bedroom", label: "Bedroom" },
+            { src: "/images/house22-21.JPG", alt: "Game room", label: "Game Room" },
+            { src: "/images/house22-24.JPG", alt: "Exterior view", label: "Exterior" },
+            { src: "/images/house22-4.JPG", alt: "Living area", label: "Living room" },
         ],
         allPhotos: [
             { src: "/images/EMMA9979.JPG", alt: "House 22 exterior", label: "House 22" },
-            { src: "/images/house22-19.JPG", alt: "Living area", label: "Living Room" },
+            { src: "/images/house22-24.JPG", alt: "Living area", label: "Living Room" },
             { src: "/images/house22-21.JPG", alt: "Kitchen area", label: "Kitchen" },
-            { src: "/images/house22-24.JPG", alt: "Bedroom", label: "Bedroom" },
+            { src: "/images/house22-19.JPG", alt: "Bedroom", label: "Bedroom" },
             { src: "/images/house22-4.JPG", alt: "Bathroom", label: "Bathroom" },
             { src: "/images/house22-27.JPG", alt: "House 22 exterior", label: "Exterior" },
+            { src: "/images/house22-22.JPG", alt: "House 22 exterior", label: "Exterior" },
+            { src: "/images/house22-23.JPG", alt: "House 22 exterior", label: "Exterior" },
+            { src: "/images/house22-26.JPG", alt: "House 22 exterior", label: "Exterior" },
             
         ],
         highlights: [

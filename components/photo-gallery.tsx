@@ -6,6 +6,7 @@ import { X, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "motion/react"
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
+import { SlidingHighlight } from "@/components/sliding-highlight"
 import type { HousePhoto } from "@/lib/houses"
 
 interface PhotoGalleryProps {
@@ -51,7 +52,7 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
             Explore the Space
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Every corner of {houseName} has been thoughtfully designed for comfort, beauty, and unforgettable moments
+            Every corner of <SlidingHighlight delay={0.4}>{houseName}</SlidingHighlight> has been thoughtfully designed for comfort, beauty, and unforgettable moments
           </p>
         </FadeIn>
 

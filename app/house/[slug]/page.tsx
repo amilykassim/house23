@@ -8,7 +8,8 @@ import { ReviewsSection } from "@/components/reviews-section"
 import { LocationSection } from "@/components/location-section"
 import { HostSection } from "@/components/host-section"
 import { Footer } from "@/components/footer"
-import { getHouseBySlug, getAllHouseSlugs } from "@/lib/houses"
+import { OtherHouseBanner } from "@/components/other-house-banner"
+import { getHouseBySlug, getAllHouseSlugs, houses } from "@/lib/houses"
 import type { Metadata } from "next"
 
 interface HousePageProps {
@@ -146,6 +147,12 @@ export default async function HousePage({ params }: HousePageProps) {
             <ReviewsSection />
             <LocationSection house={house} />
             <HostSection />
+            {(() => {
+                const otherHouse = houses.find((h) => h.slug !== house.slug)
+                return otherHouse ? (
+                    <OtherHouseBanner currentSlug={house.slug} otherHouse={otherHouse} />
+                ) : null
+            })()}
             <Footer />
         </main>
     )
