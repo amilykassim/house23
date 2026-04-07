@@ -8,6 +8,8 @@ import { VelstaysBrand } from "@/components/velstays-brand"
 import { useRef } from "react"
 import type { HouseData } from "@/lib/houses"
 
+
+
 interface HeroSectionProps {
   house: HouseData
 }
