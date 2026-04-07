@@ -1,8 +1,8 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { Star, MapPin, Users, Bed, Bath } from "lucide-react"
-import { SkeletonImage } from "@/components/skeleton-image"
 import { motion, useScroll, useTransform } from "motion/react"
 import { VelstaysBrand } from "@/components/velstays-brand"
 import { useRef, useState, useEffect } from "react"
@@ -49,14 +49,13 @@ export function HeroSection({ house }: HeroSectionProps) {
           className="absolute inset-0"
           style={{ y: imageY }}
         >
-          <SkeletonImage
+          <Image
             src={house.heroImage}
             alt={`${house.name} - vacation home exterior`}
             fill
             className="object-cover"
             priority
             sizes="100vw"
-            skeletonClassName="bg-black/90"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
         </motion.div>

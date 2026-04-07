@@ -37,7 +37,7 @@ export function SkeletonImage({
         {...props}
         className={cn(
           className,
-          "transition-opacity duration-500 ease-out",
+          "transition-opacity duration-0 ease-out",
           loaded ? "opacity-100" : "opacity-0"
         )}
         onLoad={(e) => {
