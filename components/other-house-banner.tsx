@@ -59,7 +59,7 @@ export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerPr
                 <div className="flex flex-col justify-center p-8 sm:p-10 md:p-12">
                   <div className="space-y-5">
                     <div>
-                      <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                      <h3 className="font-brand text-2xl sm:text-3xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                         {otherHouse.name}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">{otherHouse.location}</p>

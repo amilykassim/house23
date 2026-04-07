@@ -9,8 +9,11 @@ import { LocationSection } from "@/components/location-section"
 import { HostSection } from "@/components/host-section"
 import { Footer } from "@/components/footer"
 import { OtherHouseBanner } from "@/components/other-house-banner"
+import { SavingsBanner } from "@/components/savings-banner"
 import { getHouseBySlug, getAllHouseSlugs, houses } from "@/lib/houses"
 import type { Metadata } from "next"
+import Link from "next/link"
+import { BookOpen, ChevronRight } from "lucide-react"
 
 interface HousePageProps {
     params: Promise<{ slug: string }>
@@ -59,11 +62,12 @@ export default async function HousePage({ params }: HousePageProps) {
         <main className="min-h-screen">
             <Header />
             <HeroSection house={house} />
+            <SavingsBanner />
 
             {/* Main Content with Booking Sidebar */}
-            <div className="relative z-10">
+            <div className="relative z-20">
                 {/* Gradient fade from hero into content */}
-                <div className="h-24 bg-linear-to-b from-transparent to-background -mt-24" />
+                <div className="h-40 bg-gradient-to-b from-transparent via-background/60 to-background -mt-40" />
                 <div className="bg-background">
                     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
                         <div className="grid lg:grid-cols-3 gap-12">
@@ -143,16 +147,77 @@ export default async function HousePage({ params }: HousePageProps) {
             </div>
 
             <PhotoGallery photos={house.photos} allPhotos={house.allPhotos} houseName={`${house.name}`} />
-            <AmenitiesSection />
-            <ReviewsSection />
-            <LocationSection house={house} />
-            <HostSection />
+
+            {/* More from Velstays */}
             {(() => {
                 const otherHouse = houses.find((h) => h.slug !== house.slug)
                 return otherHouse ? (
                     <OtherHouseBanner currentSlug={house.slug} otherHouse={otherHouse} />
                 ) : null
             })()}
+
+            {/* Things to Know */}
+            <section className="py-16 px-4 sm:px-6 lg:px-8 bg-background">
+                <div className="mx-auto max-w-7xl">
+                    <div className="flex items-center gap-2 mb-2">
+                        <BookOpen className="h-5 w-5 text-muted-foreground" />
+                        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                            Things to know to
+                        </span>
+                    </div>
+                    <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-8">
+                        Enjoy your stay
+                    </h2>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        {[
+                            {
+                                href: "/house-guide",
+                                title: "Wifi details, TV...",
+                                description: "How to use the Wi-Fi, TV, oven and more — your complete manual.",
+                            },
+                            {
+                                href: "/check-in-check-out",
+                                title: "Check-in & Check-out",
+                                description: "Everything about your arrival, departure, and what to expect.",
+                            },
+                            {
+                                href: "/house-rules",
+                                title: "House Rules",
+                                description: "A few simple guidelines to keep the space great for everyone.",
+                            },
+                            {
+                                href: "/cancellation-policy",
+                                title: "Cancellation Policy",
+                                description: "Plans change — see our flexible cancellation options.",
+                            },
+                        ].map((item) => (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className="group relative flex flex-col justify-between rounded-2xl border border-border p-6 transition-all hover:border-primary/30 hover:bg-muted/50 hover:shadow-sm"
+                            >
+                                <div>
+                                    <h4 className="font-serif text-lg font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
+                                        {item.title}
+                                    </h4>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                        {item.description}
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-1 mt-4 text-primary transition-transform duration-200 group-hover:translate-x-1">
+                                    <span className="text-sm font-medium">Read</span>
+                                    <ChevronRight className="h-4 w-4" />
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <AmenitiesSection houseSlug={house.slug} />
+            <ReviewsSection />
+            <LocationSection house={house} />
+            <HostSection />
             <Footer />
         </main>
     )

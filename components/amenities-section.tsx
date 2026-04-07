@@ -37,6 +37,7 @@ import {
   Droplet,
   Zap,
   AlertTriangle,
+  Gamepad2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -47,6 +48,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
+import { useMemo } from "react"
+
+interface AmenitiesSectionProps {
+  houseSlug?: string
+}
 
 const amenityCategories = [
   {
@@ -159,9 +165,9 @@ const amenityCategories = [
   },
 ]
 
-const featuredAmenities = [
+const baseFeaturedAmenities = [
   { icon: Wind, label: "Self check-in" },
-  { icon: Mountain, label: "Dedicated workspace" },
+  { icon: Mountain, label: "Dedicated workspace", house22Label: "Game Room", house22Icon: Gamepad2 },
   { icon: Car, label: "Free private parking" },
   { icon: Mountain, label: "Lush green view" },
   { icon: Wifi, label: "WiFi" },
@@ -170,8 +176,36 @@ const featuredAmenities = [
   { icon: Tv, label: "Smart TV" },
 ]
 
-export function AmenitiesSection() {
+export function AmenitiesSection({ houseSlug = "house-23" }: AmenitiesSectionProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
+  const isHouse22 = houseSlug === "house-22"
+
+  const featuredAmenities = useMemo(() => {
+    return baseFeaturedAmenities.map((a) => {
+      if (isHouse22 && a.house22Label) {
+        return { icon: a.house22Icon || a.icon, label: a.house22Label }
+      }
+      return { icon: a.icon, label: a.label }
+    })
+  }, [isHouse22])
+
+  const dynamicCategories = useMemo(() => {
+    if (!isHouse22) return amenityCategories
+    return amenityCategories.map((cat) => {
+      if (cat.name === "Internet and office") {
+        return {
+          ...cat,
+          name: "Internet and entertainment",
+          items: cat.items.map((item) =>
+            item.label === "Dedicated workspace"
+              ? { icon: Gamepad2, label: "Game Room" }
+              : item
+          ),
+        }
+      }
+      return cat
+    })
+  }, [isHouse22])
 
   return (
     <section id="amenities" className="py-20 px-4 sm:px-6 lg:px-8 bg-secondary/30">
@@ -211,7 +245,7 @@ export function AmenitiesSection() {
               <DialogTitle className="font-serif text-2xl">What this place offers</DialogTitle>
             </DialogHeader>
             <div className="mt-6 space-y-8 bg-background overflow-y-auto max-h-[calc(80vh-100px)]">
-              {amenityCategories.map((category) => (
+              {dynamicCategories.map((category) => (
                 <div key={category.name}>
                   <h3 className="font-semibold text-foreground mb-4">{category.name}</h3>
                   <div className="space-y-3">
