@@ -1,8 +1,8 @@
 "use client"
 
-import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, BedDouble, Bath, Users, Star } from "lucide-react"
+import { SkeletonImage } from "@/components/skeleton-image"
 import { FadeIn } from "@/components/motion"
 import { SlidingHighlight } from "@/components/sliding-highlight"
 import type { HouseData } from "@/lib/houses"
@@ -37,7 +37,7 @@ export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerPr
               <div className="grid md:grid-cols-2">
                 {/* Image side */}
                 <div className="relative aspect-4/3 md:aspect-auto md:min-h-85 overflow-hidden">
-                  <Image
+                  <SkeletonImage
                     src={otherHouse.heroImage}
                     alt={otherHouse.name}
                     fill
@@ -59,7 +59,7 @@ export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerPr
                 <div className="flex flex-col justify-center p-8 sm:p-10 md:p-12">
                   <div className="space-y-5">
                     <div>
-                      <h3 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                      <h3 className="font-brand text-2xl sm:text-3xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                         {otherHouse.name}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1">{otherHouse.location}</p>

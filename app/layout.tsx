@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Poppins, Cormorant_Garamond } from 'next/font/google'
+import { Poppins, Cormorant_Garamond, Dancing_Script } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from 'sonner'
@@ -15,6 +15,12 @@ const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-serif"
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-brand"
 });
 
 export const metadata: Metadata = {
@@ -46,7 +52,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${cormorant.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${cormorant.variable} ${dancingScript.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="theme">
           {children}

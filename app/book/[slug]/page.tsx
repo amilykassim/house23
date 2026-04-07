@@ -31,7 +31,7 @@ import { getHouseBySlug } from "@/lib/houses"
 import type { DateRange } from "react-day-picker"
 
 const WHATSAPP_NUMBER = "250788459885"
-const MOMO_CODE = "*182*8*1*12345#"
+const MOMO_CODE = "*182*8*1*1771031#"
 const USD_TO_RWF = 1460
 
 const steps = [
@@ -65,12 +65,18 @@ export default function BookPage() {
     const [showWhatsAppModal, setShowWhatsAppModal] = useState(false)
     const [bookingSubmitting, setBookingSubmitting] = useState(false)
     const [bookingConfirmed, setBookingConfirmed] = useState(false)
+    const [dynamicPrices, setDynamicPrices] = useState<Record<string, { pricePerNight: number; cleaningFee: number; serviceFee: number }> | null>(null)
 
     // Validation errors
     const [errors, setErrors] = useState<Record<string, string>>({})
 
     useEffect(() => {
         setMounted(true)
+        // Fetch dynamic prices
+        fetch("/api/prices")
+            .then((res) => res.json())
+            .then((data) => setDynamicPrices(data))
+            .catch(() => {})
         // Read booking data from URL search params
         const searchParams = new URLSearchParams(window.location.search)
         const checkIn = searchParams.get("checkIn")
@@ -119,9 +125,9 @@ export default function BookPage() {
             ? differenceInDays(dateRange.to, dateRange.from)
             : 0
 
-    const pricePerNight = house.pricePerNight
-    const cleaningFee = house.cleaningFee
-    const serviceFee = house.serviceFee
+    const pricePerNight = dynamicPrices?.[slug]?.pricePerNight ?? house.pricePerNight
+    const cleaningFee = dynamicPrices?.[slug]?.cleaningFee ?? house.cleaningFee
+    const serviceFee = dynamicPrices?.[slug]?.serviceFee ?? house.serviceFee
     const subtotal = nights * pricePerNight
     const applicableCleaningFee = nights >= 3 ? cleaningFee : 0
     const total = subtotal + applicableCleaningFee + serviceFee

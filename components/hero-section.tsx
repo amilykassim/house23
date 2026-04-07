@@ -1,11 +1,12 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { Star, MapPin, Users, Bed, Bath } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { motion, useScroll, useTransform } from "motion/react"
 import { VelstaysBrand } from "@/components/velstays-brand"
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
+import { houses } from "@/lib/houses"
 import type { HouseData } from "@/lib/houses"
 
 
@@ -16,112 +17,147 @@ interface HeroSectionProps {
 
 export function HeroSection({ house }: HeroSectionProps) {
   const sectionRef = useRef(null)
+  const [dynamicPrice, setDynamicPrice] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch("/api/prices")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data[house.slug]?.pricePerNight != null) {
+          setDynamicPrice(data[house.slug].pricePerNight)
+        }
+      })
+      .catch(() => {})
+  }, [house.slug])
+
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
   })
-  const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"])
+  const imageY = useTransform(scrollYProgress, [0, 1], ["0%", "12%"])
   const contentOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0])
-  const contentY = useTransform(scrollYProgress, [0, 0.5], [0, -50])
+  const contentY = useTransform(scrollYProgress, [0, 0.5], [0, -60])
+
+  const currentIndex = houses.findIndex((h) => h.slug === house.slug)
 
   return (
-    <section ref={sectionRef} className="relative min-h-screen pt-16">
-      {/* Hero Image with Parallax */}
-      <motion.div className="absolute inset-0 pt-16" style={{ y: imageY }}>
-        <Image
-          src={house.heroImage}
-          alt={`${house.name} - vacation home exterior`}
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-linear-to-b from-background/30 via-transparent to-background" />
-      </motion.div>
+    <section
+      ref={sectionRef}
+      className="relative min-h-screen pt-16 bg-black"
+    >
+      {/* Background Image */}
+      <div className="absolute inset-0 pt-16 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute inset-0"
+          style={{ y: imageY }}
+        >
+          <Image
+            src={house.heroImage}
+            alt={`${house.name} - vacation home exterior`}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
+        </motion.div>
+      </div>
 
       {/* Hero Content */}
       <motion.div
-        className="relative z-10 flex min-h-[calc(100vh-4rem)] flex-col justify-end pb-12 px-4 sm:px-6 lg:px-8"
+        className="relative z-10 flex min-h-[calc(100vh-4rem)] flex-col justify-end pb-24 sm:pb-28 px-4 sm:px-6 lg:px-8 pointer-events-none"
         style={{ opacity: contentOpacity, y: contentY }}
       >
         <div className="mx-auto max-w-7xl w-full">
           <div className="max-w-3xl">
-            {/* Rating Badge */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="inline-flex items-center gap-2 bg-background/90 backdrop-blur-sm rounded-full px-4 py-2 mb-6"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 1, ease: [0.21, 0.47, 0.32, 0.98] }}
             >
-              <div className="flex items-center gap-1">
-                <Star className="h-4 w-4 fill-primary text-primary" />
-                <span className="text-sm font-semibold text-foreground">{house.rating}</span>
+            {/* Rating Badge */}
+            <div className="flex flex-wrap items-center gap-2 mb-5">
+              <div className="inline-flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-full px-4 py-2 border border-white/10">
+                <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                <span className="text-sm font-semibold text-white">{house.rating}</span>
+                <span className="text-white/70 text-sm">{house.reviewCount} reviews</span>
+                <span className="text-white/40">|</span>
+                <span className="text-sm text-white font-medium">Superhost</span>
               </div>
-              <span className="text-muted-foreground text-sm">{house.reviewCount} reviews</span>
-              <span className="text-muted-foreground">|</span>
-              <span className="text-sm text-foreground font-medium">Superhost</span>
-            </motion.div>
+            </div>
 
             {/* Title */}
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.35, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-white/90 leading-tight mb-4 drop-shadow-lg text-balance"
-            >
-             <VelstaysBrand variant="light" delay={0.6} /> · {house.name}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="text-lg sm:text-xl text-white/85 mb-6 max-w-2xl drop-shadow-lg text-pretty"
-            >
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-semibold text-white leading-tight mb-4 text-balance">
+              <span className="font-serif">Velstays</span> · <span className="relative inline-block font-brand">
+                <span className="relative z-10">{house.name}</span>
+                <motion.span
+                  className="absolute bottom-0 left-0 right-0 h-3 rounded-full z-0 bg-white/70"
+                  initial={{ scaleX: 0, rotate: 0 }}
+                  animate={{ scaleX: 1, rotate: -2 }}
+                  transition={{ delay: 0.6, duration: 0.6, ease: "easeOut" }}
+                  style={{ originX: 0, transformOrigin: "left center" }}
+                />
+              </span>
+            </h1>
+            <p className="text-lg sm:text-xl text-white/80 mb-6 max-w-2xl text-pretty leading-relaxed">
               {house.tagline}
-            </motion.p>
+            </p>
 
             {/* Location */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="flex items-center gap-2 text-white/80 mb-8"
-            >
+            <div className="flex items-center gap-2 text-white/70 mb-6">
               <MapPin className="h-5 w-5" />
               <span className="text-base">{house.location}</span>
-            </motion.div>
+            </div>
 
             {/* Property Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="flex flex-wrap gap-6 mb-8"
-            >
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur-smreen-989800black rounded-full px-4 py-2">
-                <Users className="h-4 w-4 text-muted-foregroundhitereengb" />
-                <span className="text-sm font-medium text-foreground">{house.guests} guests</span>
-              </div>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur898-sblackm rounded-full px-4 py-2">
-                <Bed className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">{house.bedrooms} bedrooms</span>
-              </div>
-              <div className="flex items-center gap-2 bg-background/90 backdrop-blur898-sblackm rounded-full px-4 py-2">
-                <Bath className="h-4 w-4 text-muted-foregroundhite" />
-                <span className="text-sm font-medium text-foreground">{house.bathrooms} bathrooms</span>
-              </div>
-            </motion.div>
+            <div className="flex flex-wrap gap-3 mb-8">
+              {[
+                { icon: Users, label: `${house.guests} guests` },
+                { icon: Bed, label: `${house.bedrooms} bedrooms` },
+                { icon: Bath, label: `${house.bathrooms} bathrooms` },
+              ].map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 border border-white/10"
+                >
+                  <stat.icon className="h-4 w-4 text-white/70" />
+                  <span className="text-sm font-medium text-white">{stat.label}</span>
+                </div>
+              ))}
+            </div>
 
-            {/* CTA */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.8, ease: [0.21, 0.47, 0.32, 0.98] }}
-              className="flex flex-wrap gap-4"
-            >
+            {/* Price */}
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-semibold text-white">${dynamicPrice ?? house.pricePerNight}</span>
+              <span className="text-white/60 text-sm">/ night</span>
+            </div>
             </motion.div>
           </div>
         </div>
       </motion.div>
+
+      {/* House Selector Pills */}
+      <div className="absolute z-30 bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1 pointer-events-auto bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/10">
+        {houses.map((h, i) => (
+          <Link
+            key={h.slug}
+            href={`/house/${h.slug}`}
+            className="relative px-4 py-1.5 rounded-full text-sm font-medium transition-colors duration-300"
+            aria-label={`Go to ${h.name}`}
+          >
+            {i === currentIndex && (
+              <motion.div
+                layoutId="hero-pill-indicator"
+                className="absolute inset-0 bg-white rounded-full shadow-sm"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <span className={`relative z-10 ${i === currentIndex ? "text-black" : "text-white/70 hover:text-white"}`}>
+              {h.name}
+            </span>
+          </Link>
+        ))}
+      </div>
     </section>
   )
 }

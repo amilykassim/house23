@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { X, ChevronLeft, ChevronRight } from "lucide-react"
+import { SkeletonImage } from "@/components/skeleton-image"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "motion/react"
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
@@ -64,7 +65,7 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
               onClick={() => openLightbox(0)}
               className="relative rounded-2xl overflow-hidden group cursor-pointer w-full h-full"
             >
-              <Image
+              <SkeletonImage
                 src={photos[0].src}
                 alt={photos[0].alt}
                 fill
@@ -84,7 +85,7 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
                 onClick={() => openLightbox(index + 1)}
                 className="relative rounded-2xl overflow-hidden group cursor-pointer w-full h-full"
               >
-                <Image
+                <SkeletonImage
                   src={photo.src}
                   alt={photo.alt}
                   fill

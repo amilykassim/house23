@@ -27,6 +27,7 @@ import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
+import { PricingManager } from "@/components/pricing-manager"
 
 interface Booking {
     id: string
@@ -327,8 +328,8 @@ export default function AdminDashboardPage() {
 
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Revenue Chart + House Performance */}
-                <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-24 lg:self-start">
+                {/* Left: Revenue Chart + House Performance + Pricing */}
+                <div className="lg:col-span-2 space-y-6">
                     {/* Revenue Chart */}
                     <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
                         <div className="flex items-center justify-between mb-6">
@@ -430,6 +431,9 @@ export default function AdminDashboardPage() {
                             })}
                         </div>
                     </div>
+
+                    {/* Pricing Manager */}
+                    <PricingManager />
                 </div>
 
                 {/* Right sidebar */}
