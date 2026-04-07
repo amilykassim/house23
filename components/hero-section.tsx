@@ -41,7 +41,7 @@ export function HeroSection({ house }: HeroSectionProps) {
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-screen pt-16"
+      className="relative min-h-screen pt-16 bg-black"
     >
       {/* Background Image */}
       <div className="absolute inset-0 pt-16 overflow-hidden pointer-events-none">
