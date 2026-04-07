@@ -133,7 +133,7 @@ export const houses: HouseData[] = [
         bedrooms: 2,
         beds: 2,
         bathrooms: 2,
-        pricePerNight: 45,
+        pricePerNight: 41,
         cleaningFee: 10,
         serviceFee: 0,
         photos: [

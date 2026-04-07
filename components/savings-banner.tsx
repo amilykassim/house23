@@ -4,14 +4,31 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X, Sparkles } from "lucide-react"
 
-export function SavingsBanner() {
+interface SavingsBannerProps {
+  slug?: string
+}
+
+export function SavingsBanner({ slug = "house-23" }: SavingsBannerProps) {
   const [show, setShow] = useState(false)
+  const [directPrice, setDirectPrice] = useState(51)
+  const [airbnbPrice, setAirbnbPrice] = useState(61)
 
   useEffect(() => {
     if (sessionStorage.getItem("savingsBannerSeen") === "true") return
+    // Fetch dynamic prices
+    fetch("/api/prices")
+      .then((res) => res.json())
+      .then((data) => {
+        const p = data[slug]
+        if (p) {
+          setDirectPrice(p.pricePerNight)
+          setAirbnbPrice(p.airbnbPricePerNight)
+        }
+      })
+      .catch(() => {})
     const timer = setTimeout(() => setShow(true), 3500)
     return () => clearTimeout(timer)
-  }, [])
+  }, [slug])
 
   const dismiss = () => {
     setShow(false)
@@ -61,7 +78,7 @@ export function SavingsBanner() {
 
               {/* Main message */}
               <p className="text-[15px] font-semibold text-foreground leading-snug mb-4">
-                Save <span className="text-primary">$10 every night</span> when you book directly with us
+                Save <span className="text-primary">${airbnbPrice - directPrice} every night</span> when you book directly with us
               </p>
 
               {/* Price comparison cards */}
@@ -72,7 +89,7 @@ export function SavingsBanner() {
                     Airbnb
                   </p>
                   <p className="text-xl font-bold text-muted-foreground/60 line-through decoration-destructive/60 decoration-2">
-                    $61
+                    ${airbnbPrice}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">per night</p>
                 </div>
@@ -85,7 +102,7 @@ export function SavingsBanner() {
                     transition={{ delay: 0.3, type: "spring", stiffness: 400, damping: 15 }}
                     className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap shadow-sm"
                   >
-                    Save 20%
+                    Save {airbnbPrice > 0 ? Math.round(((airbnbPrice - directPrice) / airbnbPrice) * 100) : 0}%
                   </motion.div>
                   <p className="text-[10px] font-medium uppercase tracking-wider text-primary/60 mb-2">
                     Direct
@@ -96,7 +113,7 @@ export function SavingsBanner() {
                     transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
                     className="text-xl font-bold text-primary"
                   >
-                    $51
+                    ${directPrice}
                   </motion.p>
                   <p className="text-[10px] text-primary/60 mt-0.5">per night</p>
                 </div>

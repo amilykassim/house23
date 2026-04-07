@@ -62,7 +62,7 @@ export default async function HousePage({ params }: HousePageProps) {
         <main className="min-h-screen">
             <Header />
             <HeroSection house={house} />
-            <SavingsBanner />
+            <SavingsBanner slug={house.slug} />
 
             {/* Main Content with Booking Sidebar */}
             <div className="relative z-20">

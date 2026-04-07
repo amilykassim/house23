@@ -56,14 +56,17 @@ export function BookingCard({
   const [otherBlockedDates, setOtherBlockedDates] = useState<Set<string>>(new Set())
   const [isReserving, setIsReserving] = useState(false)
   const [showHouseRequired, setShowHouseRequired] = useState(false)
+  const [dynamicPrices, setDynamicPrices] = useState<Record<string, { pricePerNight: number; cleaningFee: number; serviceFee: number; airbnbPricePerNight: number }> | null>(null)
 
   // Get the selected house's data
   const selectedHouse = houses.find((h) => h.slug === selectedSlug) || houses[0]
   const otherHouse = houses.find((h) => h.slug !== selectedSlug) || houses[1]
 
-  const pricePerNight = selectedHouse.pricePerNight
-  const cleaningFee = selectedHouse.cleaningFee
-  const serviceFee = selectedHouse.serviceFee
+  // Use dynamic prices if available, otherwise fall back to static
+  const dp = dynamicPrices?.[selectedSlug]
+  const pricePerNight = dp?.pricePerNight ?? selectedHouse.pricePerNight
+  const cleaningFee = dp?.cleaningFee ?? selectedHouse.cleaningFee
+  const serviceFee = dp?.serviceFee ?? selectedHouse.serviceFee
   const rating = selectedHouse.rating
   const reviewCount = selectedHouse.reviewCount
   const maxGuests = selectedHouse.guests
@@ -88,6 +91,11 @@ export function BookingCard({
 
   useEffect(() => {
     setMounted(true)
+    // Fetch dynamic prices
+    fetch("/api/prices")
+      .then((res) => res.json())
+      .then((data) => setDynamicPrices(data))
+      .catch(() => {})
   }, [])
 
   const fetchBlockedDates = useCallback(() => {

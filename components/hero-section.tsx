@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Star, MapPin, Users, Bed, Bath } from "lucide-react"
 import { motion, useScroll, useTransform } from "motion/react"
 import { VelstaysBrand } from "@/components/velstays-brand"
-import { useRef } from "react"
+import { useRef, useState, useEffect } from "react"
 import { houses } from "@/lib/houses"
 import type { HouseData } from "@/lib/houses"
 
@@ -15,6 +15,19 @@ interface HeroSectionProps {
 
 export function HeroSection({ house }: HeroSectionProps) {
   const sectionRef = useRef(null)
+  const [dynamicPrice, setDynamicPrice] = useState<number | null>(null)
+
+  useEffect(() => {
+    fetch("/api/prices")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data[house.slug]?.pricePerNight != null) {
+          setDynamicPrice(data[house.slug].pricePerNight)
+        }
+      })
+      .catch(() => {})
+  }, [house.slug])
+
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
@@ -113,7 +126,7 @@ export function HeroSection({ house }: HeroSectionProps) {
 
             {/* Price */}
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-semibold text-white">${house.pricePerNight}</span>
+              <span className="text-3xl font-semibold text-white">${dynamicPrice ?? house.pricePerNight}</span>
               <span className="text-white/60 text-sm">/ night</span>
             </div>
             </motion.div>
