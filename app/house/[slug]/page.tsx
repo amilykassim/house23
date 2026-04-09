@@ -10,6 +10,7 @@ import { HostSection } from "@/components/host-section"
 import { Footer } from "@/components/footer"
 import { OtherHouseBanner } from "@/components/other-house-banner"
 import { SavingsBanner } from "@/components/savings-banner"
+import { AnimatedHighlights } from "@/components/animated-highlights"
 import { getHouseBySlug, getAllHouseSlugs, houses } from "@/lib/houses"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -91,41 +92,7 @@ export default async function HousePage({ params }: HousePageProps) {
                                 </section>
 
                                 {/* Highlights */}
-                                <section className="pt-8 border-t border-border">
-                                    <div className="grid gap-6">
-                                        {house.highlights.map((highlight) => (
-                                            <div key={highlight.title} className="flex gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center shrink-0">
-                                                    {highlight.icon === "sparkle" && (
-                                                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                                                        </svg>
-                                                    )}
-                                                    {highlight.icon === "location" && (
-                                                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        </svg>
-                                                    )}
-                                                    {highlight.icon === "calendar" && (
-                                                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                        </svg>
-                                                    )}
-                                                    {highlight.icon === "lock" && (
-                                                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-foreground">{highlight.title}</h3>
-                                                    <p className="text-muted-foreground text-sm">{highlight.description}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
+                                <AnimatedHighlights highlights={house.highlights} />
                             </div>
 
                             {/* Booking Sidebar */}

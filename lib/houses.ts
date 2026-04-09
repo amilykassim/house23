@@ -26,7 +26,7 @@ export interface HouseData {
     highlights: {
         title: string
         description: string
-        icon: "sparkle" | "location" | "calendar" | "lock"
+        icon: "sparkle" | "location" | "calendar" | "lock" | "workspace" | "gamepad"
     }[]
     nearbyPlaces: {
         name: string
@@ -44,7 +44,7 @@ export const houses: HouseData[] = [
         description: [
             "Welcome to House 23 by Velstays. This architectural masterpiece seamlessly blends indoor and outdoor living, offering panoramic green zone views from the master bedroom and living room.",
             "Step inside to discover an open-concept living space bathed in natural light, featuring almost floor-to-ceiling windows, custom furnishings, and designer finishes throughout. The gourmet kitchen is equipped with professional-grade appliances, perfect for preparing memorable meals with locally sourced ingredients.",
-            "Outside, your private living room overlooks the lush green surroundings, while the outdoor sitting area provides the perfect setting for al fresco dining and sunset cocktails. Velstays offers the ultimate Kigalian experience.",
+            "Outside, your private living room overlooks the lush green surroundings, while the outdoor sitting area provides the perfect setting for al fresco dining and sunset cocktails. Velstays offers the ultimate calm experience.",
         ],
         heroImage: "/images/EMMA9964.jpg",
         location: "Kicukiro - Kigali, Rwanda",
@@ -89,18 +89,18 @@ export const houses: HouseData[] = [
         highlights: [
             {
                 title: "Private from the Get Go",
-                description: "Enjoy the entire place to yourself — complete comfort, zero sharing.",
+                description: "Enjoy the entire place to yourself, complete comfort, zero sharing.",
                 icon: "lock",
+            },
+            {
+                title: "Dedicated Workspace",
+                description: "A quiet, well-equipped office space, perfect for remote work",
+                icon: "workspace",
             },
             {
                 title: "Exceptional hospitality",
                 description: "42 guests gave the check-in process a 5-star rating.",
                 icon: "sparkle",
-            },
-            {
-                title: "Great location",
-                description: "100% of recent guests gave the location a 5-star rating.",
-                icon: "location",
             },
         ],
         nearbyPlaces: [
@@ -127,8 +127,8 @@ export const houses: HouseData[] = [
         location: "Kicukiro - Kigali, Rwanda",
         mapEmbed:
             "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1062.1763704881878!2d30.122715354221366!3d-1.987933949009095!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x19dca70024a51111%3A0xdedd2366044e8c36!2sHouse%2022!5e1!3m2!1sen!2srw!4v1774850432549!5m2!1sen!2srw",
-        rating: 4.9,
-        reviewCount: 28,
+        rating: 4.75,
+        reviewCount: 4,
         guests: 3,
         bedrooms: 2,
         beds: 2,
@@ -158,18 +158,18 @@ export const houses: HouseData[] = [
         highlights: [
             {
                 title: "Private from the Get Go",
-                description: "Enjoy the entire place to yourself — complete comfort, zero sharing.",
+                description: "Enjoy the entire place to yourself, complete comfort, zero sharing.",
                 icon: "lock",
+            },
+            {
+                title: "Game Room",
+                description: "Unwind with games and entertainment, fun for everyone staying.",
+                icon: "gamepad",
             },
             {
                 title: "Exceptional hospitality",
                 description: "28 guests gave the check-in process a 5-star rating.",
                 icon: "sparkle",
-            },
-            {
-                title: "Great location",
-                description: "95% of recent guests gave the location a 5-star rating.",
-                icon: "location",
             },
         ],
         nearbyPlaces: [
