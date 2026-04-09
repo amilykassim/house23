@@ -18,14 +18,14 @@ export default function AdminListingPage() {
 
             {/* Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Pricing Manager */}
-                <div className="lg:col-span-2">
-                    <PricingManager />
-                </div>
-
                 {/* Guide Access Manager */}
                 <div className="lg:col-span-2">
                     <GuideAccessManager />
+                </div>
+
+                {/* Pricing Manager */}
+                <div className="lg:col-span-2">
+                    <PricingManager />
                 </div>
             </div>
         </div>
