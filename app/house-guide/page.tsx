@@ -866,7 +866,7 @@ export default function HouseGuidePage() {
 
                     <FadeIn direction="up" delay={0.1}>
                         <p className="text-muted-foreground text-lg leading-relaxed max-w-xl mb-8">
-                            From the TV remote to the coffee maker, from LED mirrors to the Microwave — tap through each room to master everything.
+                            From the TV remote to the coffee maker, from LED mirrors to the Microwave. Tap through each room to master everything.
                         </p>
                     </FadeIn>
 

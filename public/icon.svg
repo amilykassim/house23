@@ -1,25 +1,25 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- Left leg: vivid red top → deep crimson bottom -->
+    <!-- Left leg: bright white top → soft grey bottom -->
     <linearGradient id="v-left" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#FF1A1A"/>
-      <stop offset="100%" stop-color="#B20710"/>
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#D4D4D4"/>
     </linearGradient>
-    <!-- Right leg: deep crimson top → vivid red bottom (opposing = 3-D ribbon) -->
+    <!-- Right leg: grey top → white bottom (opposing = 3-D ribbon) -->
     <linearGradient id="v-right" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#9B0000"/>
-      <stop offset="100%" stop-color="#FF1A1A"/>
+      <stop offset="0%" stop-color="#A3A3A3"/>
+      <stop offset="100%" stop-color="#FFFFFF"/>
     </linearGradient>
     <!-- Shadow on the right (rear) leg for depth -->
     <linearGradient id="v-shadow" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-      <stop offset="55%" stop-color="#000" stop-opacity="0.4"/>
+      <stop offset="55%" stop-color="#000" stop-opacity="0.25"/>
       <stop offset="100%" stop-color="#000" stop-opacity="0"/>
     </linearGradient>
-    <!-- Outer glow filter to make red pop -->
+    <!-- Subtle glow for the white V -->
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
-      <feFlood flood-color="#E50914" flood-opacity="0.35" result="color"/>
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feFlood flood-color="#FFFFFF" flood-opacity="0.15" result="color"/>
       <feComposite in="color" in2="blur" operator="in" result="shadow"/>
       <feMerge>
         <feMergeNode in="shadow"/>
@@ -28,15 +28,10 @@
     </filter>
   </defs>
 
-  <!-- Dark background — subtle so the red dominates -->
-  <rect width="180" height="180" rx="36" fill="#141414"/>
+  <!-- Black background -->
+  <rect width="180" height="180" rx="36" fill="#0A0A0A"/>
 
-  <!--
-    True "V" shape — 3-layer Netflix ribbon construction:
-    1. Right diagonal leg (rear, opposing gradient)
-    2. Shadow overlay for 3-D depth
-    3. Left diagonal leg (front, bright gradient on top)
-  -->
+  <!-- White "V" shape — 3-layer ribbon construction -->
   <g filter="url(#glow)">
     <!-- Right leg of V (rear) — top-right down to bottom-center -->
     <polygon points="156,24 134,24 90,148 112,148" fill="url(#v-right)"/>

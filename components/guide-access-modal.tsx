@@ -161,7 +161,7 @@ export function GuideAccessModal({ onSuccess }: GuideAccessModalProps) {
                                         Welcome, {guestName}! 🎉
                                     </h2>
                                     <p className="text-sm text-muted-foreground">
-                                        Loading your house guide...
+                                        Preparing top-tier comfort tips 😌
                                     </p>
                                 </motion.div>
                             ) : (
