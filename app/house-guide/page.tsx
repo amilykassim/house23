@@ -3,6 +3,7 @@
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { ReadingNavigation } from "@/components/reading-navigation"
+import { GuideAccessModal } from "@/components/guide-access-modal"
 import { FadeIn, ScaleIn } from "@/components/motion"
 import { useState, useRef, useEffect, useCallback, type ReactNode } from "react"
 import { motion, AnimatePresence, useScroll, useTransform } from "motion/react"
@@ -733,11 +734,24 @@ const zones: RoomZone[] = [
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 export default function HouseGuidePage() {
+    const [authenticated, setAuthenticated] = useState(false)
+    const [checkingAuth, setCheckingAuth] = useState(true)
+    const [guestName, setGuestName] = useState("")
     const [activeZone, setActiveZone] = useState("kitchen")
     const [completedItems, setCompletedItems] = useState<Set<string>>(new Set())
     const [wifiPassed, setWifiPassed] = useState(false)
     const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
     const wifiSentinelRef = useRef<HTMLDivElement>(null)
+
+    // Check if already authenticated this session
+    useEffect(() => {
+        const hasAccess = sessionStorage.getItem("guide_access")
+        if (hasAccess === "true") {
+            setAuthenticated(true)
+            setGuestName(sessionStorage.getItem("guide_guest_name") || "")
+        }
+        setCheckingAuth(false)
+    }, [])
 
     // Watch when the wifi sentinel scrolls past the header (top: 64px)
     useEffect(() => {
@@ -778,6 +792,30 @@ export default function HouseGuidePage() {
         sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" })
     }
 
+    // Loading state while checking session
+    if (checkingAuth) {
+        return (
+            <main className="min-h-screen">
+                <Header />
+                <div className="flex items-center justify-center h-[60vh]">
+                    <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+                </div>
+                <Footer />
+            </main>
+        )
+    }
+
+    // Show auth modal if not authenticated
+    if (!authenticated) {
+        return (
+            <main className="min-h-screen">
+                <Header />
+                <GuideAccessModal onSuccess={(name) => { setGuestName(name); setAuthenticated(true) }} />
+                <Footer />
+            </main>
+        )
+    }
+
     return (
         <main className="min-h-screen">
             <Header />
@@ -790,11 +828,24 @@ export default function HouseGuidePage() {
                 <div className="absolute top-40 -right-32 w-80 h-80 bg-fuchsia-200/20 dark:bg-fuchsia-900/10 rounded-full blur-3xl pointer-events-none" />
 
                 <div className="mx-auto max-w-3xl relative">
-                    <FadeIn direction="up">
-                        <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-4">
-                            Your complete home manual
-                        </p>
-                    </FadeIn>
+                    {guestName && (
+                        <FadeIn direction="up">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-5">
+                                <span className="text-lg">👋</span>
+                                <span className="text-sm font-semibold text-primary">
+                                    Welcome, {guestName}
+                                </span>
+                            </div>
+                        </FadeIn>
+                    )}
+
+                    {!guestName && (
+                        <FadeIn direction="up">
+                            <p className="text-sm font-semibold uppercase tracking-widest text-primary mb-4">
+                                Your complete home manual
+                            </p>
+                        </FadeIn>
+                    )}
 
                     <FadeIn direction="up" delay={0.05}>
                         <h1 className="font-serif text-4xl sm:text-5xl md:text-6xl font-semibold text-foreground mb-5 leading-[1.1]">

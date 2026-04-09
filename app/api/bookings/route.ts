@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
 import { readData, writeData } from "@/lib/storage"
+import type { GuideAccessEntry } from "@/app/api/guide-access/route"
 
 export const dynamic = "force-dynamic"
 
@@ -72,6 +73,49 @@ async function unblockDatesForBooking(house: string, checkIn: string, checkOut: 
     dates.forEach((d) => current.delete(d))
     blockedDates[house] = Array.from(current).sort()
     await writeBlockedDates(blockedDates)
+}
+
+async function readGuideAccess(): Promise<GuideAccessEntry[]> {
+    return readData<GuideAccessEntry[]>("guide-access.json", [])
+}
+
+async function writeGuideAccess(data: GuideAccessEntry[]): Promise<void> {
+    await writeData("guide-access.json", data)
+}
+
+function extractLast4(phone: string): string {
+    return phone.replace(/\D/g, "").slice(-4)
+}
+
+async function addGuideAccessForBooking(booking: Booking): Promise<void> {
+    const code = extractLast4(booking.guestPhone)
+    if (code.length !== 4) return
+
+    const entries = await readGuideAccess()
+    if (entries.some((e) => e.code === code)) return // already exists
+
+    entries.push({
+        code,
+        label: booking.guestName,
+        source: "booking",
+        bookingId: booking.id,
+        createdAt: new Date().toISOString(),
+    })
+    await writeGuideAccess(entries)
+}
+
+async function removeGuideAccessForBooking(booking: Booking): Promise<void> {
+    const code = extractLast4(booking.guestPhone)
+    if (code.length !== 4) return
+
+    const entries = await readGuideAccess()
+    // Only remove if this was the booking that added it
+    const filtered = entries.filter(
+        (e) => !(e.code === code && e.source === "booking" && e.bookingId === booking.id)
+    )
+    if (filtered.length !== entries.length) {
+        await writeGuideAccess(filtered)
+    }
 }
 
 async function generateId(): Promise<string> {
@@ -218,8 +262,12 @@ export async function PATCH(request: NextRequest) {
     const booking = bookings[index]
     if (status === "confirmed" && previousStatus !== "confirmed") {
         await blockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
+        // Auto-add guest phone to house guide access
+        await addGuideAccessForBooking(booking)
     } else if (status !== "confirmed" && previousStatus === "confirmed") {
         await unblockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
+        // Remove guest phone from house guide access
+        await removeGuideAccessForBooking(booking)
     }
 
     // Send email notifications (non-blocking)

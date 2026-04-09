@@ -27,7 +27,7 @@ import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
-import { PricingManager } from "@/components/pricing-manager"
+
 
 interface Booking {
     id: string
@@ -432,8 +432,7 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
 
-                    {/* Pricing Manager */}
-                    <PricingManager />
+
                 </div>
 
                 {/* Right sidebar */}

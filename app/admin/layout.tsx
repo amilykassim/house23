@@ -8,6 +8,7 @@ import {
     LayoutDashboard,
     CalendarDays,
     BookOpen,
+    ClipboardList,
     Home,
     Menu,
     X,
@@ -18,6 +19,7 @@ const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { href: "/admin/bookings", label: "Bookings", icon: BookOpen, exact: false },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
+    { href: "/admin/listing", label: "Listing", icon: ClipboardList, exact: false },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
