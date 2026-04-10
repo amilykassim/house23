@@ -629,7 +629,7 @@ _Sent from Velstays website_`
                                                             3
                                                         </div>
                                                         <p className="text-sm text-foreground">
-                                                            Enter your MoMo PIN to confirm
+                                                            Confirm if the merchant name is <span className="font-semibold">Amily</span>
                                                         </p>
                                                     </div>
 
@@ -638,7 +638,22 @@ _Sent from Velstays website_`
                                                             4
                                                         </div>
                                                         <p className="text-sm text-foreground">
+                                                            Enter your MoMo PIN to confirm
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex gap-3 items-center">
+                                                        <div className="w-6 h-6 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-bold shrink-0">
+                                                            5
+                                                        </div>
+                                                        <p className="text-sm text-foreground">
                                                             Copy the <span className="font-semibold">Transaction ID</span> from SMS
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="mt-4 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                                        <p className="text-xs text-foreground">
+                                                            <span className="font-semibold">Note:</span> Double check if the merchant name on the payment code is <span className="font-semibold">Amily</span>
                                                         </p>
                                                     </div>
                                                 </div>
