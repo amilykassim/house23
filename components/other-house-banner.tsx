@@ -1,7 +1,9 @@
 "use client"
 
+import { useRef } from "react"
 import Link from "next/link"
 import { ArrowRight, BedDouble, Bath, Users, Star } from "lucide-react"
+import { motion, useInView } from "motion/react"
 import { SkeletonImage } from "@/components/skeleton-image"
 import { FadeIn } from "@/components/motion"
 import { SlidingHighlight } from "@/components/sliding-highlight"
@@ -13,6 +15,9 @@ interface OtherHouseBannerProps {
 }
 
 export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerProps) {
+  const imageRef = useRef(null)
+  const isImageInView = useInView(imageRef, { once: true, amount: 0.3 })
+
   return (
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-background overflow-hidden">
       {/* Subtle top divider */}
@@ -36,23 +41,41 @@ export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerPr
             <div className="relative rounded-2xl overflow-hidden border border-border/50 bg-card shadow-[0_2px_20px_-6px_rgba(0,0,0,0.08),0_0_0_1px_rgba(0,0,0,0.02)] hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.15),0_8px_20px_-8px_rgba(0,0,0,0.1)] dark:shadow-[0_2px_20px_-6px_rgba(0,0,0,0.3),0_0_0_1px_rgba(255,255,255,0.03)] dark:hover:shadow-[0_20px_60px_-12px_rgba(0,0,0,0.5),0_8px_20px_-8px_rgba(0,0,0,0.4)] transition-shadow duration-500">
               <div className="grid md:grid-cols-2">
                 {/* Image side */}
-                <div className="relative aspect-4/3 md:aspect-auto md:min-h-85 overflow-hidden">
-                  <SkeletonImage
-                    src={otherHouse.heroImage}
-                    alt={otherHouse.name}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    sizes="(max-width: 768px) 100vw, 50vw"
-                  />
+                <div ref={imageRef} className="relative aspect-4/3 md:aspect-auto md:min-h-85 overflow-hidden">
+                  <motion.div
+                    initial={{ scale: 1.2, opacity: 0 }}
+                    animate={isImageInView ? { scale: 1, opacity: 1 } : { scale: 1.2, opacity: 0 }}
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 1.2, ease: [0.21, 0.47, 0.32, 0.98] }}
+                    className="absolute inset-0"
+                  >
+                    <SkeletonImage
+                      src={otherHouse.heroImage}
+                      alt={otherHouse.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                  </motion.div>
                   {/* Gradient overlay for text readability on mobile */}
-                  <div className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent md:bg-linear-to-r md:from-transparent md:via-transparent md:to-black/10" />
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={isImageInView ? { opacity: 1 } : { opacity: 0 }}
+                    transition={{ duration: 0.8, delay: 0.4 }}
+                    className="absolute inset-0 bg-linear-to-t from-black/40 via-transparent to-transparent md:bg-linear-to-r md:from-transparent md:via-transparent md:to-black/10"
+                  />
 
                   {/* Rating badge */}
-                  <div className="absolute top-4 left-4 flex items-center gap-1.5 bg-white/90 dark:bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm">
+                  <motion.div
+                    initial={{ opacity: 0, y: -12 }}
+                    animate={isImageInView ? { opacity: 1, y: 0 } : { opacity: 0, y: -12 }}
+                    transition={{ duration: 0.5, delay: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}
+                    className="absolute top-4 left-4 flex items-center gap-1.5 bg-white/90 dark:bg-black/70 backdrop-blur-sm rounded-full px-3 py-1.5 shadow-sm"
+                  >
                     <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
                     <span className="text-sm font-semibold text-foreground">{otherHouse.rating}</span>
                     <span className="text-xs text-muted-foreground">({otherHouse.reviewCount})</span>
-                  </div>
+                  </motion.div>
                 </div>
 
                 {/* Content side */}

@@ -65,13 +65,19 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
               onClick={() => openLightbox(0)}
               className="relative rounded-2xl overflow-hidden group cursor-pointer w-full h-full"
             >
-              <SkeletonImage
-                src={photos[0].src}
-                alt={photos[0].alt}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors" />
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                className="w-full h-full"
+              >
+                <SkeletonImage
+                  src={photos[0].src}
+                  alt={photos[0].alt}
+                  fill
+                  className="object-cover"
+                />
+              </motion.div>
+              <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 pointer-events-none" />
               <span className="absolute bottom-4 left-4 bg-background/90 backdrop-blur-sm text-foreground text-sm font-medium px-3 py-1.5 rounded-full">
                 {photos[0].label}
               </span>
@@ -85,13 +91,19 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
                 onClick={() => openLightbox(index + 1)}
                 className="relative rounded-2xl overflow-hidden group cursor-pointer w-full h-full"
               >
-                <SkeletonImage
-                  src={photo.src}
-                  alt={photo.alt}
-                  fill
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors" />
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  className="w-full h-full"
+                >
+                  <SkeletonImage
+                    src={photo.src}
+                    alt={photo.alt}
+                    fill
+                    className="object-cover"
+                  />
+                </motion.div>
+                <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/10 transition-colors duration-300 pointer-events-none" />
                 <span className="absolute bottom-3 left-3 bg-background/90 backdrop-blur-sm text-foreground text-xs font-medium px-2.5 py-1 rounded-full">
                   {photo.label}
                 </span>
