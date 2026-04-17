@@ -16,6 +16,7 @@ import { getOrderedPhotos } from "@/lib/photo-order"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { BookOpen, ChevronRight } from "lucide-react"
+import { ForceTheme } from "@/components/force-theme"
 
 interface HousePageProps {
     params: Promise<{ slug: string }>
@@ -64,6 +65,7 @@ export default async function HousePage({ params }: HousePageProps) {
 
     return (
         <main className="min-h-screen">
+            <ForceTheme theme="light" />
             <Header />
             <HeroSection house={house} />
             <SavingsBanner slug={house.slug} />
