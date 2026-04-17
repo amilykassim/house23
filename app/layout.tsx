@@ -58,7 +58,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${poppins.variable} ${cormorant.variable} ${dancingScript.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} storageKey="theme">
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="theme">
           {children}
           <Toaster position="top-right" toastOptions={{ className: '!bg-card !text-foreground !border-border' }} />
           <Analytics />

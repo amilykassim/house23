@@ -7,6 +7,7 @@ import { motion, useMotionValue, useSpring, useTransform } from "motion/react"
 import { Star, ArrowUpRight } from "lucide-react"
 import { houses } from "@/lib/houses"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { SlidingHighlight } from "@/components/sliding-highlight"
 
 const MOBILE_QUERY = "(max-width: 768px)"
 function useIsMobile() {
@@ -245,6 +246,54 @@ export function LandingHero() {
 
   return (
     <div className="relative min-h-dvh w-full bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden">
+      {/* Stripe-style animated gradient blobs — light mode */}
+      {[
+        { color: "rgba(120,80,220,0.45)", dark: "rgba(100,50,200,0.35)", x: ["10%","85%","50%","10%"], y: ["15%","30%","80%","15%"], size: "45%" },
+        { color: "rgba(60,140,255,0.40)", dark: "rgba(30,80,200,0.30)", x: ["80%","20%","60%","80%"], y: ["20%","70%","10%","20%"], size: "50%" },
+        { color: "rgba(0,210,180,0.35)",  dark: "rgba(0,150,130,0.28)", x: ["50%","10%","90%","50%"], y: ["80%","30%","60%","80%"], size: "40%" },
+        { color: "rgba(220,60,120,0.35)", dark: "rgba(180,30,80,0.28)", x: ["90%","40%","15%","90%"], y: ["50%","10%","60%","50%"], size: "38%" },
+        { color: "rgba(255,180,50,0.30)", dark: "rgba(200,130,20,0.22)", x: ["30%","70%","20%","30%"], y: ["60%","15%","45%","60%"], size: "35%" },
+      ].map((blob, i) => (
+        <div key={i}>
+          <motion.div
+            className="absolute rounded-full pointer-events-none dark:hidden"
+            style={{
+              width: blob.size,
+              height: blob.size,
+              background: `radial-gradient(circle, ${blob.color} 0%, transparent 70%)`,
+              filter: "blur(60px)",
+            }}
+            animate={{
+              left: blob.x,
+              top: blob.y,
+            }}
+            transition={{
+              duration: 10 + i * 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+          <motion.div
+            className="absolute rounded-full pointer-events-none hidden dark:block"
+            style={{
+              width: blob.size,
+              height: blob.size,
+              background: `radial-gradient(circle, ${blob.dark} 0%, transparent 70%)`,
+              filter: "blur(60px)",
+            }}
+            animate={{
+              left: blob.x,
+              top: blob.y,
+            }}
+            transition={{
+              duration: 10 + i * 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+        </div>
+      ))}
+
       {/* Noise grain texture — desktop only */}
       <div
         className="absolute inset-0 opacity-[0.035] pointer-events-none hidden sm:block"
@@ -266,7 +315,7 @@ export function LandingHero() {
           transition={{ duration: 0.6, delay: 0.1 }}
         >
           <span className="font-serif text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white tracking-tight">
-            Velstays
+            <SlidingHighlight delay={0.8}>Velstays</SlidingHighlight>
           </span>
         </motion.div>
         <motion.div
@@ -297,7 +346,7 @@ export function LandingHero() {
           >
             Two homes.
             <br />
-            <span className="text-gray-300 dark:text-white/30">
+            <span className="text-gray-500 dark:text-white/30">
               {displayed}
               <motion.span
                 className="inline-block w-0.5 h-[0.85em] bg-gray-300 dark:bg-white/30 align-middle ml-0.5 translate-y-[0.05em]"
