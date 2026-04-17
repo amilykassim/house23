@@ -2,6 +2,7 @@
 
 import { PricingManager } from "@/components/pricing-manager"
 import { GuideAccessManager } from "@/components/guide-access-manager"
+import { PhotoOrderManager } from "@/components/photo-order-manager"
 
 export default function AdminListingPage() {
     return (
@@ -12,12 +13,17 @@ export default function AdminListingPage() {
                     Listing
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                    Manage pricing and house guide access
+                    Manage photos, pricing, and house guide access
                 </p>
             </div>
 
             {/* Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Photo Order Manager */}
+                <div className="lg:col-span-2">
+                    <PhotoOrderManager />
+                </div>
+
                 {/* Guide Access Manager */}
                 <div className="lg:col-span-2">
                     <GuideAccessManager />

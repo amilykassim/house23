@@ -12,6 +12,7 @@ import { OtherHouseBanner } from "@/components/other-house-banner"
 import { SavingsBanner } from "@/components/savings-banner"
 import { AnimatedHighlights } from "@/components/animated-highlights"
 import { getHouseBySlug, getAllHouseSlugs, houses } from "@/lib/houses"
+import { getOrderedPhotos } from "@/lib/photo-order"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { BookOpen, ChevronRight } from "lucide-react"
@@ -58,6 +59,8 @@ export default async function HousePage({ params }: HousePageProps) {
     if (!house) {
         notFound()
     }
+
+    const { photos, allPhotos } = await getOrderedPhotos(house)
 
     return (
         <main className="min-h-screen">
@@ -113,7 +116,7 @@ export default async function HousePage({ params }: HousePageProps) {
                 </div>
             </div>
 
-            <PhotoGallery photos={house.photos} allPhotos={house.allPhotos} houseName={`${house.name}`} />
+            <PhotoGallery photos={photos} allPhotos={allPhotos} houseName={`${house.name}`} />
 
             {/* More from Velstays */}
             {(() => {

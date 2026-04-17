@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation"
-import { DEFAULT_HOUSE_SLUG } from "@/lib/houses"
+import { LandingHero } from "@/components/landing-hero"
 
 export default function HomePage() {
-  redirect(`/house/${DEFAULT_HOUSE_SLUG}`)
+  return <LandingHero />
 }
