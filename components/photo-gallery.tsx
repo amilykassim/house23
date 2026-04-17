@@ -120,7 +120,7 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
             className="rounded-full px-8 hover:bg-transparent hover:border-foreground hover:text-foreground"
             onClick={openAllPhotos}
           >
-            View All Photos
+            View all {lightboxPhotos.length} photos 
           </Button>
         </FadeIn>
       </div>
