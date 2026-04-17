@@ -467,3 +467,92 @@ export async function sendAdminNewBookingNotification(data: BookingEmailData) {
         console.error("Failed to send admin notification email:", error)
     }
 }
+
+export async function sendAdminGuideAccessNotification(data: {
+    guestName: string
+    code: string
+}) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping guide access notification email")
+        return
+    }
+    if (!process.env.RESEND_API_KEY) {
+        console.warn("RESEND_API_KEY not set — skipping guide access notification email")
+        return
+    }
+
+    const accessTime = new Date().toLocaleString("en-US", {
+        timeZone: "Africa/Kigali",
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+    })
+
+    try {
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: ADMIN_EMAIL,
+            subject: `WiFi Access — ${data.guestName} viewed WiFi details`,
+            html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin:0;padding:0;background-color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+    <div style="max-width:560px;margin:0 auto;padding:40px 20px;">
+        <div style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+            <!-- Header -->
+            <div style="background:#18181b;padding:32px 24px;text-align:center;">
+                <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">📶 WiFi Access Notification</h1>
+                <p style="color:#a1a1aa;font-size:13px;margin:0;">A guest has accessed the WiFi details</p>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:24px;">
+                <p style="color:#52525b;font-size:14px;line-height:1.6;margin:0 0 20px;">
+                    A guest has successfully entered their access code and viewed the house guide, including WiFi credentials.
+                </p>
+
+                <!-- Access Details -->
+                <div style="background:#f0fdf4;border:2px solid #bbf7d0;border-radius:12px;padding:20px;margin:0 0 20px;">
+                    <h3 style="color:#166534;font-size:13px;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px;">Access Details</h3>
+                    <table style="width:100%;border-collapse:collapse;">
+                        <tr>
+                            <td style="color:#15803d;font-size:13px;padding:4px 0;">Guest</td>
+                            <td style="color:#166534;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">${data.guestName}</td>
+                        </tr>
+                        <tr>
+                            <td style="color:#15803d;font-size:13px;padding:4px 0;">Code Used</td>
+                            <td style="color:#166534;font-size:13px;padding:4px 0;text-align:right;font-weight:600;font-family:monospace;">${data.code}</td>
+                        </tr>
+                        <tr>
+                            <td style="color:#15803d;font-size:13px;padding:4px 0;">Time</td>
+                            <td style="color:#166534;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">${accessTime}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div style="background:#eff6ff;border-radius:12px;padding:16px;text-align:center;">
+                    <p style="color:#1e40af;font-size:13px;margin:0;font-weight:600;">ℹ️ For your records only</p>
+                    <p style="color:#1e40af;font-size:12px;margin:4px 0 0;opacity:0.8;">No action needed — the guest now has access to the house guide.</p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="padding:20px 24px;border-top:1px solid #e5e7eb;text-align:center;">
+                <p style="color:#a1a1aa;font-size:11px;margin:0;">Velstays · Kigali, Rwanda</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`,
+        })
+    } catch (error) {
+        console.error("Failed to send guide access notification email:", error)
+    }
+}

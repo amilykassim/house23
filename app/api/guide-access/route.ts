@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { readData, writeData } from "@/lib/storage"
+import { sendAdminGuideAccessNotification } from "@/lib/email"
 
 export const dynamic = "force-dynamic"
 
@@ -39,6 +40,11 @@ export async function GET(request: NextRequest) {
         const code = verify.replace(/\D/g, "").slice(-4)
         const entry = entries.find((e) => e.code === code)
         if (entry) {
+            // Notify admin that a guest accessed WiFi details (fire and forget)
+            sendAdminGuideAccessNotification({
+                guestName: entry.label || "Unknown Guest",
+                code: entry.code,
+            }).catch(() => {})
             return NextResponse.json({ valid: true, name: entry.label })
         }
         return NextResponse.json({ valid: false })
