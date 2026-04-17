@@ -78,6 +78,7 @@
   --font-sans: var(--font-sans), 'Poppins', system-ui, sans-serif;
   --font-serif: var(--font-serif), 'Cormorant Garamond', Georgia, serif;
   --font-brand: var(--font-brand), 'Dancing Script', cursive;
+  --font-doodle: var(--font-doodle), 'Caveat', cursive;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
   --color-foreground: var(--foreground);

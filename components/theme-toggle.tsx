@@ -1,7 +1,6 @@
 'use client'
 
 import { useTheme } from 'next-themes'
-import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 
 function SunIcon({ className }: { className?: string }) {
@@ -46,18 +45,17 @@ export function ThemeToggle() {
       className="relative h-8 w-16 rounded-full bg-black/8 border border-black/10 dark:bg-white/10 dark:border-white/10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
       aria-label={`Switch to ${isDark ? 'light' : 'dark'} mode`}
     >
-      {/* Sliding knob */}
-      <motion.div
-        className="absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-lg flex items-center justify-center"
-        animate={{ x: isDark ? 32 : 0 }}
-        transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+      {/* Sliding knob — CSS transform; cheap to repaint when the theme class flips. */}
+      <div
+        className="absolute top-1 left-1 h-6 w-6 rounded-full bg-white shadow-lg flex items-center justify-center transition-transform duration-200 ease-out"
+        style={{ transform: `translateX(${isDark ? 32 : 0}px)` }}
       >
         {isDark ? (
           <MoonIcon className="h-3.5 w-3.5 text-slate-800" />
         ) : (
           <SunIcon className="h-3.5 w-3.5 text-primary" />
         )}
-      </motion.div>
+      </div>
 
       {/* Background icons */}
       <div className="absolute inset-0 flex items-center justify-between px-2.5 pointer-events-none">

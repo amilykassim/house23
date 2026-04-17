@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(curl -s -X PATCH http://localhost:3000/api/photo-categories -H \"Content-Type: application/json\" -d '{\"slug\":\"test\",\"categories\":{}}')"
+      "Bash(curl -s -X PATCH http://localhost:3000/api/photo-categories -H \"Content-Type: application/json\" -d '{\"slug\":\"test\",\"categories\":{}}')",
+      "Bash(ffmpeg -version)"
     ]
   }
 }

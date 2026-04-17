@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
-import { Poppins, Cormorant_Garamond, Dancing_Script } from 'next/font/google'
+import { Poppins, Cormorant_Garamond, Dancing_Script, Caveat } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { AmbientSoundProvider } from '@/components/ambient-sound'
 import { Toaster } from 'sonner'
 import './globals.css'
 
@@ -21,6 +22,12 @@ const dancingScript = Dancing_Script({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-brand"
+});
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-doodle"
 });
 
 export const metadata: Metadata = {
@@ -56,12 +63,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${cormorant.variable} ${dancingScript.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${cormorant.variable} ${dancingScript.variable} ${caveat.variable}`} suppressHydrationWarning>
       <body className="font-sans antialiased">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} storageKey="theme">
-          {children}
-          <Toaster position="top-right" toastOptions={{ className: '!bg-card !text-foreground !border-border' }} />
-          <Analytics />
+          <AmbientSoundProvider>
+            {children}
+            <Toaster position="top-right" toastOptions={{ className: '!bg-card !text-foreground !border-border' }} />
+            <Analytics />
+          </AmbientSoundProvider>
         </ThemeProvider>
       </body>
     </html>
