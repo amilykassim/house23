@@ -24,9 +24,10 @@ function useIsMobile() {
 const house23 = houses.find((h) => h.slug === "house-23")!
 const house22 = houses.find((h) => h.slug === "house-22")!
 
-type HouseData = typeof house23
+type HouseDataType = typeof house23
 
-function CardContent({ house }: { house: HouseData }) {
+function CardContent({ house, dynamicPrice }: { house: HouseDataType; dynamicPrice?: number }) {
+  const price = dynamicPrice ?? house.pricePerNight
   return (
     <div className="absolute inset-0 flex flex-col justify-between p-5 sm:p-7">
       <div className="flex justify-end">
@@ -45,7 +46,7 @@ function CardContent({ house }: { house: HouseData }) {
         </p>
         <div className="flex items-center justify-between">
           <span className="text-white text-xl font-semibold">
-            ${house.pricePerNight}
+            ${price}
             <span className="text-white/40 text-sm font-normal">/night</span>
           </span>
           <div className="flex items-center gap-1 text-white/70 text-sm font-medium">
@@ -59,7 +60,7 @@ function CardContent({ house }: { house: HouseData }) {
 }
 
 /* ── Mobile card: zero motion values, no springs, no transforms ── */
-function MobileCard({ house, index }: { house: HouseData; index: number }) {
+function MobileCard({ house, index, dynamicPrice }: { house: HouseDataType; index: number; dynamicPrice?: number }) {
   return (
     <motion.div
       className="relative w-full"
@@ -84,7 +85,7 @@ function MobileCard({ house, index }: { house: HouseData; index: number }) {
             quality={75}
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/20" />
-          <CardContent house={house} />
+          <CardContent house={house} dynamicPrice={dynamicPrice} />
         </Link>
       </div>
     </motion.div>
@@ -97,11 +98,13 @@ function DesktopCard({
   index,
   hoveredIndex,
   onHover,
+  dynamicPrice,
 }: {
-  house: HouseData
+  house: HouseDataType
   index: number
   hoveredIndex: number | null
   onHover: (i: number | null) => void
+  dynamicPrice?: number
 }) {
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -181,7 +184,7 @@ function DesktopCard({
             style={{ opacity: isHovered ? 0.12 : 0, background: glareBackground }}
           />
 
-          <CardContent house={house} />
+          <CardContent house={house} dynamicPrice={dynamicPrice} />
         </Link>
       </motion.div>
 
@@ -223,8 +226,22 @@ function useTypewriter(text: string, delay: number, speed: number) {
 
 export function LandingHero() {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [prices, setPrices] = useState<Record<string, number>>({})
   const { displayed, done } = useTypewriter(TYPEWRITER_TEXT, TYPEWRITER_DELAY, TYPEWRITER_SPEED)
   const isMobile = useIsMobile()
+
+  useEffect(() => {
+    fetch("/api/prices")
+      .then((res) => res.json())
+      .then((data: Record<string, { pricePerNight: number }>) => {
+        const mapped: Record<string, number> = {}
+        for (const [slug, p] of Object.entries(data)) {
+          mapped[slug] = p.pricePerNight
+        }
+        setPrices(mapped)
+      })
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="relative min-h-dvh w-full bg-[#fafafa] dark:bg-[#0a0a0a] overflow-hidden">
@@ -295,13 +312,13 @@ export function LandingHero() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12 w-full max-w-5xl mb-16 sm:mb-20">
           {isMobile ? (
             <>
-              <MobileCard house={house23} index={0} />
-              <MobileCard house={house22} index={1} />
+              <MobileCard house={house23} index={0} dynamicPrice={prices["house-23"]} />
+              <MobileCard house={house22} index={1} dynamicPrice={prices["house-22"]} />
             </>
           ) : (
             <>
-              <DesktopCard house={house23} index={0} hoveredIndex={hoveredIndex} onHover={setHoveredIndex} />
-              <DesktopCard house={house22} index={1} hoveredIndex={hoveredIndex} onHover={setHoveredIndex} />
+              <DesktopCard house={house23} index={0} hoveredIndex={hoveredIndex} onHover={setHoveredIndex} dynamicPrice={prices["house-23"]} />
+              <DesktopCard house={house22} index={1} hoveredIndex={hoveredIndex} onHover={setHoveredIndex} dynamicPrice={prices["house-22"]} />
             </>
           )}
         </div>

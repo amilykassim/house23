@@ -2,17 +2,34 @@ import { readData } from "@/lib/storage"
 import type { HouseData, HousePhoto } from "@/lib/houses"
 
 type PhotoOrderData = Record<string, string[]>
+type PhotoCategoryData = Record<string, Record<string, string>>
 
 export async function getOrderedPhotos(house: HouseData): Promise<{
     photos: HousePhoto[]
     allPhotos: HousePhoto[]
 }> {
     try {
-        const order = await readData<PhotoOrderData>("photo-order.json", {})
+        const [order, categories] = await Promise.all([
+            readData<PhotoOrderData>("photo-order.json", {}),
+            readData<PhotoCategoryData>("photo-categories.json", {}),
+        ])
         const savedOrder = order[house.slug]
+        const savedCategories = categories[house.slug] || {}
+
+        // Helper to apply saved category overrides
+        const applyCategory = (photo: HousePhoto): HousePhoto => {
+            const savedCat = savedCategories[photo.src]
+            if (savedCat) {
+                return { ...photo, category: savedCat }
+            }
+            return photo
+        }
 
         if (!savedOrder || savedOrder.length === 0) {
-            return { photos: house.photos, allPhotos: house.allPhotos }
+            return {
+                photos: house.photos.map(applyCategory),
+                allPhotos: house.allPhotos.map(applyCategory),
+            }
         }
 
         // Merge photos + allPhotos, deduplicating by src
@@ -21,7 +38,7 @@ export async function getOrderedPhotos(house: HouseData): Promise<{
         for (const p of [...house.photos, ...house.allPhotos]) {
             if (!seen.has(p.src)) {
                 seen.add(p.src)
-                allCombined.push(p)
+                allCombined.push(applyCategory(p))
             }
         }
 
