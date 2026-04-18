@@ -400,13 +400,15 @@ export function PhotoGallery({ photos, allPhotos, houseName = "Velstays" }: Phot
                                 : "aspect-4/3"
                             }`}
                           >
-                            <Image
-                              src={photo.src}
-                              alt={photo.alt}
-                              fill
-                              sizes={isHero ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 50vw, 33vw"}
-                              className="object-cover transition-transform duration-500 group-hover:scale-105"
-                            />
+                            <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-105">
+                              <SkeletonImage
+                                src={photo.src}
+                                alt={photo.alt}
+                                fill
+                                sizes={isHero ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 50vw, 33vw"}
+                                className="object-cover"
+                              />
+                            </div>
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
                             <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-linear-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                               <span className="text-white text-sm font-medium">
