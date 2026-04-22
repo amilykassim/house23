@@ -404,7 +404,7 @@ export function PhotoOrderManager() {
                                     }
                                     onDragEnd={handleDragEnd}
                                     onDragOver={handleDragOver}
-                                    className={`group relative rounded-xl overflow-hidden border-2 transition-all cursor-grab active:cursor-grabbing ${
+                                    className={`group relative rounded-xl border-2 transition-all cursor-grab active:cursor-grabbing ${
                                         dragIndex === index
                                             ? "opacity-40 scale-95 border-foreground/30"
                                             : dragOverIndex === index
@@ -414,7 +414,7 @@ export function PhotoOrderManager() {
                                             : "border-border hover:border-foreground/30"
                                     }`}
                                 >
-                                    <div className="aspect-4/3 relative">
+                                    <div className="aspect-4/3 relative rounded-[10px] overflow-hidden">
                                         <img
                                             src={photo.src}
                                             alt={photo.alt}
@@ -436,47 +436,47 @@ export function PhotoOrderManager() {
                                         }`}>
                                             {index + 1}
                                         </div>
-                                        {/* Category badge + dropdown */}
-                                        <div className="absolute bottom-0 inset-x-0 bg-linear-to-t from-black/70 to-transparent p-2 pt-8">
-                                            <div className="relative" data-category-dropdown>
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        setCategoryDropdownOpen(
-                                                            categoryDropdownOpen === photo.src ? null : photo.src
-                                                        )
-                                                    }}
-                                                    className="flex items-center gap-1 text-[10px] font-medium text-white/90 hover:text-white bg-white/15 hover:bg-white/25 backdrop-blur-sm rounded-md px-2 py-1 transition-colors"
-                                                >
-                                                    <Tag className="h-2.5 w-2.5" />
-                                                    <span className="truncate max-w-[80px]">
-                                                        {photo.category || "Uncategorized"}
-                                                    </span>
-                                                    <ChevronDown className="h-2.5 w-2.5 shrink-0" />
-                                                </button>
-                                                {/* Dropdown */}
-                                                {categoryDropdownOpen === photo.src && (
-                                                    <div className="absolute bottom-full left-0 mb-1 bg-card border border-border rounded-lg shadow-xl py-1 min-w-[140px] z-20 max-h-[200px] overflow-y-auto">
-                                                        {CATEGORIES.map((cat) => (
-                                                            <button
-                                                                key={cat}
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation()
-                                                                    handleCategoryChange(photo.src, cat)
-                                                                }}
-                                                                className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
-                                                                    photo.category === cat
-                                                                        ? "bg-foreground/10 text-foreground font-medium"
-                                                                        : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
-                                                                }`}
-                                                            >
-                                                                {cat}
-                                                            </button>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                        {/* Bottom gradient (visual only) */}
+                                        <div className="absolute bottom-0 inset-x-0 h-12 bg-linear-to-t from-black/70 to-transparent pointer-events-none" />
+                                    </div>
+                                    {/* Category badge + dropdown — outside the overflow-hidden image wrapper so dropdown is not clipped */}
+                                    <div className="absolute bottom-2 left-2 z-10" data-category-dropdown>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                setCategoryDropdownOpen(
+                                                    categoryDropdownOpen === photo.src ? null : photo.src
+                                                )
+                                            }}
+                                            className="flex items-center gap-1 text-[10px] font-medium text-white/90 hover:text-white bg-white/15 hover:bg-white/25 backdrop-blur-sm rounded-md px-2 py-1 transition-colors"
+                                        >
+                                            <Tag className="h-2.5 w-2.5" />
+                                            <span className="truncate max-w-20">
+                                                {photo.category || "Uncategorized"}
+                                            </span>
+                                            <ChevronDown className="h-2.5 w-2.5 shrink-0" />
+                                        </button>
+                                        {/* Dropdown */}
+                                        {categoryDropdownOpen === photo.src && (
+                                            <div className="absolute bottom-full left-0 mb-1 bg-card border border-border rounded-lg shadow-xl py-1 min-w-35 z-30 max-h-55 overflow-y-auto overscroll-contain">
+                                                {CATEGORIES.map((cat) => (
+                                                    <button
+                                                        key={cat}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            handleCategoryChange(photo.src, cat)
+                                                        }}
+                                                        className={`w-full text-left px-3 py-1.5 text-xs transition-colors ${
+                                                            photo.category === cat
+                                                                ? "bg-foreground/10 text-foreground font-medium"
+                                                                : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                                                        }`}
+                                                    >
+                                                        {cat}
+                                                    </button>
+                                                ))}
                                             </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             )

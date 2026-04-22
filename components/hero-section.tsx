@@ -60,6 +60,8 @@ export function HeroSection({ house }: HeroSectionProps) {
             sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/10 to-black/70" />
+          {/* Mobile-only extra darkening so hero text stays legible against brighter photos */}
+          <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/40 to-black/30 sm:hidden" />
         </motion.div>
       </div>
 
@@ -136,8 +138,8 @@ export function HeroSection({ house }: HeroSectionProps) {
         </div>
       </motion.div>
 
-      {/* House Selector Pills */}
-      <div className="absolute z-30 bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1 pointer-events-auto bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/10">
+      {/* House Selector Pills — hidden on mobile */}
+      <div className="absolute z-30 bottom-10 left-1/2 -translate-x-1/2 hidden sm:flex items-center gap-1 pointer-events-auto bg-white/10 backdrop-blur-md rounded-full p-1 border border-white/10">
         {houses.map((h, i) => (
           <Link
             key={h.slug}
