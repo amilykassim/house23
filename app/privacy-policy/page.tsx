@@ -17,7 +17,7 @@ export default function PrivacyPolicyPage() {
                         Privacy Policy
                     </h1>
                     <p className="text-muted-foreground text-lg mb-2">
-                        Your privacy matters to us. This policy explains how we collect, use, and protect your information.
+                        Your privacy matters to us. This policy explains how we collect, use, and protect your information in accordance with the data protection laws of the Republic of Rwanda.
                     </p>
                     <p className="text-sm text-muted-foreground mb-12">
                         Last updated: March 31, 2026
@@ -25,13 +25,13 @@ export default function PrivacyPolicyPage() {
 
                     <div className="prose prose-neutral dark:prose-invert max-w-none space-y-10">
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 1. Information We Collect
                             </h2>
                             <p className="text-muted-foreground leading-relaxed mb-3">
                                 When you interact with Velstays, we may collect the following types of information:
                             </p>
-                            <ul className="text-muted-foreground space-y-2 leading-relaxed">
+                            <ul className="text-muted-foreground space-y-2 leading-relaxed list-disc pl-6 marker:text-muted-foreground">
                                 <li><span className="font-medium text-foreground">Contact Information</span> — Name, email address, and phone number provided when you make a booking inquiry or contact the host.</li>
                                 <li><span className="font-medium text-foreground">Booking Details</span> — Dates of stay, number of guests, and special requests.</li>
                                 <li><span className="font-medium text-foreground">Usage Data</span> — Information about how you use our website, including pages visited, time spent, and browser type (collected via analytics tools).</li>
@@ -40,13 +40,13 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 2. How We Use Your Information
                             </h2>
                             <p className="text-muted-foreground leading-relaxed mb-3">
                                 We use the information we collect to:
                             </p>
-                            <ul className="text-muted-foreground space-y-2 leading-relaxed">
+                            <ul className="text-muted-foreground space-y-2 leading-relaxed list-disc pl-6 marker:text-muted-foreground">
                                 <li>Process and manage your booking</li>
                                 <li>Communicate with you about your stay</li>
                                 <li>Provide check-in instructions and property details</li>
@@ -57,13 +57,13 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 3. Information Sharing
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
                                 We do <span className="font-medium text-foreground">not</span> sell, rent, or trade your personal information to third parties. We may share your information only in the following circumstances:
                             </p>
-                            <ul className="text-muted-foreground space-y-2 leading-relaxed mt-3">
+                            <ul className="text-muted-foreground space-y-2 leading-relaxed list-disc pl-6 marker:text-muted-foreground mt-3">
                                 <li><span className="font-medium text-foreground">Service Providers</span> — With trusted third-party services (e.g., Airbnb, analytics tools) that help us operate and improve our services.</li>
                                 <li><span className="font-medium text-foreground">Legal Requirements</span> — When required by law, regulation, or legal process.</li>
                                 <li><span className="font-medium text-foreground">Safety</span> — To protect the safety, rights, or property of our guests, host, or others.</li>
@@ -71,7 +71,7 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 4. Cookies & Analytics
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
@@ -80,7 +80,7 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 5. Data Security
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 6. Data Retention
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
@@ -98,13 +98,13 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 7. Your Rights
                             </h2>
                             <p className="text-muted-foreground leading-relaxed mb-3">
                                 Depending on your location, you may have the right to:
                             </p>
-                            <ul className="text-muted-foreground space-y-2 leading-relaxed">
+                            <ul className="text-muted-foreground space-y-2 leading-relaxed list-disc pl-6 marker:text-muted-foreground">
                                 <li>Access the personal information we hold about you</li>
                                 <li>Request correction of inaccurate information</li>
                                 <li>Request deletion of your personal data</li>
@@ -116,7 +116,7 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 8. Third-Party Links
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
@@ -125,7 +125,7 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 9. Changes to This Policy
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">
@@ -134,7 +134,7 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="font-serif text-xl font-semibold text-foreground mb-3">
+                            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-3">
                                 10. Contact Us
                             </h2>
                             <p className="text-muted-foreground leading-relaxed">

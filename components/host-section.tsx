@@ -7,11 +7,11 @@ import { FadeIn, StaggerContainer, StaggerItem } from "@/components/motion"
 const hostStats = [
   { label: "Reviews", value: "42" },
   { label: "Rating", value: "4.95" },
-  { label: "Years hosting", value: "3+" },
+  { label: "Years hosting", value: "2+" },
 ]
 
 const hostHighlights = [
-  { icon: Star, text: "Superhost for 3+ years" },
+  { icon: Star, text: "Superhost for 2+ years" },
   { icon: Clock, text: "Responds within an hour" },
   { icon: Shield, text: "Identity verified" },
 ]

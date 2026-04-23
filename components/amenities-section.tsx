@@ -101,7 +101,7 @@ const amenityCategories = [
       { icon: Snowflake, label: "Freezer" },
       { icon: Flame, label: "Stove" },
       { icon: Flame, label: "Oven" },
-      { icon: Coffee, label: "Hot water kettle" },
+      { icon: Droplet, label: "Water dispenser (hot, cold & warm)" },
       { icon: Coffee, label: "Coffee maker" },
       { icon: Wine, label: "Wine glasses" },
       { icon: Trash2, label: "Trash compactor" },
