@@ -2,7 +2,12 @@
   "permissions": {
     "allow": [
       "Bash(curl -s -X PATCH http://localhost:3000/api/photo-categories -H \"Content-Type: application/json\" -d '{\"slug\":\"test\",\"categories\":{}}')",
-      "Bash(ffmpeg -version)"
+      "Bash(ffmpeg -version)",
+      "Bash(ls /Users/amilykadyl/amily-projects/sketch-dee/public/ 2>/dev/null | head -30 && echo \"---\" && ls /Users/amilykadyl/amily-projects/sketch-dee/app/ 2>/dev/null | head -30)",
+      "Read(//Users/amilykadyl/amily-projects/sketch-dee/public/**)",
+      "Read(//Users/amilykadyl/amily-projects/sketch-dee/app/**)",
+      "Bash(brew list *)",
+      "Bash(brew install *)"
     ]
   }
 }
