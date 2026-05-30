@@ -41,8 +41,8 @@ const footerLinks = [
 ]
 
 const socialLinks = [
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: TikTokIcon, href: "#", label: "TikTok" },
+  { icon: Instagram, href: "https://www.instagram.com/velstays/", label: "Instagram" },
+  { icon: TikTokIcon, href: "https://www.instagram.com/velstays/", label: "TikTok" },
   { icon: Mail, href: "mailto:hello@velstays.com", label: "Email" },
 ]
 
@@ -62,6 +62,8 @@ export function Footer() {
                 <a
                   key={social.label}
                   href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="w-10 h-10 rounded-full bg-foreground/10 dark:bg-card-foreground/10 flex items-center justify-center hover:bg-foreground/20 dark:hover:bg-card-foreground/20 transition-colors"
                   aria-label={social.label}
                 >
