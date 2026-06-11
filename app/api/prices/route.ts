@@ -20,7 +20,7 @@ const DEFAULT_PRICING: PricingData = {
         airbnbPricePerNight: 61,
     },
     "house-22": {
-        pricePerNight: 41,
+        pricePerNight: 51,
         cleaningFee: 10,
         serviceFee: 0,
         airbnbPricePerNight: 51,
