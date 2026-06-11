@@ -32,7 +32,7 @@ import type { DateRange } from "react-day-picker"
 
 const WHATSAPP_NUMBER = "250788459885"
 const MOMO_CODE = "*182*8*1*1771031#"
-const USD_TO_RWF = 1460
+const USD_TO_RWF = 1471
 
 const steps = [
     { id: 1, label: "Review", icon: CalendarDays },
