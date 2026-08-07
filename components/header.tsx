@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation"
 import { Menu, X, Home, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { AnimatedButton } from "@/components/animated-button"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { VelstaysBrand } from "@/components/velstays-brand"
 import { houses, DEFAULT_HOUSE_SLUG } from "@/lib/houses"
 import {
@@ -98,7 +97,6 @@ export function Header() {
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
-            <ThemeToggle />
             {!pathname.startsWith("/book/") && (
               <AnimatedButton
                 size="lg"
@@ -118,7 +116,6 @@ export function Header() {
 
           {/* Mobile: Toggle + Hamburger */}
           <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle />
             <button
               className="p-2 text-foreground"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}

@@ -13,7 +13,6 @@ import {
     Menu,
     X,
 } from "lucide-react"
-import { ThemeToggle } from "@/components/theme-toggle"
 
 const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -84,8 +83,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                 <Home className="h-4 w-4" />
                                 Website
                             </Link>
-                            <span className="h-4 w-px bg-border" />
-                            <ThemeToggle />
                         </div>
 
                         {/* Mobile Menu Button */}
@@ -125,11 +122,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     </Link>
                                 )
                             })}
-
-                                {/* Theme toggle for mobile */}
-                                <div className="px-2 pt-2">
-                                    <ThemeToggle />
-                                </div>
 
                                 <div className="border-t border-border my-3" />
 
