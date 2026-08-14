@@ -7,7 +7,11 @@ const EMAILS_DISABLED = false
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-export const FROM_EMAIL = process.env.FROM_EMAIL || "Velstays <bookings@resend.dev>"
+// Vercel stores env values verbatim, so a value pasted with surrounding quotes
+// arrives as `"Velstays <a@b.com>"` — which Resend rejects. Strip them here.
+export const FROM_EMAIL = (process.env.FROM_EMAIL || "Velstays <bookings@resend.dev>")
+    .trim()
+    .replace(/^["'](.*)["']$/, "$1")
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "velstays1@gmail.com"
 const SITE_URL = (process.env.SITE_URL || "https://velstays.com").replace(/\/$/, "")
 

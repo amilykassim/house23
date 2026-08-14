@@ -468,5 +468,26 @@
     "specialRequests": "Airport pickup",
     "status": "confirmed",
     "createdAt": "2026-04-05T06:55:30.429Z"
+  },
+  {
+    "id": "BK-024",
+    "house": "house-22",
+    "houseName": "House 22",
+    "guestName": "Kash",
+    "guestEmail": "amilykassim12@gmail.com",
+    "guestPhone": "0782228870",
+    "checkIn": "2026-09-06",
+    "checkOut": "2026-09-08",
+    "nights": 2,
+    "guests": 2,
+    "pricePerNight": 51,
+    "cleaningFee": 0,
+    "serviceFee": 0,
+    "total": 102,
+    "totalRwf": 150042,
+    "momoTransactionId": "1234567823456",
+    "specialRequests": "",
+    "status": "cancelled",
+    "createdAt": "2026-08-14T17:33:22.813Z"
   }
 ]
