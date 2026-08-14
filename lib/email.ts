@@ -33,9 +33,10 @@ export interface BookingEmailData {
 }
 
 // ---------------------------------------------------------------------------
-// "Stationery" guest email design — ivory letterhead, Georgia serif, monogram
-// seal, ledger with dotted leaders. Used for the three guest-facing emails;
-// admin notifications keep the utilitarian layout further below.
+// "Stationery" email design — ivory letterhead, Georgia serif, monogram seal,
+// ledger with dotted leaders. Used for the three guest-facing emails and the
+// admin new-booking notification; the guide-access ping to the admin keeps the
+// utilitarian layout further below.
 // ---------------------------------------------------------------------------
 
 const INK = "#211e18"
@@ -84,6 +85,14 @@ function ledgerRow(label: string, value: string, sub?: string): string {
                             <td valign="top" style="padding:9px 10px 9px 0;font-size:13px;line-height:1.4;color:${MUTED};white-space:nowrap;">${label}</td>
                             <td valign="top" style="width:100%;padding:9px 0 0;"><div style="border-bottom:1px dotted #c9c2b2;height:13px;font-size:0;line-height:0;">&nbsp;</div></td>
                             <td valign="top" style="padding:9px 0 9px 10px;font-size:13px;line-height:1.4;color:${INK};font-weight:600;text-align:right;white-space:nowrap;">${value}${sub ? `<div style="font-weight:400;font-size:11px;line-height:1.4;color:${FAINT};padding-top:2px;">${sub}</div>` : ""}</td>
+                        </tr>`
+}
+
+/** Small caption that groups the ledger rows beneath it (e.g. "Guest") */
+function ledgerCaption(label: string, first = false): string {
+    return `
+                        <tr>
+                            <td colspan="3" style="padding:${first ? "0" : "18px"} 0 2px;font-size:10px;letter-spacing:3px;text-indent:3px;text-transform:uppercase;color:${FAINT};">${label}</td>
                         </tr>`
 }
 
@@ -328,111 +337,41 @@ export async function sendAdminNewBookingNotification(data: BookingEmailData) {
         return
     }
 
+    const guestName = escapeHtml(data.guestName)
+    const houseName = escapeHtml(data.houseName)
+
     try {
         await resend.emails.send({
             from: FROM_EMAIL,
             to: ADMIN_EMAIL,
-            subject: `New Booking! ${data.bookingId} — ${data.guestName} · ${data.houseName}`,
-            html: `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin:0;padding:0;background-color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-    <div style="max-width:560px;margin:0 auto;padding:40px 20px;">
-        <div style="background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
-            <!-- Header -->
-            <div style="background:#18181b;padding:32px 24px;text-align:center;">
-                <h1 style="color:#ffffff;font-size:20px;margin:0 0 4px;">🔔 New Booking Request</h1>
-                <p style="color:#a1a1aa;font-size:13px;margin:0;">${data.bookingId} · Velstays ${data.houseName}</p>
-            </div>
-
-            <!-- Body -->
-            <div style="padding:24px;">
-                <p style="color:#52525b;font-size:14px;line-height:1.6;margin:0 0 20px;">
-                    A new booking request has been submitted and is awaiting your review.
-                </p>
-
-                <!-- Guest Info -->
-                <div style="background:#eff6ff;border-radius:12px;padding:16px;margin:0 0 16px;">
-                    <h3 style="color:#1e40af;font-size:13px;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.5px;">Guest</h3>
-                    <table style="width:100%;border-collapse:collapse;">
-                        <tr>
-                            <td style="color:#3b82f6;font-size:13px;padding:2px 0;">Name</td>
-                            <td style="color:#1e3a5f;font-size:13px;padding:2px 0;text-align:right;font-weight:600;">${data.guestName}</td>
-                        </tr>
-                        ${data.guestEmail ? `<tr>
-                            <td style="color:#3b82f6;font-size:13px;padding:2px 0;">Email</td>
-                            <td style="color:#1e3a5f;font-size:13px;padding:2px 0;text-align:right;font-weight:600;">${data.guestEmail}</td>
-                        </tr>` : ""}
-                    </table>
-                </div>
-
-                <!-- Booking Details -->
-                <div style="background:#f4f4f5;border-radius:12px;padding:20px;margin:0 0 16px;">
-                    <h3 style="color:#18181b;font-size:13px;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px;">Booking Details</h3>
-                    <table style="width:100%;border-collapse:collapse;">
-                        <tr>
-                            <td style="color:#71717a;font-size:13px;padding:4px 0;">Property</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">Velstays ${data.houseName}</td>
-                        </tr>
-                        <tr>
-                            <td style="color:#71717a;font-size:13px;padding:4px 0;">Check-in</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">${data.checkIn}</td>
-                        </tr>
-                        <tr>
-                            <td style="color:#71717a;font-size:13px;padding:4px 0;">Check-out</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">${data.checkOut}</td>
-                        </tr>
-                        <tr>
-                            <td style="color:#71717a;font-size:13px;padding:4px 0;">Nights</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">${data.nights}</td>
-                        </tr>
-                        <tr>
-                            <td style="color:#71717a;font-size:13px;padding:4px 0;">Guests</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;">${data.guests}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" style="padding:8px 0 0;"><hr style="border:none;border-top:1px solid #e5e7eb;margin:0;"></td>
-                        </tr>
-                        <tr>
-                            <td style="color:#18181b;font-size:14px;padding:8px 0 4px;font-weight:700;">Total</td>
-                            <td style="color:#18181b;font-size:14px;padding:8px 0 4px;text-align:right;font-weight:700;">$${data.total}</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" style="color:#71717a;font-size:12px;padding:0;text-align:right;">≈ ${data.totalRwf.toLocaleString()} RWF</td>
-                        </tr>
-                        ${data.momoTransactionId ? `<tr>
-                            <td style="color:#71717a;font-size:13px;padding:4px 0;">MoMo TXN</td>
-                            <td style="color:#18181b;font-size:13px;padding:4px 0;text-align:right;font-weight:600;font-family:monospace;">${data.momoTransactionId}</td>
-                        </tr>` : ""}
-                    </table>
-                </div>
-
-                ${data.specialRequests ? `
-                <div style="background:#fefce8;border-radius:12px;padding:16px;margin:0 0 16px;">
-                    <p style="color:#854d0e;font-size:12px;font-weight:600;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.5px;">Special Requests</p>
-                    <p style="color:#713f12;font-size:13px;margin:0;line-height:1.5;">${data.specialRequests}</p>
-                </div>
-                ` : ""}
-
-                <!-- Action -->
-                <div style="background:#fef3c7;border-radius:12px;padding:16px;text-align:center;">
-                    <p style="color:#92400e;font-size:13px;margin:0;font-weight:600;">⏳ Action Required</p>
-                    <p style="color:#92400e;font-size:12px;margin:4px 0 0;opacity:0.8;">Review and confirm or reject this booking in the admin dashboard.</p>
-                </div>
-            </div>
-
-            <!-- Footer -->
-            <div style="padding:20px 24px;border-top:1px solid #e5e7eb;text-align:center;">
-                <p style="color:#a1a1aa;font-size:11px;margin:0;">Velstays · Kigali, Rwanda</p>
-            </div>
-        </div>
-    </div>
-</body>
-</html>`,
+            subject: `New booking request — ${data.bookingId} · ${data.guestName} · ${data.houseName}`,
+            html: stationeryEmail({
+                sealColor: FOREST,
+                title: "A new booking request",
+                introHtml: `<p style="${introStyle}"><strong>${guestName}</strong> has requested <strong>Velstays ${houseName}</strong> and is awaiting your review.</p>`,
+                chip: { label: "Action Required", bg: "#f4ead2", color: "#7a5a17" },
+                bodyHtml: `
+                <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0;">
+                    ${ledgerCaption("Guest", true)}
+                    ${ledgerRow("Name", guestName)}
+                    ${data.guestEmail ? ledgerRow("Email", escapeHtml(data.guestEmail)) : ""}
+                    ${data.guestPhone ? ledgerRow("Phone", escapeHtml(data.guestPhone)) : ""}
+                    ${ledgerCaption("Reservation")}
+                    ${ledgerRow("Reference", data.bookingId)}
+                    ${ledgerRow("Residence", houseName)}
+                    ${ledgerRow("Arrival", formatStayDate(data.checkIn), "from 2:00 PM")}
+                    ${ledgerRow("Departure", formatStayDate(data.checkOut), "by 11:00 AM")}
+                    ${ledgerRow("Nights", String(data.nights))}
+                    ${ledgerRow("Guests", String(data.guests))}
+                    ${data.momoTransactionId ? ledgerRow("MoMo TXN", escapeHtml(data.momoTransactionId)) : ""}
+                    ${ledgerTotalRow("Total", `$${data.total}`)}
+                </table>
+                <p style="text-align:right;font-size:11px;color:${FAINT};margin:6px 0 26px;">&asymp; ${data.totalRwf.toLocaleString()} RWF</p>
+                ${data.specialRequests ? noteBox(`<strong style="color:${INK};">Special request.</strong> &ldquo;${escapeHtml(data.specialRequests)}&rdquo;`) : ""}
+                <p style="text-align:center;margin:0 0 28px;">
+                    <a href="${SITE_URL}/admin/bookings" style="display:inline-block;background:${FOREST};color:${IVORY};font-size:11px;letter-spacing:3px;text-indent:3px;text-transform:uppercase;text-decoration:none;padding:13px 26px;border-radius:2px;">Review in dashboard</a>
+                </p>`,
+            }),
         })
     } catch (error) {
         console.error("Failed to send admin notification email:", error)
