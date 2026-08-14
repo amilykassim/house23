@@ -214,6 +214,7 @@ export async function POST(request: NextRequest) {
     const emailData = {
         guestName: newBooking.guestName,
         guestEmail: newBooking.guestEmail,
+        guestPhone: newBooking.guestPhone,
         houseName: newBooking.houseName,
         checkIn: newBooking.checkIn,
         checkOut: newBooking.checkOut,
@@ -275,6 +276,7 @@ export async function PATCH(request: NextRequest) {
         const emailData = {
             guestName: booking.guestName,
             guestEmail: booking.guestEmail,
+            guestPhone: booking.guestPhone,
             houseName: booking.houseName,
             checkIn: booking.checkIn,
             checkOut: booking.checkOut,
