@@ -21,7 +21,7 @@ export function NoirFooter() {
         <em className="not-italic text-primary">This one you&apos;ll miss.</em>
       </motion.h2>
       <motion.p {...fadeUp} className="mx-auto mt-7 mb-10 max-w-md text-muted-foreground">
-        Book direct for the best nightly rate — replies within the day, usually much faster.
+        Book directly with us for the best nightly rate — replies within the day, usually much faster.
       </motion.p>
       <motion.div {...fadeUp} className="inline-block">
         <Link
