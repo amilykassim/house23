@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
 
 import { useParams, useRouter } from "next/navigation"
 import { format, addDays, differenceInDays } from "date-fns"
 import {
+    AlertTriangle,
     CalendarDays,
     Users,
     User,
@@ -28,6 +29,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Separator } from "@/components/ui/separator"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getHouseBySlug } from "@/lib/houses"
+import { usePolling } from "@/lib/use-polling"
 import type { DateRange } from "react-day-picker"
 
 const WHATSAPP_NUMBER = "250788459885"
@@ -70,6 +72,9 @@ export default function BookPage() {
     // Validation errors
     const [errors, setErrors] = useState<Record<string, string>>({})
 
+    // Nights in the selected range that have become unavailable while booking
+    const [unavailableDates, setUnavailableDates] = useState<string[]>([])
+
     useEffect(() => {
         setMounted(true)
         // Fetch dynamic prices
@@ -98,6 +103,30 @@ export default function BookPage() {
 
         if (guestsParam) setGuests(guestsParam)
     }, [])
+
+    // Live availability check: manual blocks + Airbnb feed for the selected nights.
+    const checkAvailability = useCallback(async () => {
+        if (!dateRange?.from || !dateRange?.to) return
+        const selectedNights: string[] = []
+        for (let d = dateRange.from; d < dateRange.to; d = addDays(d, 1)) {
+            selectedNights.push(format(d, "yyyy-MM-dd"))
+        }
+        try {
+            const [blockedRes, airbnbRes] = await Promise.all([
+                fetch(`/api/blocked-dates?house=${slug}`).then((r) => r.json()).catch(() => ({})),
+                fetch(`/api/airbnb-sync?house=${slug}`).then((r) => r.json()).catch(() => ({})),
+            ])
+            const taken = new Set<string>([...(blockedRes.dates || []), ...(airbnbRes.dates || [])])
+            setUnavailableDates(selectedNights.filter((n) => taken.has(n)))
+        } catch {
+            // keep last known state
+        }
+    }, [dateRange, slug])
+
+    // Poll every 3s from the moment dates are known until the booking is confirmed.
+    usePolling(checkAvailability, 3_000, !bookingConfirmed && !!dateRange?.from && !!dateRange?.to, true)
+
+    const datesConflict = unavailableDates.length > 0
 
     if (!house) {
         return (
@@ -137,6 +166,7 @@ export default function BookPage() {
     const formatRwf = (amount: number) => amount.toLocaleString("en-RW")
 
     const goNext = () => {
+        if (datesConflict) return
         if (currentStep === 2) {
             const newErrors: Record<string, string> = {}
             if (!guestName.trim()) newErrors.name = "Name is required"
@@ -215,9 +245,10 @@ _Sent from Velstays website_`
     }
 
     const confirmBooking = async () => {
+        if (datesConflict) return
         setBookingSubmitting(true)
         try {
-            await fetch("/api/bookings", {
+            const res = await fetch("/api/bookings", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -239,6 +270,13 @@ _Sent from Velstays website_`
                     specialRequests,
                 }),
             })
+            if (res.status === 409) {
+                // Dates were taken between the last poll and submission
+                const data = await res.json().catch(() => ({}))
+                setUnavailableDates(data.unavailableDates || ["conflict"])
+                setBookingSubmitting(false)
+                return
+            }
         } catch {
             // Continue even if save fails
         }
@@ -285,6 +323,37 @@ _Sent from Velstays website_`
                         <p className="text-sm text-muted-foreground mb-5">
                             Velstays <span className="mx-1"> | </span> {house.name} · {nights} night{nights !== 1 ? "s" : ""} · {guests} guest{Number(guests) !== 1 ? "s" : ""}
                         </p>
+
+                        {/* Availability warning — shown live if selected nights get taken */}
+                        {datesConflict && (
+                            <div
+                                role="alert"
+                                className="mb-5 flex items-start gap-3 rounded-xl border border-red-300 bg-red-50 p-4 text-red-900 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200"
+                            >
+                                <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                                <div className="flex-1 text-sm">
+                                    <p className="font-semibold">
+                                        Some of your dates just became unavailable
+                                    </p>
+                                    <p className="mt-1">
+                                        {unavailableDates
+                                            .filter((d) => d !== "conflict")
+                                            .map((d) => format(new Date(d + "T00:00:00"), "MMM d"))
+                                            .join(", ")}
+                                        {unavailableDates.some((d) => d !== "conflict") ? " " : ""}
+                                        {unavailableDates.filter((d) => d !== "conflict").length === 1 ? "is" : "are"} no longer available for {house.name}.
+                                        Please choose different dates to continue.
+                                    </p>
+                                    <Button
+                                        asChild
+                                        size="sm"
+                                        className="mt-3 rounded-lg bg-red-700 text-white hover:bg-red-800"
+                                    >
+                                        <Link href={`/house/${slug}`}>Choose new dates</Link>
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Step Indicator */}
                         <div className="mb-5">
@@ -770,7 +839,7 @@ _Sent from Velstays website_`
                                         {/* Confirm Booking Button */}
                                         <Button
                                             onClick={confirmBooking}
-                                            disabled={bookingSubmitting || bookingConfirmed}
+                                            disabled={bookingSubmitting || bookingConfirmed || datesConflict}
                                             className="w-full h-12 rounded-xl text-base font-semibold gap-2"
                                         >
                                             {bookingSubmitting ? (
@@ -911,6 +980,7 @@ _Sent from Velstays website_`
                         {currentStep < 4 && (
                             <Button
                                 onClick={goNext}
+                                disabled={datesConflict}
                                 className="rounded-xl gap-1 h-11 px-8"
                             >
                                 {currentStep === 3 ? "Review & Confirm" : "Continue"}

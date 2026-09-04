@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { expandDateRange, getUnavailableDates } from "@/lib/airbnb-ical"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
 import { readData, writeData } from "@/lib/storage"
 import type { GuideAccessEntry } from "@/app/api/guide-access/route"
@@ -181,6 +182,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
             { error: "Missing required fields" },
             { status: 400 }
+        )
+    }
+
+    // Re-check availability at submission time so a night that was taken
+    // (on Airbnb or blocked by the admin) while the guest was booking is refused.
+    const unavailable = await getUnavailableDates(house)
+    const conflicts = expandDateRange(checkIn, checkOut).filter((d) => unavailable.has(d))
+    if (conflicts.length > 0) {
+        return NextResponse.json(
+            {
+                error: "Some of the selected dates are no longer available",
+                unavailableDates: conflicts,
+            },
+            { status: 409 }
         )
     }
 

@@ -79,7 +79,7 @@ export default function AdminCalendarPage() {
     }, [fetchBlockedDates, fetchAirbnbDates])
 
     // Keep Airbnb bookings fresh while the page is open; also refetch on tab focus.
-    usePolling(fetchAirbnbDates, 5_000)
+    usePolling(fetchAirbnbDates, 3_000)
 
     const handleSyncAirbnb = async () => {
         setSyncing(true)
@@ -433,7 +433,7 @@ export default function AdminCalendarPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                         Airbnb bookings are imported automatically and shown in orange on the calendar.
-                        This page refreshes every 5 seconds while open.
+                        This page refreshes every 3 seconds while open.
                         {lastSynced && (
                             <span className="block mt-1 text-xs">
                                 Last synced {format(lastSynced, "HH:mm:ss")}

@@ -144,7 +144,7 @@ export function BookingCard({
 
   // While the calendar is open, keep availability fresh (Airbnb + manual blocks)
   // without the guest having to close and reopen it.
-  usePolling(fetchBlockedDates, 5_000, calendarOpen, true)
+  usePolling(fetchBlockedDates, 3_000, calendarOpen, true)
 
   const isDateBlocked = useCallback(
     (date: Date) => blockedDates.has(format(date, "yyyy-MM-dd")),
