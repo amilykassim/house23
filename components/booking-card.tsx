@@ -13,6 +13,7 @@ import { CalendarDayButton } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { houses, type HouseData } from "@/lib/houses"
+import { usePolling } from "@/lib/use-polling"
 import type { DateRange } from "react-day-picker"
 import Link from "next/link"
 
@@ -140,6 +141,10 @@ export function BookingCard({
   useEffect(() => {
     fetchBlockedDates()
   }, [fetchBlockedDates])
+
+  // While the calendar is open, keep availability fresh (Airbnb + manual blocks)
+  // without the guest having to close and reopen it.
+  usePolling(fetchBlockedDates, 30_000, calendarOpen, true)
 
   const isDateBlocked = useCallback(
     (date: Date) => blockedDates.has(format(date, "yyyy-MM-dd")),

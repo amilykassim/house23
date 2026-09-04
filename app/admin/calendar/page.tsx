@@ -18,6 +18,7 @@ import {
 import { ChevronLeft, ChevronRight, Lock, Unlock, Loader2, RefreshCw, Copy, Check, ExternalLink, Link2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { houses } from "@/lib/houses"
+import { usePolling } from "@/lib/use-polling"
 
 interface AirbnbEvent {
     start: string
@@ -37,6 +38,7 @@ export default function AdminCalendarPage() {
     const [saving, setSaving] = useState(false)
     const [copied, setCopied] = useState(false)
     const [mounted, setMounted] = useState(false)
+    const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
     const today = startOfDay(new Date())
@@ -64,6 +66,7 @@ export default function AdminCalendarPage() {
             const data = await res.json()
             setAirbnbDates(new Set(data.dates || []))
             setAirbnbEvents(data.events || [])
+            setLastSynced(new Date())
         } catch {
             // silently fail for airbnb sync
         }
@@ -74,6 +77,9 @@ export default function AdminCalendarPage() {
         fetchAirbnbDates()
         setSelectedDates(new Set())
     }, [fetchBlockedDates, fetchAirbnbDates])
+
+    // Keep Airbnb bookings fresh while the page is open; also refetch on tab focus.
+    usePolling(fetchAirbnbDates, 30_000)
 
     const handleSyncAirbnb = async () => {
         setSyncing(true)
@@ -427,6 +433,12 @@ export default function AdminCalendarPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                         Airbnb bookings are imported automatically and shown in orange on the calendar.
+                        This page refreshes every 30 seconds while open.
+                        {lastSynced && (
+                            <span className="block mt-1 text-xs">
+                                Last synced {format(lastSynced, "HH:mm:ss")}
+                            </span>
+                        )}
                     </p>
                 </div>
 
