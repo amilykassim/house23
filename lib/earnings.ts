@@ -27,6 +27,18 @@ export interface EarningsBooking {
     status: "pending" | "confirmed" | "cancelled"
     createdAt: string
     source?: "website" | "manual"
+    houseName?: string
+    guestName?: string
+    guestEmail?: string
+    guestPhone?: string
+}
+
+// A confirmed booking with at least one night inside the period
+export interface EarningsStay {
+    booking: EarningsBooking
+    totalNights: number
+    nightsInPeriod: number
+    amountInPeriod: number // RWF
 }
 
 export type PeriodKind = "week" | "month" | "year" | "custom"
@@ -59,6 +71,7 @@ export interface EarningsSummary {
     leadDays: number | null // website bookings only
     byHouse: Record<string, { total: number; nights: number }>
     weekdays: number[] // Monday first
+    stays: EarningsStay[] // by check-in date
 }
 
 const WEEK_OPTIONS = { weekStartsOn: 1 as const }
@@ -144,6 +157,7 @@ export function summarizeEarnings(
     let stayNights = 0
     let leadSum = 0
     let leadCount = 0
+    const stays: EarningsStay[] = []
 
     const previous = previousPeriod(period)
     const previousStartKey = dayKey(previous.start)
@@ -158,7 +172,7 @@ export function summarizeEarnings(
 
         const perNight = booking.totalRwf / stay
         const perNightUsd = booking.total / stay
-        let touches = false
+        let nightsInPeriod = 0
 
         for (let i = 0; i < stay; i++) {
             const night = addDays(checkIn, i)
@@ -166,7 +180,7 @@ export function summarizeEarnings(
             if (key >= previousStartKey && key <= previousEndKey) previousTotal += perNight
             if (key < startKey || key > endKey) continue
 
-            touches = true
+            nightsInPeriod += 1
             total += perNight
             totalUsd += perNightUsd
             nights += 1
@@ -184,7 +198,8 @@ export function summarizeEarnings(
             }
         }
 
-        if (!touches) continue
+        if (nightsInPeriod === 0) continue
+        stays.push({ booking, totalNights: stay, nightsInPeriod, amountInPeriod: perNight * nightsInPeriod })
         bookingCount += 1
         stayNights += stay
         if (booking.source === "manual") {
@@ -211,5 +226,6 @@ export function summarizeEarnings(
         leadDays: leadCount > 0 ? leadSum / leadCount : null,
         byHouse,
         weekdays,
+        stays: stays.sort((a, b) => a.booking.checkIn.localeCompare(b.booking.checkIn)),
     }
 }

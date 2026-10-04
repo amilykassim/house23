@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import { format, parseISO, startOfDay } from "date-fns"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
 import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
 import { DateRangePicker } from "@/components/date-range-picker"
@@ -40,16 +40,56 @@ const scrub = (count: number, select: (index: number) => void) => (e: React.Poin
 }
 
 const money = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
+const houseName = (booking: EarningsBooking) =>
+    houses.find((h) => h.slug === booking.house)?.name ?? booking.houseName ?? booking.house
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
 
-function Tile({ label, value, note }: { label: string; value: string; note: string }) {
-    return (
-        <div className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1">
-            <span className="text-[13px] font-semibold text-muted-foreground">{label}</span>
+interface TileProps {
+    label: string
+    value: string
+    note: string
+    /** Makes the tile a button that opens its details below the row */
+    onClick?: () => void
+    open?: boolean
+}
+
+function Tile({ label, value, note, onClick, open = false }: TileProps) {
+    const content = (
+        <>
+            <span className="flex items-center justify-between gap-2 text-[13px] font-semibold text-muted-foreground">
+                {label}
+                {onClick && <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />}
+            </span>
             <span className="text-[19px] sm:text-[26px] leading-tight font-bold text-foreground">{value}</span>
             <span className="text-[13px] text-muted-foreground">{note}</span>
-        </div>
+        </>
     )
+    if (!onClick) {
+        return (
+            <div className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1">
+                {content}
+            </div>
+        )
+    }
+    // The 2px border swaps for 1px less padding so the tile keeps its size
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            aria-expanded={open}
+            className={`min-w-0 text-left rounded-2xl border-2 bg-card p-[13px] sm:p-[17px] flex flex-col gap-1 ${open ? "border-foreground" : "border-border hover:border-[#B0B0B0]"}`}
+        >
+            {content}
+        </button>
+    )
+}
+
+// "Sat 3 to Sat 10 Oct", or with both months when the stay crosses one
+function stayLabel(checkIn: string, checkOut: string) {
+    const start = parseISO(checkIn)
+    const end = parseISO(checkOut)
+    const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
+    return `${format(start, sameMonth ? "EEE d" : "EEE d MMM")} to ${format(end, "EEE d MMM")}`
 }
 
 export function EarningsInsights({ bookings, expenses = [] }: { bookings: EarningsBooking[]; expenses?: Expense[] }) {
@@ -59,6 +99,8 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     const [customEnd, setCustomEnd] = useState<string | null>(() => format(new Date(), "yyyy-MM-dd"))
     const [hoveredBar, setHoveredBar] = useState<number | null>(null)
     const [hoveredDay, setHoveredDay] = useState<number | null>(null)
+    // Which tile's details are open under the tiles row
+    const [detail, setDetail] = useState<"nights" | "bookings" | null>(null)
     const period: Period | null = useMemo(() => {
         if (kind !== "custom") return periodFor(kind, anchor)
         if (!customStart || !customEnd || customEnd < customStart) return null
@@ -300,19 +342,151 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
             </section>
 
             <section className={TILE_GRID}>
-                <Tile label="Nights booked" value={String(summary.nights)} note={`of ${summary.capacity} available`} />
+                <Tile
+                    label="Nights booked"
+                    value={String(summary.nights)}
+                    note={`of ${summary.capacity} available`}
+                    onClick={() => setDetail(detail === "nights" ? null : "nights")}
+                    open={detail === "nights"}
+                />
                 <Tile
                     label="Occupancy"
                     value={`${Math.min(Math.round((summary.nights / Math.max(summary.capacity, 1)) * 100), 100)}%`}
                     note={houses.length > 1 ? "all houses together" : "of the period"}
                 />
-                <Tile label="Bookings" value={String(summary.bookings)} note={`${summary.byHand} added by hand`} />
+                <Tile
+                    label="Bookings"
+                    value={String(summary.bookings)}
+                    note={`${summary.byHand} added by hand`}
+                    onClick={() => setDetail(detail === "bookings" ? null : "bookings")}
+                    open={detail === "bookings"}
+                />
                 <Tile
                     label="Average per booking"
                     value={summary.bookings > 0 ? money(total / summary.bookings) : "–"}
                     note="earned in this period"
                 />
             </section>
+
+            {detail && (
+                <section className={`${CARD} gap-3 shadow-[0_6px_20px_rgba(0,0,0,0.08)]`}>
+                    <div className="flex items-center justify-between gap-4">
+                        <h2 className="text-[17px] font-semibold text-foreground">
+                            {detail === "nights"
+                                ? `${plural(summary.nights, "night")} booked`
+                                : plural(summary.bookings, "booking")}{" "}
+                            · {periodTitle(period)}
+                        </h2>
+                        <button
+                            type="button"
+                            onClick={() => setDetail(null)}
+                            className="min-h-11 px-2 text-sm font-semibold text-foreground underline"
+                        >
+                            Close
+                        </button>
+                    </div>
+
+                    {summary.stays.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No confirmed bookings in this period.</p>
+                    )}
+
+                    {/* Nights: which ones are taken per house, then each stay's nightly rate */}
+                    {detail === "nights" && summary.stays.length > 0 && (
+                        <>
+                            {houses.map((h, i) => (
+                                <div key={h.slug} className="flex flex-col gap-1.5">
+                                    <div className="flex justify-between gap-4 text-sm">
+                                        <span className="font-semibold text-foreground">{h.name}</span>
+                                        <span className="text-muted-foreground">
+                                            {plural(summary.byHouse[h.slug]?.nights || 0, "night")}
+                                        </span>
+                                    </div>
+                                    <div className="flex gap-0.5">
+                                        {summary.buckets.map((bucket) => (
+                                            <div
+                                                key={bucket.key}
+                                                title={`${bucket.name}: ${(bucket.byHouse[h.slug] || 0) > 0 ? "booked" : "empty"}`}
+                                                className="flex-1 min-w-0 h-7 rounded bg-muted"
+                                                style={(bucket.byHouse[h.slug] || 0) > 0 ? { background: HOUSE_COLORS[i] } : undefined}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
+                            <div className="flex gap-0.5 text-xs text-muted-foreground text-center">
+                                {summary.buckets.map((bucket) => (
+                                    <span key={bucket.key} className="flex-1 min-w-0 whitespace-nowrap">
+                                        {bucket.label}
+                                    </span>
+                                ))}
+                            </div>
+                            <div className="flex flex-col">
+                                {summary.stays.map(({ booking, totalNights, nightsInPeriod, amountInPeriod }) => (
+                                    <div
+                                        key={booking.id}
+                                        className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1 py-3 border-t border-[#EBEBEB] text-[15px]"
+                                    >
+                                        <span className="font-semibold text-foreground">
+                                            {stayLabel(booking.checkIn, booking.checkOut)}
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                            {houseName(booking)} ·{" "}
+                                            {nightsInPeriod === totalNights
+                                                ? plural(totalNights, "night")
+                                                : `${nightsInPeriod} of ${totalNights} nights in this period`}{" "}
+                                            · {money(amountInPeriod / nightsInPeriod)} a night
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+
+                    {/* Bookings: who, how to reach them, where it came from, what it earned */}
+                    {detail === "bookings" &&
+                        summary.stays.map(({ booking, totalNights, nightsInPeriod, amountInPeriod }) => {
+                            const byHand = booking.source === "manual"
+                            const guest = !byHand && booking.guestName ? booking.guestName : ""
+                            const contact = [booking.guestPhone, booking.guestEmail].filter(Boolean).join(" · ")
+                            return (
+                                <div
+                                    key={booking.id}
+                                    className="flex flex-wrap justify-between items-center gap-x-6 gap-y-2 py-3.5 border-t border-[#EBEBEB]"
+                                >
+                                    <div className="flex-[1_1_260px] min-w-0 flex flex-col gap-0.5">
+                                        <span className="text-[15px] font-semibold text-foreground">
+                                            {guest || "No guest details"}
+                                        </span>
+                                        <span className="text-[13px] text-muted-foreground [overflow-wrap:anywhere]">
+                                            {contact || (byHand ? "Added by hand without contact details" : "No contact details")}
+                                        </span>
+                                    </div>
+                                    <div className="flex-[1_1_200px] flex flex-col gap-0.5">
+                                        <span className="text-[15px] text-foreground">
+                                            {stayLabel(booking.checkIn, booking.checkOut)}
+                                        </span>
+                                        <span className="text-[13px] text-muted-foreground">
+                                            {houseName(booking)} ·{" "}
+                                            {nightsInPeriod === totalNights
+                                                ? plural(totalNights, "night")
+                                                : `${nightsInPeriod} of ${totalNights} nights in this period`}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span
+                                            className={`px-2.5 py-1 rounded-full text-xs font-semibold text-foreground border ${byHand ? "bg-muted border-muted" : "bg-card border-[#B0B0B0]"}`}
+                                        >
+                                            {byHand ? "By hand" : "Website"}
+                                        </span>
+                                        <span className="text-[15px] font-bold text-foreground whitespace-nowrap">
+                                            {money(amountInPeriod)}
+                                        </span>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                </section>
+            )}
 
             <h2 className="mt-4 text-[22px] font-bold tracking-[-0.01em] text-foreground">Patterns</h2>
 
