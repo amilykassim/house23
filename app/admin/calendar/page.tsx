@@ -18,7 +18,6 @@ import {
 import { ChevronLeft, ChevronRight, Lock, Unlock, Loader2, RefreshCw, Copy, Check, ExternalLink, Link2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { houses } from "@/lib/houses"
-import { usePolling } from "@/lib/use-polling"
 
 interface AirbnbEvent {
     start: string
@@ -78,15 +77,14 @@ export default function AdminCalendarPage() {
         setSelectedDates(new Set())
     }, [fetchBlockedDates, fetchAirbnbDates])
 
-    // Keep Airbnb bookings fresh while the page is open; also refetch on tab focus.
-    // "Sync" re-reads on demand, so a slow timer is enough.
-    usePolling(fetchAirbnbDates, 60_000)
+    // No background refresh here: an open admin tab would keep the database
+    // awake. "Sync now" re-reads blocked dates and Airbnb on demand.
 
     const handleSyncAirbnb = async () => {
         setSyncing(true)
         setMessage(null)
         try {
-            await fetchAirbnbDates()
+            await Promise.all([fetchBlockedDates(), fetchAirbnbDates()])
             setMessage({ type: "success", text: "Airbnb calendar synced successfully" })
         } catch {
             setMessage({ type: "error", text: "Failed to sync with Airbnb" })
@@ -434,7 +432,7 @@ export default function AdminCalendarPage() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                         Airbnb bookings are imported automatically and shown in orange on the calendar.
-                        This page refreshes every 3 seconds while open.
+                        Press Sync now to refresh.
                         {lastSynced && (
                             <span className="block mt-1 text-xs">
                                 Last synced {format(lastSynced, "HH:mm:ss")}
