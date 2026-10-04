@@ -68,7 +68,8 @@ export function AmbientSoundProvider({ children }: { children: React.ReactNode }
 
   return (
     <AmbientSoundContext.Provider value={{ enabled, toggle }}>
-      <audio ref={audioRef} src={AUDIO_SRC} loop preload="auto" />
+      {/* preload="none": the file is only downloaded once someone turns the sound on */}
+      <audio ref={audioRef} src={AUDIO_SRC} loop preload="none" />
       {children}
     </AmbientSoundContext.Provider>
   )

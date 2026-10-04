@@ -79,7 +79,8 @@ export default function AdminCalendarPage() {
     }, [fetchBlockedDates, fetchAirbnbDates])
 
     // Keep Airbnb bookings fresh while the page is open; also refetch on tab focus.
-    usePolling(fetchAirbnbDates, 3_000)
+    // "Sync" re-reads on demand, so a slow timer is enough.
+    usePolling(fetchAirbnbDates, 60_000)
 
     const handleSyncAirbnb = async () => {
         setSyncing(true)

@@ -100,40 +100,18 @@ export function BookingCard({
   }, [])
 
   const fetchBlockedDates = useCallback(() => {
-    // Fetch blocked dates for selected house
-    fetch(`/api/blocked-dates?house=${selectedSlug}`)
+    // Taken nights (admin blocks, bookings and Airbnb) for the selected house
+    fetch(`/api/availability?house=${selectedSlug}`)
       .then((res) => res.json())
-      .then((data) => {
-        const dates = new Set<string>(data.dates || [])
-        fetch(`/api/airbnb-sync?house=${selectedSlug}`)
-          .then((res) => res.json())
-          .then((airbnb) => {
-            if (airbnb.dates?.length) {
-              airbnb.dates.forEach((d: string) => dates.add(d))
-            }
-            setBlockedDates(dates)
-          })
-          .catch(() => setBlockedDates(dates))
-      })
+      .then((data) => setBlockedDates(new Set<string>(data.dates || [])))
       .catch(() => { })
 
-    // Fetch blocked dates for the other house
+    // ...and for the other house, to suggest it when these dates are taken
     const otherSlug = houses.find((h) => h.slug !== selectedSlug)?.slug
     if (otherSlug) {
-      fetch(`/api/blocked-dates?house=${otherSlug}`)
+      fetch(`/api/availability?house=${otherSlug}`)
         .then((res) => res.json())
-        .then((data) => {
-          const dates = new Set<string>(data.dates || [])
-          fetch(`/api/airbnb-sync?house=${otherSlug}`)
-            .then((res) => res.json())
-            .then((airbnb) => {
-              if (airbnb.dates?.length) {
-                airbnb.dates.forEach((d: string) => dates.add(d))
-              }
-              setOtherBlockedDates(dates)
-            })
-            .catch(() => setOtherBlockedDates(dates))
-        })
+        .then((data) => setOtherBlockedDates(new Set<string>(data.dates || [])))
         .catch(() => { })
     }
   }, [selectedSlug])
@@ -144,7 +122,7 @@ export function BookingCard({
 
   // While the calendar is open, keep availability fresh (Airbnb + manual blocks)
   // without the guest having to close and reopen it.
-  usePolling(fetchBlockedDates, 3_000, calendarOpen, true)
+  usePolling(fetchBlockedDates, 30_000, calendarOpen, true)
 
   const isDateBlocked = useCallback(
     (date: Date) => blockedDates.has(format(date, "yyyy-MM-dd")),

@@ -112,19 +112,18 @@ export default function BookPage() {
             selectedNights.push(format(d, "yyyy-MM-dd"))
         }
         try {
-            const [blockedRes, airbnbRes] = await Promise.all([
-                fetch(`/api/blocked-dates?house=${slug}`).then((r) => r.json()).catch(() => ({})),
-                fetch(`/api/airbnb-sync?house=${slug}`).then((r) => r.json()).catch(() => ({})),
-            ])
-            const taken = new Set<string>([...(blockedRes.dates || []), ...(airbnbRes.dates || [])])
+            const res = await fetch(`/api/availability?house=${slug}`)
+            const data = await res.json()
+            const taken = new Set<string>(data.dates || [])
             setUnavailableDates(selectedNights.filter((n) => taken.has(n)))
         } catch {
             // keep last known state
         }
     }, [dateRange, slug])
 
-    // Poll every 3s from the moment dates are known until the booking is confirmed.
-    usePolling(checkAvailability, 3_000, !bookingConfirmed && !!dateRange?.from && !!dateRange?.to, true)
+    // Re-check every 30s (and on tab focus) from the moment dates are known until
+    // the booking is confirmed. The server checks again when the booking is sent.
+    usePolling(checkAvailability, 30_000, !bookingConfirmed && !!dateRange?.from && !!dateRange?.to, true)
 
     const datesConflict = unavailableDates.length > 0
 
