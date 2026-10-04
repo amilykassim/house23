@@ -59,7 +59,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="px-4 sm:px-6">
                     <div className="flex h-16 items-center justify-between">
                         {/* Logo */}
-                        <Link href="/admin" className="flex items-center gap-2">
+                        <Link href="/admin/insights" className="flex items-center gap-2">
                             <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground">
                                 Velstays
                             </span>

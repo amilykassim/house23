@@ -17,7 +17,9 @@ export default function AdminLoginPage() {
 function AdminLoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get("returnTo") || "/admin"
+  // Insights is the back office's home: a plain /admin login lands there too
+  const requested = searchParams.get("returnTo")
+  const returnTo = !requested || requested === "/admin" ? "/admin/insights" : requested
 
   const [passcode, setPasscode] = useState(["", "", "", ""])
   const [error, setError] = useState("")
