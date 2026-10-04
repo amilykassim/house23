@@ -14,3 +14,6 @@ next.user-config.*
 node_modules
 .next/
 .DS_Storetsconfig.tsbuildinfo
+
+# Local copies of production data (guest details): never commit
+backups/

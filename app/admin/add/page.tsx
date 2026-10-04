@@ -47,7 +47,9 @@ export default function AdminAddBookingPage() {
         fetchUnavailable()
     }, [fetchUnavailable])
 
-    usePolling(fetchUnavailable, 5_000)
+    // Each refresh reads storage three times, so keep it slow; it also runs
+    // whenever the tab regains focus.
+    usePolling(fetchUnavailable, 60_000)
 
     const nights = checkIn && checkOut ? differenceInCalendarDays(parseISO(checkOut), parseISO(checkIn)) : 0
     const setPriceRwf = nights * ADMIN_NIGHTLY_PRICE_RWF

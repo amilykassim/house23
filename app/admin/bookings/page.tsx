@@ -198,6 +198,8 @@ export default function AdminBookingsPage() {
                         description: "text-xs text-orange-700/70 dark:text-orange-300/70 mt-0.5",
                     },
                 }), 0)
+            } else {
+                throw new Error("Delete failed")
             }
         } catch {
             setTimeout(() => toast("Something went wrong", {
@@ -793,6 +795,42 @@ export default function AdminBookingsPage() {
                                                         "MMM d, yyyy 'at' h:mm a"
                                                     )}
                                                 </p>
+
+                                                {/* Delete: pending bookings still under review have it beside Accept / Reject */}
+                                                {!(booking.status === "pending" && !checkOutPassed) && (
+                                                    <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center justify-end gap-2">
+                                                        {confirmDelete === booking.id ? (
+                                                            <>
+                                                                <span className="text-xs text-red-500 font-medium mr-auto">
+                                                                    {booking.status === "confirmed"
+                                                                        ? "Delete permanently? Its dates open up again and it leaves the earnings. No email is sent."
+                                                                        : "Delete permanently?"}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => handleDelete(booking.id)}
+                                                                    disabled={deletingBooking === booking.id}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                                                                >
+                                                                    {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setConfirmDelete(null)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => setConfirmDelete(booking.id)}
+                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
+                                                            >
+                                                                <X className="h-3 w-3" />
+                                                                Delete booking
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         </motion.div>
                                     )}

@@ -405,7 +405,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ booking: bookings[index] })
 }
 
+// Permanently remove a booking (admin only). A confirmed booking also gives
+// back its dates and its house-guide access; no email is sent to the guest.
 export async function DELETE(request: NextRequest) {
+    if (request.cookies.get("admin_auth")?.value !== "authenticated") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 
@@ -426,15 +432,24 @@ export async function DELETE(request: NextRequest) {
         )
     }
 
-    if (bookings[index].status !== "pending") {
-        return NextResponse.json(
-            { error: "Only pending bookings can be deleted" },
-            { status: 400 }
-        )
-    }
-
-    bookings.splice(index, 1)
+    const [removed] = bookings.splice(index, 1)
     await writeBookings(bookings)
+
+    if (removed.status === "confirmed") {
+        // Free the nights, except any still covered by another confirmed booking
+        const stillBooked = new Set(
+            bookings
+                .filter((b) => b.house === removed.house && b.status === "confirmed")
+                .flatMap((b) => getDatesBetween(b.checkIn, b.checkOut))
+        )
+        const freed = new Set(getDatesBetween(removed.checkIn, removed.checkOut).filter((d) => !stillBooked.has(d)))
+        if (freed.size > 0) {
+            const blockedDates = await readBlockedDates()
+            blockedDates[removed.house] = (blockedDates[removed.house] || []).filter((d) => !freed.has(d))
+            await writeBlockedDates(blockedDates)
+        }
+        await removeGuideAccessForBooking(removed)
+    }
 
     return NextResponse.json({ success: true })
 }
