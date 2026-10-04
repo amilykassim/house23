@@ -1,0 +1,433 @@
+"use client"
+
+import { useMemo, useState } from "react"
+import { format, parseISO, startOfDay } from "date-fns"
+import { ChevronLeft, ChevronRight } from "lucide-react"
+import { houses } from "@/lib/houses"
+import { SegmentedControl } from "@/components/segmented-control"
+import { DateRangePicker } from "@/components/date-range-picker"
+import { ADMIN_NIGHTLY_PRICE_RWF } from "@/lib/currency"
+import {
+    periodFor,
+    periodTitle,
+    shiftAnchor,
+    summarizeEarnings,
+    type EarningsBooking,
+    type Period,
+    type PeriodKind,
+} from "@/lib/earnings"
+
+// One fixed colour per house, in listing order (never reassigned by rank).
+const HOUSE_COLORS = ["#2A78D6", "#EB6834", "#1BAF7A", "#EDA100"]
+const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+const PERIOD_KINDS: { id: Exclude<PeriodKind, "custom">; label: string }[] = [
+    { id: "week", label: "Week" },
+    { id: "month", label: "Month" },
+    { id: "year", label: "Year" },
+]
+const CHART_HEIGHT = 170
+const DAY_CHART_HEIGHT = 140
+// Two tiles per row on phones, as many as fit from tablet width up
+const TILE_GRID = "grid grid-cols-2 gap-3 sm:gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]"
+const CARD = "rounded-3xl border border-border bg-card p-4 sm:p-6 flex flex-col"
+
+// Hovering, tapping or dragging across a chart selects the bar under the pointer.
+const scrub = (count: number, select: (index: number) => void) => (e: React.PointerEvent<HTMLDivElement>) => {
+    const box = e.currentTarget.getBoundingClientRect()
+    const index = Math.floor(((e.clientX - box.left) / box.width) * count)
+    select(Math.max(0, Math.min(count - 1, index)))
+}
+
+const money = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
+
+function Tile({ label, value, note }: { label: string; value: string; note: string }) {
+    return (
+        <div className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1">
+            <span className="text-[13px] font-semibold text-muted-foreground">{label}</span>
+            <span className="text-[19px] sm:text-[26px] leading-tight font-bold text-foreground">{value}</span>
+            <span className="text-[13px] text-muted-foreground">{note}</span>
+        </div>
+    )
+}
+
+export function EarningsInsights({ bookings }: { bookings: EarningsBooking[] }) {
+    const [kind, setKind] = useState<PeriodKind>("month")
+    const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
+    const [customStart, setCustomStart] = useState<string | null>(() => format(periodFor("month", new Date()).start, "yyyy-MM-dd"))
+    const [customEnd, setCustomEnd] = useState<string | null>(() => format(new Date(), "yyyy-MM-dd"))
+    const [hoveredBar, setHoveredBar] = useState<number | null>(null)
+    const [hoveredDay, setHoveredDay] = useState<number | null>(null)
+    const period: Period | null = useMemo(() => {
+        if (kind !== "custom") return periodFor(kind, anchor)
+        if (!customStart || !customEnd || customEnd < customStart) return null
+        return { kind: "custom", start: parseISO(customStart), end: parseISO(customEnd) }
+    }, [kind, anchor, customStart, customEnd])
+
+    const summary = useMemo(
+        () => (period ? summarizeEarnings(bookings, period, houses.map((h) => h.slug)) : null),
+        [bookings, period]
+    )
+
+    const pickKind = (next: PeriodKind) => {
+        setKind(next)
+        setAnchor(startOfDay(new Date()))
+        setHoveredBar(null)
+        setHoveredDay(null)
+    }
+    const shift = (step: number) => {
+        if (kind === "custom") return
+        setAnchor((a) => shiftAnchor(kind, a, step))
+        setHoveredBar(null)
+    }
+
+    const header = (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-foreground">Earnings</h1>
+            <div className="flex flex-wrap items-center gap-3">
+                <SegmentedControl
+                    options={PERIOD_KINDS}
+                    value={kind === "custom" ? null : kind}
+                    onChange={pickKind}
+                />
+                <button
+                    type="button"
+                    onClick={() => pickKind("custom")}
+                    aria-pressed={kind === "custom"}
+                    className={`min-h-11 px-4 rounded-full border bg-card text-sm font-semibold text-foreground ${kind === "custom" ? "border-foreground ring-1 ring-foreground" : "border-[#B0B0B0]"}`}
+                >
+                    Custom dates
+                </button>
+            </div>
+        </div>
+    )
+
+    const customInputs = kind === "custom" && (
+        <div className="max-w-[560px]">
+            <DateRangePicker
+                startLabel="From"
+                endLabel="To"
+                startPrompt="Pick the first day"
+                endPrompt="Pick the last day"
+                start={customStart}
+                end={customEnd}
+                onChange={(start, end) => {
+                    setCustomStart(start)
+                    setCustomEnd(end)
+                    setHoveredBar(null)
+                }}
+                allowSameDay
+            />
+        </div>
+    )
+
+    if (!period || !summary) {
+        return (
+            <div className="space-y-6">
+                {header}
+                {customInputs}
+                <p className="text-sm text-muted-foreground">Pick a start date and an end date to see the earnings.</p>
+            </div>
+        )
+    }
+
+    const { total, previousTotal } = summary
+    const change = previousTotal > 0 ? Math.round(((total - previousTotal) / previousTotal) * 100) : null
+    const previousName =
+        kind === "week" ? "the week before" : kind === "month" ? "the month before" : kind === "year" ? "the year before" : "the period before"
+    const delta =
+        change === null
+            ? `nothing earned ${previousName}`
+            : `${change >= 0 ? "up" : "down"} ${Math.abs(change)}% on ${previousName}`
+
+    const maxBucket = Math.max(...summary.buckets.map((b) => b.total), 1)
+    const hovered = hoveredBar !== null ? summary.buckets[hoveredBar] : null
+    const hasEarnings = total > 0
+
+    const weekdayTotal = summary.weekdays.reduce((sum, v) => sum + v, 0)
+    const weekdayMax = Math.max(...summary.weekdays, 1)
+    const bestDay = summary.weekdays.indexOf(Math.max(...summary.weekdays))
+    const quietDay = summary.weekdays.indexOf(Math.min(...summary.weekdays))
+    const weekendTotal = summary.weekdays[4] + summary.weekdays[5] + summary.weekdays[6]
+    const weekendShare = weekdayTotal > 0 ? Math.round((weekendTotal / weekdayTotal) * 100) : 0
+
+    const days = summary.capacity / houses.length
+    const emptyByHouse = houses.map((h) => Math.max(days - (summary.byHouse[h.slug]?.nights || 0), 0))
+    const emptyNights = emptyByHouse.reduce((sum, v) => sum + v, 0)
+    const emptyWorth = emptyNights * ADMIN_NIGHTLY_PRICE_RWF
+    const houseMax = Math.max(...houses.map((h) => summary.byHouse[h.slug]?.total || 0), 1)
+    const website = summary.bookings - summary.byHand
+    const ranked = houses
+        .map((h) => ({ name: h.name, total: summary.byHouse[h.slug]?.total || 0 }))
+        .sort((x, y) => y.total - x.total)
+    const lead = ranked.length > 1 ? Math.round(ranked[0].total - ranked[1].total) : 0
+
+    return (
+        <div className="space-y-6">
+            {header}
+            {customInputs}
+
+            {/* Headline */}
+            <section className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                    {kind !== "custom" && (
+                        <button
+                            type="button"
+                            onClick={() => shift(-1)}
+                            aria-label={`Previous ${kind}`}
+                            className="w-9 h-9 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] transition-colors"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                    )}
+                    <span className="text-[15px] text-muted-foreground">{periodTitle(period)}</span>
+                    {kind !== "custom" && (
+                        <button
+                            type="button"
+                            onClick={() => shift(1)}
+                            aria-label={`Next ${kind}`}
+                            className="w-9 h-9 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] transition-colors"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+                <span className="text-[34px] sm:text-[42px] font-bold tracking-[-0.03em] leading-[1.15] text-foreground">
+                    {Math.round(total).toLocaleString("en-US")} <span className="text-[0.45em] font-semibold tracking-normal">RWF</span>
+                </span>
+                <span className="text-[15px] text-muted-foreground">
+                    ≈ ${Math.round(summary.totalUsd).toLocaleString("en-US")} · {delta}
+                </span>
+            </section>
+
+            {/* Earnings over the period, stacked by house */}
+            <section className={`${CARD} gap-4`}>
+                <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+                    <div className="flex gap-4 text-sm text-muted-foreground">
+                        {houses.map((h, i) => (
+                            <span key={h.slug} className="flex items-center gap-1.5">
+                                <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: HOUSE_COLORS[i] }} />
+                                {h.name}
+                            </span>
+                        ))}
+                    </div>
+                    <span className="text-sm font-semibold text-foreground min-h-5">
+                        {hovered
+                            ? `${hovered.name} · ${money(hovered.total)} (${houses
+                                .map((h) => `${h.name} ${money(hovered.byHouse[h.slug] || 0)}`)
+                                .join(", ")})`
+                            : hasEarnings
+                                ? "Tap or hover a bar for the detail"
+                                : "No confirmed earnings in this period"}
+                    </span>
+                </div>
+                <div
+                    onPointerDown={scrub(summary.buckets.length, setHoveredBar)}
+                    onPointerMove={scrub(summary.buckets.length, setHoveredBar)}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    className={`flex items-end border-b border-border touch-pan-y ${summary.buckets.length > 12 ? "gap-0.5 sm:gap-1" : "gap-2 sm:gap-4"}`}
+                    style={{ height: CHART_HEIGHT + 20 }}
+                >
+                    {summary.buckets.map((bucket, index) => {
+                        const segments = houses
+                            .map((h, i) => ({ slug: h.slug, color: HOUSE_COLORS[i], value: bucket.byHouse[h.slug] || 0 }))
+                            .filter((s) => s.value > 0)
+                        return (
+                            <div
+                                key={bucket.key}
+                                className={`flex-1 min-w-0 h-full flex flex-col-reverse items-center gap-0.5 ${hoveredBar === index ? "bg-[#F7F7F7]" : ""}`}
+                            >
+                                {segments.map((s, i) => (
+                                    <div
+                                        key={s.slug}
+                                        className={`w-full max-w-7 ${i === segments.length - 1 ? "rounded-t" : ""}`}
+                                        style={{ height: Math.max(Math.round((s.value / maxBucket) * CHART_HEIGHT), 2), background: s.color }}
+                                    />
+                                ))}
+                            </div>
+                        )
+                    })}
+                </div>
+                <div className={`flex text-xs text-muted-foreground text-center ${summary.buckets.length > 12 ? "gap-0.5 sm:gap-1" : "gap-2 sm:gap-4"}`}>
+                    {summary.buckets.map((bucket) => (
+                        <span key={bucket.key} className="flex-1 min-w-0 whitespace-nowrap">
+                            {bucket.label}
+                        </span>
+                    ))}
+                </div>
+            </section>
+
+            <section className={TILE_GRID}>
+                <Tile label="Nights booked" value={String(summary.nights)} note={`of ${summary.capacity} available`} />
+                <Tile
+                    label="Occupancy"
+                    value={`${Math.min(Math.round((summary.nights / Math.max(summary.capacity, 1)) * 100), 100)}%`}
+                    note={houses.length > 1 ? "all houses together" : "of the period"}
+                />
+                <Tile label="Bookings" value={String(summary.bookings)} note={`${summary.byHand} added by hand`} />
+                <Tile
+                    label="Average per booking"
+                    value={summary.bookings > 0 ? money(total / summary.bookings) : "–"}
+                    note="earned in this period"
+                />
+            </section>
+
+            <h2 className="mt-4 text-[22px] font-bold tracking-[-0.01em] text-foreground">Patterns</h2>
+
+            {hasEarnings ? (
+                <section className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
+                    <div className="rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Best day</span>
+                        <span className="text-xl font-bold tracking-[-0.01em] leading-tight text-foreground">{WEEKDAYS[bestDay]}s earn the most</span>
+                        <span className="text-sm text-muted-foreground">
+                            {money(summary.weekdays[bestDay])} in this period, {Math.round((summary.weekdays[bestDay] / weekdayTotal) * 100)}% of the total
+                        </span>
+                    </div>
+                    <div className="rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Weekends</span>
+                        <span className="text-xl font-bold tracking-[-0.01em] leading-tight text-foreground">{weekendShare}% comes from Friday to Sunday</span>
+                        <span className="text-sm text-muted-foreground">
+                            {money(weekendTotal)} of {money(weekdayTotal)}
+                        </span>
+                    </div>
+                    <div className="rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Room to grow</span>
+                        <span className="text-xl font-bold tracking-[-0.01em] leading-tight text-foreground">{WEEKDAYS[quietDay]}s are the quietest</span>
+                        <span className="text-sm text-muted-foreground">
+                            {money(summary.weekdays[quietDay])} earned. A {quietDay < 4 ? "midweek" : "weekend"} offer could fill them.
+                        </span>
+                    </div>
+                </section>
+            ) : (
+                <p className="text-sm text-muted-foreground">
+                    Patterns appear once there are confirmed bookings in this period.
+                </p>
+            )}
+
+            <section className="flex flex-wrap items-stretch gap-4">
+                {/* Earnings by weekday */}
+                <div className={`flex-[999_1_420px] min-w-0 ${CARD} gap-4`}>
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+                        <h3 className="text-[17px] font-semibold text-foreground">By day of the week</h3>
+                        <span className="text-sm font-semibold text-foreground min-h-5">
+                            {hoveredDay !== null ? `${WEEKDAYS[hoveredDay]} · ${money(summary.weekdays[hoveredDay])}` : ""}
+                        </span>
+                    </div>
+                    <div
+                        onPointerDown={scrub(7, setHoveredDay)}
+                        onPointerMove={scrub(7, setHoveredDay)}
+                        onMouseLeave={() => setHoveredDay(null)}
+                        className="flex items-end gap-2 sm:gap-3 border-b border-border touch-pan-y"
+                        style={{ height: DAY_CHART_HEIGHT + 40 }}
+                    >
+                        {summary.weekdays.map((value, index) => (
+                            <div
+                                key={WEEKDAYS[index]}
+                                className={`flex-1 min-w-0 h-full flex flex-col justify-end items-center gap-1.5 ${hoveredDay === index ? "bg-[#F7F7F7]" : ""}`}
+                            >
+                                <span className="text-[13px] font-semibold text-foreground text-center whitespace-nowrap">
+                                    {hasEarnings && index === bestDay ? Math.round(value).toLocaleString("en-US") : ""}
+                                </span>
+                                <div
+                                    className={`w-full max-w-12 rounded-t ${hasEarnings && index === bestDay ? "bg-foreground" : "bg-[#D5D5D5]"}`}
+                                    style={{ height: Math.max(Math.round((value / weekdayMax) * DAY_CHART_HEIGHT), 2) }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex gap-2 sm:gap-3 text-[13px] text-muted-foreground text-center">
+                        {WEEKDAYS.map((day) => (
+                            <span key={day} className="flex-1 min-w-0">
+                                {day.slice(0, 3)}
+                            </span>
+                        ))}
+                    </div>
+                    {hasEarnings && (
+                        <div className="flex flex-col gap-2 pt-2">
+                            <div className="flex gap-0.5 h-3.5">
+                                <div className="rounded-l-full bg-[#D5D5D5]" style={{ width: `${100 - weekendShare}%` }} />
+                                <div className="flex-1 rounded-r-full bg-foreground" />
+                            </div>
+                            <div className="flex justify-between gap-4 text-sm text-foreground">
+                                <span>Mon to Thu · {100 - weekendShare}%</span>
+                                <span>Fri to Sun · {weekendShare}%</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
+                    <div className={`flex-1 ${CARD} gap-3.5`}>
+                        <h3 className="text-[17px] font-semibold text-foreground">By house</h3>
+                        {houses.map((h, i) => {
+                            const house = summary.byHouse[h.slug] || { total: 0, nights: 0 }
+                            return (
+                                <div key={h.slug} className="flex flex-col gap-1.5">
+                                    <div className="flex justify-between gap-4 text-[15px] text-foreground">
+                                        <span>{h.name}</span>
+                                        <span className="font-semibold">
+                                            {money(house.total)} · {plural(house.nights, "night")}
+                                        </span>
+                                    </div>
+                                    <div className="h-2.5 rounded-full bg-muted">
+                                        <div
+                                            className="h-2.5 rounded-full"
+                                            style={{ width: `${Math.round((house.total / houseMax) * 100)}%`, background: HOUSE_COLORS[i] }}
+                                        />
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    <div className={`flex-1 ${CARD} gap-3.5`}>
+                        <h3 className="text-[17px] font-semibold text-foreground">Where bookings came from</h3>
+                        {[
+                            { name: "Website", count: website },
+                            { name: "Added by hand", count: summary.byHand },
+                        ].map((source) => (
+                            <div key={source.name} className="flex flex-col gap-1.5">
+                                <div className="flex justify-between gap-4 text-[15px] text-foreground">
+                                    <span>{source.name}</span>
+                                    <span className="font-semibold">{plural(source.count, "booking")}</span>
+                                </div>
+                                <div className="h-2.5 rounded-full bg-muted">
+                                    <div
+                                        className="h-2.5 rounded-full bg-muted-foreground"
+                                        style={{ width: `${summary.bookings > 0 ? Math.round((source.count / summary.bookings) * 100) : 0}%` }}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section className={TILE_GRID}>
+                <Tile label="Empty nights" value={String(emptyNights)} note={`worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`} />
+                <Tile
+                    label="Average stay"
+                    value={summary.bookings > 0 ? `${summary.averageStay.toFixed(1)} nights` : "–"}
+                    note="per booking"
+                />
+                <Tile
+                    label="Booked ahead"
+                    value={summary.leadDays !== null ? plural(Math.round(summary.leadDays), "day") : "–"}
+                    note="before check-in, website bookings"
+                />
+                {ranked.length > 1 && (
+                    <Tile
+                        label="Stronger house"
+                        value={hasEarnings && lead > 0 ? ranked[0].name : "–"}
+                        note={
+                            !hasEarnings
+                                ? "no earnings in this period"
+                                : lead > 0
+                                    ? `${money(lead)} ahead of ${ranked[1].name}`
+                                    : "the houses are level"
+                        }
+                    />
+                )}
+            </section>
+        </div>
+    )
+}

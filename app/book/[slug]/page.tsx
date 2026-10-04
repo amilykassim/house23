@@ -31,10 +31,10 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { getHouseBySlug } from "@/lib/houses"
 import { usePolling } from "@/lib/use-polling"
 import type { DateRange } from "react-day-picker"
+import { USD_TO_RWF } from "@/lib/currency"
 
 const WHATSAPP_NUMBER = "250788459885"
 const MOMO_CODE = "*182*8*1*1771031#"
-const USD_TO_RWF = 1471
 
 const steps = [
     { id: 1, label: "Review", icon: CalendarDays },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { expandDateRange, getUnavailableDates } from "@/lib/airbnb-ical"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
 import { readData, writeData } from "@/lib/storage"
+import { USD_TO_RWF } from "@/lib/currency"
 import type { GuideAccessEntry } from "@/app/api/guide-access/route"
 
 export const dynamic = "force-dynamic"
@@ -26,6 +27,8 @@ export interface Booking {
     specialRequests: string
     status: "pending" | "confirmed" | "cancelled"
     createdAt: string
+    // "manual" = recorded by hand in the admin panel; absent on website bookings
+    source?: "website" | "manual"
 }
 
 async function readBookings(): Promise<Booking[]> {
@@ -157,8 +160,78 @@ export async function GET(request: NextRequest) {
     }
 }
 
+// Record a booking by hand from the admin panel: confirmed straight away,
+// dates blocked, no guest emails.
+async function createManualBooking(request: NextRequest, body: Record<string, unknown>) {
+    if (request.cookies.get("admin_auth")?.value !== "authenticated") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const house = typeof body.house === "string" ? body.house : ""
+    const checkIn = typeof body.checkIn === "string" ? body.checkIn : ""
+    const checkOut = typeof body.checkOut === "string" ? body.checkOut : ""
+    // The admin form records the amount in RWF; USD is derived from it.
+    const paidRwf = Number(body.totalRwf)
+    const total = paidRwf > 0 ? Math.round((paidRwf / USD_TO_RWF) * 100) / 100 : Number(body.total)
+    const isDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)
+
+    if (!house || !isDate(checkIn) || !isDate(checkOut) || !(total > 0)) {
+        return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+    }
+
+    const stayDates = expandDateRange(checkIn, checkOut)
+    if (stayDates.length === 0) {
+        return NextResponse.json({ error: "Check-out must be after check-in" }, { status: 400 })
+    }
+
+    const unavailable = await getUnavailableDates(house)
+    const conflicts = stayDates.filter((d) => unavailable.has(d))
+    if (conflicts.length > 0) {
+        return NextResponse.json(
+            {
+                error: "Some of the selected dates are no longer available",
+                unavailableDates: conflicts,
+            },
+            { status: 409 }
+        )
+    }
+
+    const bookings = await readBookings()
+    const newBooking: Booking = {
+        id: await generateId(),
+        house,
+        houseName: typeof body.houseName === "string" && body.houseName ? body.houseName : house,
+        guestName: typeof body.guestName === "string" && body.guestName ? body.guestName : "Added by hand",
+        guestEmail: "",
+        guestPhone: typeof body.guestPhone === "string" ? body.guestPhone : "",
+        checkIn,
+        checkOut,
+        nights: stayDates.length,
+        guests: Number(body.guests) || 1,
+        pricePerNight: Number(body.pricePerNight) || 0,
+        cleaningFee: Number(body.cleaningFee) || 0,
+        serviceFee: 0,
+        total,
+        totalRwf: paidRwf > 0 ? Math.round(paidRwf) : Math.round(total * USD_TO_RWF),
+        momoTransactionId: "",
+        specialRequests: "",
+        status: "confirmed",
+        createdAt: new Date().toISOString(),
+        source: "manual",
+    }
+
+    bookings.push(newBooking)
+    await writeBookings(bookings)
+    await blockDatesForBooking(house, checkIn, checkOut)
+
+    return NextResponse.json({ booking: newBooking }, { status: 201 })
+}
+
 export async function POST(request: NextRequest) {
     const body = await request.json()
+    if (body.manual === true) {
+        return createManualBooking(request, body)
+    }
     const {
         house,
         houseName,

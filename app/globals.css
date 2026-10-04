@@ -75,6 +75,26 @@
   --sidebar-ring: oklch(0.65 0.15 25);
 }
 
+/* Back office palette. Only /admin routes get the "light" theme class
+   (see components/theme-provider.tsx); the public site is always dark. */
+html.light {
+  --background: #ffffff;
+  --foreground: #222222;
+  --card: #ffffff;
+  --card-foreground: #222222;
+  --popover: #ffffff;
+  --popover-foreground: #222222;
+  --primary: #b8473f;
+  --primary-foreground: #ffffff;
+  --secondary: #f7f7f7;
+  --secondary-foreground: #222222;
+  --muted: #f2f2f2;
+  --muted-foreground: #6a6a6a;
+  --border: #dddddd;
+  --input: #f2f2f2;
+  --ring: #222222;
+}
+
 @theme inline {
   /* One face carries the whole site: Overused Grotesk (variable, 300-900).
      serif/brand/doodle aliases stay so existing components keep working. */

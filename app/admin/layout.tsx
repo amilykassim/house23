@@ -3,20 +3,36 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Plus_Jakarta_Sans } from "next/font/google"
 
 import {
     LayoutDashboard,
     CalendarDays,
     BookOpen,
     ClipboardList,
+    CirclePlus,
+    Receipt,
+    TrendingUp,
     Home,
     Menu,
     X,
 } from "lucide-react"
 
+// The back office uses its own face; overriding --font-sans re-points every
+// font utility inside the admin shell.
+const jakarta = Plus_Jakarta_Sans({
+    subsets: ["latin"],
+    weight: ["400", "500", "600", "700"],
+    variable: "--font-sans",
+    display: "swap",
+})
+
 const navItems = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: "/admin/insights", label: "Insights", icon: TrendingUp, exact: false },
     { href: "/admin/bookings", label: "Bookings", icon: BookOpen, exact: false },
+    { href: "/admin/add", label: "Add booking", icon: CirclePlus, exact: false },
+    { href: "/admin/expenses", label: "Expenses", icon: Receipt, exact: false },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
     { href: "/admin/listing", label: "Listing", icon: ClipboardList, exact: false },
 ]
@@ -35,25 +51,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, [])
 
     return (
-        <div className="min-h-screen bg-background flex flex-col">
+        <div className={`${jakarta.variable} font-sans min-h-screen bg-background text-foreground flex flex-col`}>
             {/* Header — matches website header design */}
             <header
-                className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${scrolled
-                    ? "bg-background/90 backdrop-blur-lg border-border"
-                    : "bg-background/90 backdrop-blur-md border-border"
-                    }`}
+                className={`fixed top-0 left-0 right-0 z-50 border-b border-[#EBEBEB] bg-background/90 transition-all duration-300 ${scrolled ? "backdrop-blur-lg" : "backdrop-blur-md"}`}
             >
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="px-4 sm:px-6">
                     <div className="flex h-16 items-center justify-between">
                         {/* Logo */}
                         <Link href="/admin" className="flex items-center gap-2">
-                            <span className="font-brand text-2xl font-semibold tracking-tight text-foreground">
+                            <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground">
                                 Velstays
                             </span>
                         </Link>
 
                         {/* Desktop Navigation */}
-                        <nav className="hidden md:flex items-center gap-6">
+                        <nav className="hidden md:flex items-center gap-1">
                             {navItems.map((item) => {
                                 const isActive = item.exact
                                     ? pathname === item.href
@@ -62,12 +75,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                     <Link
                                         key={item.href}
                                         href={item.href}
-                                        className={`flex items-center gap-1.5 text-sm font-medium transition-colors ${isActive
-                                            ? "text-foreground"
-                                            : "text-muted-foreground hover:text-foreground"
+                                        aria-current={isActive ? "page" : undefined}
+                                        className={`px-3.5 py-2.5 rounded-full text-sm transition-colors ${isActive
+                                            ? "bg-muted font-semibold text-foreground"
+                                            : "font-medium text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
-                                        <item.icon className="h-4 w-4" />
                                         {item.label}
                                     </Link>
                                 )
@@ -78,9 +91,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         <div className="hidden md:flex items-center gap-4">
                             <Link
                                 href="/"
-                                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                             >
-                                <Home className="h-4 w-4" />
                                 Website
                             </Link>
                         </div>

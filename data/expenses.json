@@ -1,0 +1,92 @@
+[
+  {
+    "id": "EX-sample01",
+    "house": "all",
+    "category": "Internet",
+    "amountRwf": 35000,
+    "date": "2026-10-01",
+    "note": "monthly bill",
+    "createdAt": "2026-10-01T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample02",
+    "house": "house-23",
+    "category": "Repairs",
+    "amountRwf": 40000,
+    "date": "2026-10-01",
+    "note": "plumber",
+    "createdAt": "2026-10-01T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample03",
+    "house": "house-22",
+    "category": "Cleaning",
+    "amountRwf": 15000,
+    "date": "2026-10-01",
+    "note": "",
+    "createdAt": "2026-10-01T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample04",
+    "house": "house-23",
+    "category": "Cleaning",
+    "amountRwf": 15000,
+    "date": "2026-10-02",
+    "note": "",
+    "createdAt": "2026-10-02T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample05",
+    "house": "house-22",
+    "category": "Electricity",
+    "amountRwf": 25000,
+    "date": "2026-10-03",
+    "note": "",
+    "createdAt": "2026-10-03T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample06",
+    "house": "house-23",
+    "category": "Electricity",
+    "amountRwf": 28000,
+    "date": "2026-09-05",
+    "note": "",
+    "createdAt": "2026-09-05T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample07",
+    "house": "all",
+    "category": "Internet",
+    "amountRwf": 35000,
+    "date": "2026-09-01",
+    "note": "monthly bill",
+    "createdAt": "2026-09-01T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample08",
+    "house": "house-22",
+    "category": "Water",
+    "amountRwf": 9000,
+    "date": "2026-09-12",
+    "note": "",
+    "createdAt": "2026-09-12T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample09",
+    "house": "house-23",
+    "category": "Supplies",
+    "amountRwf": 12500,
+    "date": "2026-09-18",
+    "note": "soap, toilet paper",
+    "createdAt": "2026-09-18T10:00:00.000Z"
+  },
+  {
+    "id": "EX-sample10",
+    "house": "house-22",
+    "category": "Cleaning",
+    "amountRwf": 15000,
+    "date": "2026-09-21",
+    "note": "",
+    "createdAt": "2026-09-21T10:00:00.000Z"
+  }
+]
