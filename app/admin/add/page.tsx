@@ -1,12 +1,12 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { differenceInCalendarDays, parseISO } from "date-fns"
+import { addDays, differenceInCalendarDays, parseISO } from "date-fns"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
-import { DateRangePicker, dayLabel } from "@/components/date-range-picker"
+import { DateRangePicker, dayKey, dayLabel } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF, USD_TO_RWF } from "@/lib/currency"
 import { usePolling } from "@/lib/use-polling"
 
@@ -21,13 +21,25 @@ export default function AdminAddBookingPage() {
     // Bumped to close the calendar and start the date cards afresh
     const [pickerKey, setPickerKey] = useState(0)
 
-    // Taken nights for the selected house: admin blocks + confirmed bookings + Airbnb
+    // Taken nights for the selected house. From today on: admin blocks,
+    // confirmed bookings and Airbnb. In the past only a confirmed booking
+    // counts, so a stay that already happened can still be recorded late.
     const fetchUnavailable = useCallback(async () => {
-        const [blocked, airbnb] = await Promise.all([
+        const [blocked, airbnb, confirmed] = await Promise.all([
             fetch(`/api/blocked-dates?house=${house}`).then((r) => r.json()).catch(() => ({ dates: [] })),
             fetch(`/api/airbnb-sync?house=${house}`).then((r) => r.json()).catch(() => ({ dates: [] })),
+            fetch(`/api/bookings?house=${house}&status=confirmed`).then((r) => r.json()).catch(() => ({ bookings: [] })),
         ])
-        setUnavailable(new Set<string>([...(blocked.dates || []), ...(airbnb.dates || [])]))
+        const today = dayKey(new Date())
+        const taken = new Set<string>()
+        for (const date of [...(blocked.dates || []), ...(airbnb.dates || [])] as string[]) {
+            if (date >= today) taken.add(date)
+        }
+        for (const booking of (confirmed.bookings || []) as { checkIn: string; checkOut: string }[]) {
+            const nights = differenceInCalendarDays(parseISO(booking.checkOut), parseISO(booking.checkIn))
+            for (let i = 0; i < nights; i++) taken.add(dayKey(addDays(parseISO(booking.checkIn), i)))
+        }
+        setUnavailable(taken)
     }, [house])
 
     useEffect(() => {

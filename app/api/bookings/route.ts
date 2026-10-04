@@ -160,6 +160,16 @@ export async function GET(request: NextRequest) {
     }
 }
 
+// [today, tomorrow] as local "yyyy-MM-dd" strings
+function todayAndTomorrow(): [string, string] {
+    const fmt = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    const now = new Date()
+    const next = new Date(now)
+    next.setDate(now.getDate() + 1)
+    return [fmt(now), fmt(next)]
+}
+
 // Record a booking by hand from the admin panel: confirmed straight away,
 // dates blocked, no guest emails.
 async function createManualBooking(request: NextRequest, body: Record<string, unknown>) {
@@ -184,8 +194,18 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
         return NextResponse.json({ error: "Check-out must be after check-in" }, { status: 400 })
     }
 
+    // A stay that already happened can be recorded late: for past nights only
+    // another confirmed booking is a conflict (admin blocks and Airbnb holds
+    // don't stand in the way). Today onwards uses full availability.
+    const bookings = await readBookings()
+    const booked = new Set(
+        bookings
+            .filter((b) => b.house === house && b.status === "confirmed")
+            .flatMap((b) => expandDateRange(b.checkIn, b.checkOut))
+    )
     const unavailable = await getUnavailableDates(house)
-    const conflicts = stayDates.filter((d) => unavailable.has(d))
+    const [today] = todayAndTomorrow()
+    const conflicts = stayDates.filter((d) => booked.has(d) || (d >= today && unavailable.has(d)))
     if (conflicts.length > 0) {
         return NextResponse.json(
             {
@@ -196,7 +216,6 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
         )
     }
 
-    const bookings = await readBookings()
     const newBooking: Booking = {
         id: await generateId(),
         house,
