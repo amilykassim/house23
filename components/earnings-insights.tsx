@@ -7,6 +7,7 @@ import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF } from "@/lib/currency"
+import type { Expense } from "@/lib/expenses"
 import {
     periodFor,
     periodTitle,
@@ -51,7 +52,7 @@ function Tile({ label, value, note }: { label: string; value: string; note: stri
     )
 }
 
-export function EarningsInsights({ bookings }: { bookings: EarningsBooking[] }) {
+export function EarningsInsights({ bookings, expenses = [] }: { bookings: EarningsBooking[]; expenses?: Expense[] }) {
     const [kind, setKind] = useState<PeriodKind>("month")
     const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
     const [customStart, setCustomStart] = useState<string | null>(() => format(periodFor("month", new Date()).start, "yyyy-MM-dd"))
@@ -132,6 +133,18 @@ export function EarningsInsights({ bookings }: { bookings: EarningsBooking[] }) 
     }
 
     const { total, previousTotal } = summary
+
+    // Expenses dated inside the period; one for "all houses" counts once.
+    const periodStart = format(period.start, "yyyy-MM-dd")
+    const periodEnd = format(period.end, "yyyy-MM-dd")
+    const periodExpenses = expenses.filter((e) => e.date >= periodStart && e.date <= periodEnd)
+    const spent = periodExpenses.reduce((sum, e) => sum + e.amountRwf, 0)
+    const profit = total - spent
+    const spentByCategory: Record<string, number> = {}
+    periodExpenses.forEach((e) => {
+        spentByCategory[e.category] = (spentByCategory[e.category] || 0) + e.amountRwf
+    })
+    const topCategory = Object.keys(spentByCategory).sort((x, y) => spentByCategory[y] - spentByCategory[x])[0] ?? ""
     const change = previousTotal > 0 ? Math.round(((total - previousTotal) / previousTotal) * 100) : null
     const previousName =
         kind === "week" ? "the week before" : kind === "month" ? "the month before" : kind === "year" ? "the year before" : "the period before"
@@ -192,12 +205,41 @@ export function EarningsInsights({ bookings }: { bookings: EarningsBooking[] }) 
                         </button>
                     )}
                 </div>
-                <span className="text-[34px] sm:text-[42px] font-bold tracking-[-0.03em] leading-[1.15] text-foreground">
-                    {Math.round(total).toLocaleString("en-US")} <span className="text-[0.45em] font-semibold tracking-normal">RWF</span>
-                </span>
-                <span className="text-[15px] text-muted-foreground">
-                    ≈ ${Math.round(summary.totalUsd).toLocaleString("en-US")} · {delta}
-                </span>
+                {/* Revenue − expenses = profit, for the chosen period */}
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="min-w-0 rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-1">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Total revenue</span>
+                        <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">
+                            {money(total)}
+                        </span>
+                        <span className="text-[13px] text-muted-foreground">{delta}</span>
+                    </div>
+                    <div className="min-w-0 rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-1">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Expenses</span>
+                        <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">
+                            {money(spent)}
+                        </span>
+                        <span className="text-[13px] text-muted-foreground">
+                            {periodExpenses.length === 0
+                                ? "none recorded"
+                                : `${plural(periodExpenses.length, "expense")}, mostly ${topCategory.toLowerCase()}`}
+                        </span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-1 min-w-0 rounded-[20px] bg-foreground p-4 sm:p-5 flex flex-col gap-1">
+                        <span className="text-[13px] font-semibold text-background/75">{profit < 0 ? "Loss" : "Profit"}</span>
+                        <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background">
+                            {profit < 0 ? "−" : ""}
+                            {money(Math.abs(profit))}
+                        </span>
+                        <span className="text-[13px] text-background/75">
+                            {total > 0
+                                ? profit >= 0
+                                    ? `${Math.round((profit / total) * 100)}% of revenue kept`
+                                    : "expenses were higher than revenue"
+                                : "revenue minus expenses"}
+                        </span>
+                    </div>
+                </div>
             </section>
 
             {/* Earnings over the period, stacked by house */}

@@ -3,16 +3,22 @@
 import { useEffect, useState } from "react"
 import { EarningsInsights } from "@/components/earnings-insights"
 import type { EarningsBooking } from "@/lib/earnings"
+import type { Expense } from "@/lib/expenses"
 
 export default function AdminInsightsPage() {
     const [bookings, setBookings] = useState<EarningsBooking[]>([])
+    const [expenses, setExpenses] = useState<Expense[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        fetch("/api/bookings")
-            .then((res) => res.json())
-            .then((data) => setBookings(data.bookings || []))
-            .catch(() => { })
+        Promise.all([
+            fetch("/api/bookings").then((res) => res.json()).catch(() => ({})),
+            fetch("/api/expenses").then((res) => res.json()).catch(() => ({})),
+        ])
+            .then(([bookingData, expenseData]) => {
+                setBookings(bookingData.bookings || [])
+                setExpenses(expenseData.expenses || [])
+            })
             .finally(() => setLoading(false))
     }, [])
 
@@ -28,7 +34,7 @@ export default function AdminInsightsPage() {
         // From tablet width up, zoom scales the whole page down a notch;
         // phones keep full-size type and touch targets.
         <div className="sm:[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto">
-            <EarningsInsights bookings={bookings} />
+            <EarningsInsights bookings={bookings} expenses={expenses} />
         </div>
     )
 }
