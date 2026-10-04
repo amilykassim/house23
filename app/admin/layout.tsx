@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Plus_Jakarta_Sans } from "next/font/google"
+import localFont from "next/font/local"
 
 import {
     LayoutDashboard,
@@ -19,10 +19,11 @@ import {
 } from "lucide-react"
 
 // The back office uses its own face; overriding --font-sans re-points every
-// font utility inside the admin shell.
-const jakarta = Plus_Jakarta_Sans({
-    subsets: ["latin"],
-    weight: ["400", "500", "600", "700"],
+// font utility inside the admin shell. The file is self-hosted so the build
+// never depends on reaching Google Fonts.
+const jakarta = localFont({
+    src: "../fonts/PlusJakartaSans-VF.woff2",
+    weight: "400 700",
     variable: "--font-sans",
     display: "swap",
 })
