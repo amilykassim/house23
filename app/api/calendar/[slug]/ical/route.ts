@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readData } from "@/lib/storage"
+import { getBlockedDates } from "@/lib/store"
 
 function formatICalDate(dateStr: string): string {
     // dateStr is "yyyy-MM-dd", convert to "YYYYMMDD"
@@ -20,8 +20,7 @@ export async function GET(
     { params }: { params: Promise<{ slug: string }> }
 ) {
     const { slug } = await params
-    const data = await readData<Record<string, string[]>>("blocked-dates.json", {})
-    const dates = (data[slug] || []).sort()
+    const dates = await getBlockedDates(slug)
 
     // Group consecutive dates into ranges for cleaner iCal output
     const ranges: { start: string; end: string }[] = []

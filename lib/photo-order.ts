@@ -1,20 +1,15 @@
-import { readData } from "@/lib/storage"
+import { getHouseSetting } from "@/lib/store"
 import type { HouseData, HousePhoto } from "@/lib/houses"
-
-type PhotoOrderData = Record<string, string[]>
-type PhotoCategoryData = Record<string, Record<string, string>>
 
 export async function getOrderedPhotos(house: HouseData): Promise<{
     photos: HousePhoto[]
     allPhotos: HousePhoto[]
 }> {
     try {
-        const [order, categories] = await Promise.all([
-            readData<PhotoOrderData>("photo-order.json", {}),
-            readData<PhotoCategoryData>("photo-categories.json", {}),
+        const [savedOrder, savedCategories = {}] = await Promise.all([
+            getHouseSetting<string[]>("photo-order", house.slug),
+            getHouseSetting<Record<string, string>>("photo-categories", house.slug),
         ])
-        const savedOrder = order[house.slug]
-        const savedCategories = categories[house.slug] || {}
 
         // Helper to apply saved category overrides
         const applyCategory = (photo: HousePhoto): HousePhoto => {

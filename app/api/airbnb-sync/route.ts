@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readData, writeData } from "@/lib/storage"
+import { getHouseSetting, setHouseSetting } from "@/lib/store"
 import { fetchAirbnbAvailability } from "@/lib/airbnb-ical"
 
 export const dynamic = "force-dynamic"
@@ -52,12 +52,11 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const config = await readData<Record<string, CalendarConfig>>("calendar-config.json", {})
-    config[house] = {
-        ...config[house],
+    const config: CalendarConfig = {
+        ...(await getHouseSetting<CalendarConfig>("calendar-config", house)),
         airbnbIcalUrl: airbnbIcalUrl || "",
     }
-    await writeData("calendar-config.json", config)
+    await setHouseSetting("calendar-config", house, config)
 
-    return NextResponse.json({ success: true, config: config[house] })
+    return NextResponse.json({ success: true, config })
 }

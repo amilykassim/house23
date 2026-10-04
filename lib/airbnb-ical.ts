@@ -1,4 +1,4 @@
-import { readData } from "@/lib/storage"
+import { getBlockedDates, getHouseSetting } from "@/lib/store"
 
 export interface AirbnbEvent {
     start: string
@@ -74,8 +74,8 @@ export function expandDateRange(start: string, end: string): string[] {
 export async function fetchAirbnbAvailability(
     house: string
 ): Promise<{ dates: string[]; events: AirbnbEvent[] } | null> {
-    const config = await readData<Record<string, CalendarConfig>>("calendar-config.json", {})
-    const url = config[house]?.airbnbIcalUrl
+    const config = await getHouseSetting<CalendarConfig>("calendar-config", house)
+    const url = config?.airbnbIcalUrl
     if (!url) return null
 
     const response = await fetch(url, { cache: "no-store" })
@@ -97,8 +97,7 @@ export async function fetchAirbnbAvailability(
  * If Airbnb is unreachable, falls back to manual blocks only.
  */
 export async function getUnavailableDates(house: string): Promise<Set<string>> {
-    const blocked = await readData<Record<string, string[]>>("blocked-dates.json", {})
-    const unavailable = new Set<string>(blocked[house] || [])
+    const unavailable = new Set<string>(await getBlockedDates(house))
     try {
         const airbnb = await fetchAirbnbAvailability(house)
         airbnb?.dates.forEach((d) => unavailable.add(d))

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readData, writeData } from "@/lib/storage"
+import { getHouseSettings, setHouseSetting } from "@/lib/store"
 
 export const dynamic = "force-dynamic"
 
@@ -27,8 +27,14 @@ const DEFAULT_PRICING: PricingData = {
     },
 }
 
+// Saved prices, or the defaults until any have been saved
+async function readPricing(): Promise<PricingData> {
+    const pricing = await getHouseSettings<HousePricing>("prices")
+    return Object.keys(pricing).length > 0 ? pricing : DEFAULT_PRICING
+}
+
 export async function GET() {
-    const pricing = await readData<PricingData>("prices.json", DEFAULT_PRICING)
+    const pricing = await readPricing()
     return NextResponse.json(pricing)
 }
 
@@ -41,7 +47,7 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: "Invalid slug" }, { status: 400 })
         }
 
-        const pricing = await readData<PricingData>("prices.json", DEFAULT_PRICING)
+        const pricing = await readPricing()
 
         if (!pricing[slug]) {
             return NextResponse.json({ error: "House not found" }, { status: 404 })
@@ -61,7 +67,7 @@ export async function PATCH(request: NextRequest) {
             pricing[slug].airbnbPricePerNight = airbnbPricePerNight
         }
 
-        await writeData("prices.json", pricing)
+        await setHouseSetting("prices", slug, pricing[slug])
 
         return NextResponse.json({ success: true, pricing: pricing[slug] })
     } catch {

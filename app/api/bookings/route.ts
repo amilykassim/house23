@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
 import { expandDateRange, getUnavailableDates } from "@/lib/airbnb-ical"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
-import { readData, writeData } from "@/lib/storage"
+import { transaction, type Db } from "@/lib/db"
+import {
+    addGuideAccess,
+    blockDates,
+    deleteBooking,
+    deleteGuideAccessOfBooking,
+    insertBooking,
+    listBookings,
+    setBookingStatus,
+    unblockDates,
+} from "@/lib/store"
 import { USD_TO_RWF } from "@/lib/currency"
-import type { GuideAccessEntry } from "@/app/api/guide-access/route"
 
 export const dynamic = "force-dynamic"
 
@@ -31,105 +40,27 @@ export interface Booking {
     source?: "website" | "manual"
 }
 
-async function readBookings(): Promise<Booking[]> {
-    return readData<Booking[]>("bookings.json", [])
-}
-
-async function writeBookings(data: Booking[]): Promise<void> {
-    await writeData("bookings.json", data)
-}
-
-async function readBlockedDates(): Promise<Record<string, string[]>> {
-    return readData<Record<string, string[]>>("blocked-dates.json", {})
-}
-
-async function writeBlockedDates(data: Record<string, string[]>): Promise<void> {
-    await writeData("blocked-dates.json", data)
-}
-
-function getDatesBetween(checkIn: string, checkOut: string): string[] {
-    const dates: string[] = []
-    const current = new Date(checkIn + "T00:00:00")
-    const end = new Date(checkOut + "T00:00:00")
-    while (current < end) {
-        const y = current.getFullYear()
-        const m = String(current.getMonth() + 1).padStart(2, "0")
-        const d = String(current.getDate()).padStart(2, "0")
-        dates.push(`${y}-${m}-${d}`)
-        current.setDate(current.getDate() + 1)
-    }
-    return dates
-}
-
-async function blockDatesForBooking(house: string, checkIn: string, checkOut: string) {
-    const blockedDates = await readBlockedDates()
-    const current = new Set(blockedDates[house] || [])
-    const dates = getDatesBetween(checkIn, checkOut)
-    dates.forEach((d) => current.add(d))
-    blockedDates[house] = Array.from(current).sort()
-    await writeBlockedDates(blockedDates)
-}
-
-async function unblockDatesForBooking(house: string, checkIn: string, checkOut: string) {
-    const blockedDates = await readBlockedDates()
-    const current = new Set(blockedDates[house] || [])
-    const dates = getDatesBetween(checkIn, checkOut)
-    dates.forEach((d) => current.delete(d))
-    blockedDates[house] = Array.from(current).sort()
-    await writeBlockedDates(blockedDates)
-}
-
-async function readGuideAccess(): Promise<GuideAccessEntry[]> {
-    return readData<GuideAccessEntry[]>("guide-access.json", [])
-}
-
-async function writeGuideAccess(data: GuideAccessEntry[]): Promise<void> {
-    await writeData("guide-access.json", data)
-}
-
 function extractLast4(phone: string): string {
     return phone.replace(/\D/g, "").slice(-4)
 }
 
-async function addGuideAccessForBooking(booking: Booking): Promise<void> {
+async function addGuideAccessForBooking(booking: Booking, tx: Db): Promise<void> {
     const code = extractLast4(booking.guestPhone)
     if (code.length !== 4) return
 
-    const entries = await readGuideAccess()
-    if (entries.some((e) => e.code === code)) return // already exists
-
-    entries.push({
-        code,
-        label: booking.guestName,
-        source: "booking",
-        bookingId: booking.id,
-        createdAt: new Date().toISOString(),
-    })
-    await writeGuideAccess(entries)
+    // Does nothing when the code already exists
+    await addGuideAccess({ code, label: booking.guestName, source: "booking", bookingId: booking.id }, tx)
 }
 
-async function removeGuideAccessForBooking(booking: Booking): Promise<void> {
+async function removeGuideAccessForBooking(booking: Booking, tx: Db): Promise<void> {
     const code = extractLast4(booking.guestPhone)
     if (code.length !== 4) return
 
-    const entries = await readGuideAccess()
     // Only remove if this was the booking that added it
-    const filtered = entries.filter(
-        (e) => !(e.code === code && e.source === "booking" && e.bookingId === booking.id)
-    )
-    if (filtered.length !== entries.length) {
-        await writeGuideAccess(filtered)
-    }
+    await deleteGuideAccessOfBooking(code, booking.id, tx)
 }
 
-async function generateId(): Promise<string> {
-    const bookings = await readBookings()
-    const maxNum = bookings.reduce((max, b) => {
-        const num = parseInt(b.id.replace("BK-", ""), 10)
-        return num > max ? num : max
-    }, 0)
-    return `BK-${String(maxNum + 1).padStart(3, "0")}`
-}
+const isDate = (d: unknown): d is string => typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d)
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -139,18 +70,8 @@ export async function GET(request: NextRequest) {
     console.log(`[bookings GET] Fetching bookings, house=${house}, status=${status}`)
 
     try {
-        let bookings = await readBookings()
-        console.log(`[bookings GET] Raw bookings count: ${bookings.length}`)
-
-        if (house) {
-            bookings = bookings.filter((b) => b.house === house)
-        }
-        if (status) {
-            bookings = bookings.filter((b) => b.status === status)
-        }
-
-        // Sort by createdAt descending
-        bookings.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        // Newest first
+        const bookings = await listBookings({ house, status })
 
         console.log(`[bookings GET] Returning ${bookings.length} bookings`)
         return NextResponse.json({ bookings })
@@ -183,7 +104,6 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
     // The admin form records the amount in RWF; USD is derived from it.
     const paidRwf = Number(body.totalRwf)
     const total = paidRwf > 0 ? Math.round((paidRwf / USD_TO_RWF) * 100) / 100 : Number(body.total)
-    const isDate = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)
 
     if (!house || !isDate(checkIn) || !isDate(checkOut) || !(total > 0)) {
         return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -197,12 +117,8 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
     // A stay that already happened can be recorded late: for past nights only
     // another confirmed booking is a conflict (admin blocks and Airbnb holds
     // don't stand in the way). Today onwards uses full availability.
-    const bookings = await readBookings()
-    const booked = new Set(
-        bookings
-            .filter((b) => b.house === house && b.status === "confirmed")
-            .flatMap((b) => expandDateRange(b.checkIn, b.checkOut))
-    )
+    const confirmed = await listBookings({ house, status: "confirmed" })
+    const booked = new Set(confirmed.flatMap((b) => expandDateRange(b.checkIn, b.checkOut)))
     const unavailable = await getUnavailableDates(house)
     const [today] = todayAndTomorrow()
     const conflicts = stayDates.filter((d) => booked.has(d) || (d >= today && unavailable.has(d)))
@@ -216,32 +132,30 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
         )
     }
 
-    const newBooking: Booking = {
-        id: await generateId(),
-        house,
-        houseName: typeof body.houseName === "string" && body.houseName ? body.houseName : house,
-        guestName: typeof body.guestName === "string" && body.guestName ? body.guestName : "Added by hand",
-        guestEmail: "",
-        guestPhone: typeof body.guestPhone === "string" ? body.guestPhone : "",
-        checkIn,
-        checkOut,
-        nights: stayDates.length,
-        guests: Number(body.guests) || 1,
-        pricePerNight: Number(body.pricePerNight) || 0,
-        cleaningFee: Number(body.cleaningFee) || 0,
-        serviceFee: 0,
-        total,
-        totalRwf: paidRwf > 0 ? Math.round(paidRwf) : Math.round(total * USD_TO_RWF),
-        momoTransactionId: "",
-        specialRequests: "",
-        status: "confirmed",
-        createdAt: new Date().toISOString(),
-        source: "manual",
-    }
-
-    bookings.push(newBooking)
-    await writeBookings(bookings)
-    await blockDatesForBooking(house, checkIn, checkOut)
+    const newBooking = await transaction(async (tx) => {
+        const booking = await insertBooking({
+            house,
+            houseName: typeof body.houseName === "string" && body.houseName ? body.houseName : house,
+            guestName: typeof body.guestName === "string" && body.guestName ? body.guestName : "Added by hand",
+            guestEmail: "",
+            guestPhone: typeof body.guestPhone === "string" ? body.guestPhone : "",
+            checkIn,
+            checkOut,
+            nights: stayDates.length,
+            guests: Math.round(Number(body.guests)) || 1,
+            pricePerNight: Number(body.pricePerNight) || 0,
+            cleaningFee: Number(body.cleaningFee) || 0,
+            serviceFee: 0,
+            total,
+            totalRwf: paidRwf > 0 ? Math.round(paidRwf) : Math.round(total * USD_TO_RWF),
+            momoTransactionId: "",
+            specialRequests: "",
+            status: "confirmed",
+            source: "manual",
+        }, tx)
+        await blockDates(house, stayDates, tx)
+        return booking
+    })
 
     return NextResponse.json({ booking: newBooking }, { status: 201 })
 }
@@ -270,7 +184,7 @@ export async function POST(request: NextRequest) {
         specialRequests,
     } = body
 
-    if (!house || !guestName || !checkIn || !checkOut) {
+    if (!house || !guestName || !isDate(checkIn) || !isDate(checkOut)) {
         return NextResponse.json(
             { error: "Missing required fields" },
             { status: 400 }
@@ -291,9 +205,7 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const bookings = await readBookings()
-    const newBooking: Booking = {
-        id: await generateId(),
+    const newBooking = await insertBooking({
         house,
         houseName: houseName || house,
         guestName,
@@ -301,21 +213,17 @@ export async function POST(request: NextRequest) {
         guestPhone: guestPhone || "",
         checkIn,
         checkOut,
-        nights: nights || 0,
-        guests: guests || 1,
-        pricePerNight: pricePerNight || 0,
-        cleaningFee: cleaningFee || 0,
-        serviceFee: serviceFee || 0,
-        total: total || 0,
-        totalRwf: totalRwf || 0,
+        nights: Math.round(Number(nights)) || 0,
+        guests: Math.round(Number(guests)) || 1,
+        pricePerNight: Number(pricePerNight) || 0,
+        cleaningFee: Number(cleaningFee) || 0,
+        serviceFee: Number(serviceFee) || 0,
+        total: Number(total) || 0,
+        totalRwf: Number(totalRwf) || 0,
         momoTransactionId: momoTransactionId || "",
         specialRequests: specialRequests || "",
         status: "pending",
-        createdAt: new Date().toISOString(),
-    }
-
-    bookings.push(newBooking)
-    await writeBookings(bookings)
+    })
 
     // Send emails (non-blocking)
     const emailData = {
@@ -345,37 +253,37 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const { id, status, rejectionReason } = body as { id: string; status: Booking["status"]; rejectionReason?: string }
 
-    if (!id || !status) {
+    if (!id || !["pending", "confirmed", "cancelled"].includes(status)) {
         return NextResponse.json(
             { error: "Missing id or status" },
             { status: 400 }
         )
     }
 
-    const bookings = await readBookings()
-    const index = bookings.findIndex((b) => b.id === id)
+    const booking = await transaction(async (tx) => {
+        const updated = await setBookingStatus(id, status, tx)
+        if (!updated) return null
+        const { booking, previousStatus } = updated
 
-    if (index === -1) {
+        // Auto-block dates when confirming, unblock when moving away from confirmed
+        const stayDates = expandDateRange(booking.checkIn, booking.checkOut)
+        if (status === "confirmed" && previousStatus !== "confirmed") {
+            await blockDates(booking.house, stayDates, tx)
+            // Auto-add guest phone to house guide access
+            await addGuideAccessForBooking(booking, tx)
+        } else if (status !== "confirmed" && previousStatus === "confirmed") {
+            await unblockDates(booking.house, stayDates, tx)
+            // Remove guest phone from house guide access
+            await removeGuideAccessForBooking(booking, tx)
+        }
+        return booking
+    })
+
+    if (!booking) {
         return NextResponse.json(
             { error: "Booking not found" },
             { status: 404 }
         )
-    }
-
-    const previousStatus = bookings[index].status
-    bookings[index].status = status
-    await writeBookings(bookings)
-
-    // Auto-block dates when confirming, unblock when moving away from confirmed
-    const booking = bookings[index]
-    if (status === "confirmed" && previousStatus !== "confirmed") {
-        await blockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
-        // Auto-add guest phone to house guide access
-        await addGuideAccessForBooking(booking)
-    } else if (status !== "confirmed" && previousStatus === "confirmed") {
-        await unblockDatesForBooking(booking.house, booking.checkIn, booking.checkOut)
-        // Remove guest phone from house guide access
-        await removeGuideAccessForBooking(booking)
     }
 
     // Send email notifications (non-blocking)
@@ -402,7 +310,7 @@ export async function PATCH(request: NextRequest) {
         }
     }
 
-    return NextResponse.json({ booking: bookings[index] })
+    return NextResponse.json({ booking })
 }
 
 // Permanently remove a booking (admin only). A confirmed booking also gives
@@ -422,33 +330,26 @@ export async function DELETE(request: NextRequest) {
         )
     }
 
-    const bookings = await readBookings()
-    const index = bookings.findIndex((b) => b.id === id)
+    const removed = await transaction(async (tx) => {
+        const removed = await deleteBooking(id, tx)
+        if (removed?.status === "confirmed") {
+            // Free the nights, except any still covered by another confirmed booking
+            const others = await listBookings({ house: removed.house, status: "confirmed" }, tx)
+            const stillBooked = new Set(others.flatMap((b) => expandDateRange(b.checkIn, b.checkOut)))
+            const freed = expandDateRange(removed.checkIn, removed.checkOut).filter((d) => !stillBooked.has(d))
+            if (freed.length > 0) {
+                await unblockDates(removed.house, freed, tx)
+            }
+            await removeGuideAccessForBooking(removed, tx)
+        }
+        return removed
+    })
 
-    if (index === -1) {
+    if (!removed) {
         return NextResponse.json(
             { error: "Booking not found" },
             { status: 404 }
         )
-    }
-
-    const [removed] = bookings.splice(index, 1)
-    await writeBookings(bookings)
-
-    if (removed.status === "confirmed") {
-        // Free the nights, except any still covered by another confirmed booking
-        const stillBooked = new Set(
-            bookings
-                .filter((b) => b.house === removed.house && b.status === "confirmed")
-                .flatMap((b) => getDatesBetween(b.checkIn, b.checkOut))
-        )
-        const freed = new Set(getDatesBetween(removed.checkIn, removed.checkOut).filter((d) => !stillBooked.has(d)))
-        if (freed.size > 0) {
-            const blockedDates = await readBlockedDates()
-            blockedDates[removed.house] = (blockedDates[removed.house] || []).filter((d) => !freed.has(d))
-            await writeBlockedDates(blockedDates)
-        }
-        await removeGuideAccessForBooking(removed)
     }
 
     return NextResponse.json({ success: true })

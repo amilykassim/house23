@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readData, writeData } from "@/lib/storage"
+import {
+    addGuideAccess,
+    deleteGuideAccess,
+    findGuideAccess,
+    listGuideAccess,
+    setGuideAccessLabel,
+} from "@/lib/store"
 import { sendAdminGuideAccessNotification } from "@/lib/email"
 
 export const dynamic = "force-dynamic"
@@ -17,14 +23,6 @@ export interface GuideAccessEntry {
     createdAt: string
 }
 
-async function readAccess(): Promise<GuideAccessEntry[]> {
-    return readData<GuideAccessEntry[]>("guide-access.json", [])
-}
-
-async function writeAccess(data: GuideAccessEntry[]): Promise<void> {
-    await writeData("guide-access.json", data)
-}
-
 /**
  * GET  — list all access codes (admin) or verify one code (guest)
  *   ?verify=1234  → { valid: true/false }
@@ -34,11 +32,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const verify = searchParams.get("verify")
 
-    const entries = await readAccess()
-
     if (verify) {
         const code = verify.replace(/\D/g, "").slice(-4)
-        const entry = entries.find((e) => e.code === code)
+        const entry = await findGuideAccess(code)
         if (entry) {
             // Notify admin that a guest accessed WiFi details (fire and forget)
             sendAdminGuideAccessNotification({
@@ -50,7 +46,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ valid: false })
     }
 
-    return NextResponse.json({ entries })
+    return NextResponse.json({ entries: await listGuideAccess() })
 }
 
 /**
@@ -73,27 +69,20 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    const entries = await readAccess()
+    const entry = await addGuideAccess({
+        code,
+        label: label || "",
+        source: source === "booking" ? "booking" : "manual",
+        bookingId: bookingId || undefined,
+    })
 
     // Prevent duplicates
-    const exists = entries.find((e) => e.code === code)
-    if (exists) {
+    if (!entry) {
         return NextResponse.json(
-            { error: "This code already exists", existing: exists },
+            { error: "This code already exists", existing: await findGuideAccess(code) },
             { status: 409 }
         )
     }
-
-    const entry: GuideAccessEntry = {
-        code,
-        label: label || "",
-        source: source || "manual",
-        bookingId: bookingId || undefined,
-        createdAt: new Date().toISOString(),
-    }
-
-    entries.push(entry)
-    await writeAccess(entries)
 
     return NextResponse.json({ entry }, { status: 201 })
 }
@@ -110,17 +99,14 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "Missing code" }, { status: 400 })
     }
 
-    const entries = await readAccess()
-    const index = entries.findIndex((e) => e.code === code)
+    const entry =
+        label !== undefined ? await setGuideAccessLabel(code, String(label)) : await findGuideAccess(code)
 
-    if (index === -1) {
+    if (!entry) {
         return NextResponse.json({ error: "Code not found" }, { status: 404 })
     }
 
-    if (label !== undefined) entries[index].label = label
-    await writeAccess(entries)
-
-    return NextResponse.json({ entry: entries[index] })
+    return NextResponse.json({ entry })
 }
 
 /**
@@ -135,28 +121,19 @@ export async function DELETE(request: NextRequest) {
     const multipleCodes = searchParams.get("codes")
     const deleteAll = searchParams.get("all")
 
-    let entries = await readAccess()
-
     if (deleteAll === "true") {
-        await writeAccess([])
-        return NextResponse.json({ deleted: entries.length })
+        return NextResponse.json({ deleted: await deleteGuideAccess("all") })
     }
 
     if (multipleCodes) {
-        const codesToDelete = new Set(multipleCodes.split(",").map((c) => c.trim()))
-        const before = entries.length
-        entries = entries.filter((e) => !codesToDelete.has(e.code))
-        await writeAccess(entries)
-        return NextResponse.json({ deleted: before - entries.length })
+        const codesToDelete = multipleCodes.split(",").map((c) => c.trim())
+        return NextResponse.json({ deleted: await deleteGuideAccess(codesToDelete) })
     }
 
     if (singleCode) {
-        const before = entries.length
-        entries = entries.filter((e) => e.code !== singleCode)
-        if (entries.length === before) {
+        if ((await deleteGuideAccess([singleCode])) === 0) {
             return NextResponse.json({ error: "Code not found" }, { status: 404 })
         }
-        await writeAccess(entries)
         return NextResponse.json({ deleted: 1 })
     }
 

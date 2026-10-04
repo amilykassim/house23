@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readData, writeData } from "@/lib/storage"
+import { getHouseSettings, setHouseSetting } from "@/lib/store"
 
 export const dynamic = "force-dynamic"
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 export type PhotoCategoryData = Record<string, Record<string, string>>
 
 export async function GET() {
-    const categories = await readData<PhotoCategoryData>("photo-categories.json", {})
+    const categories: PhotoCategoryData = await getHouseSettings<Record<string, string>>("photo-categories")
     return NextResponse.json(categories)
 }
 
@@ -28,9 +28,7 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: "Invalid categories object" }, { status: 400 })
         }
 
-        const data = await readData<PhotoCategoryData>("photo-categories.json", {})
-        data[slug] = categories
-        await writeData("photo-categories.json", data)
+        await setHouseSetting("photo-categories", slug, categories)
 
         return NextResponse.json({ success: true })
     } catch {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { readData, writeData } from "@/lib/storage"
+import { getHouseSettings, setHouseSetting } from "@/lib/store"
 
 export const dynamic = "force-dynamic"
 
@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic"
 export type PhotoOrderData = Record<string, string[]>
 
 export async function GET() {
-    const order = await readData<PhotoOrderData>("photo-order.json", {})
+    const order: PhotoOrderData = await getHouseSettings<string[]>("photo-order")
     return NextResponse.json(order)
 }
 
@@ -24,9 +24,7 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ error: "Invalid photos array" }, { status: 400 })
         }
 
-        const order = await readData<PhotoOrderData>("photo-order.json", {})
-        order[slug] = photos
-        await writeData("photo-order.json", order)
+        await setHouseSetting("photo-order", slug, photos)
 
         return NextResponse.json({ success: true })
     } catch {
