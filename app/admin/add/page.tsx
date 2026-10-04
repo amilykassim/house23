@@ -104,9 +104,8 @@ export default function AdminAddBookingPage() {
     }
 
     return (
-        // From tablet width up, zoom scales the page down a notch (matching
-        // Insights); phones keep full-size type and touch targets.
-        <div className="sm:[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
+        // zoom scales the whole page down a notch on every screen size
+        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
             <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">
                 Add a booking
             </h1>

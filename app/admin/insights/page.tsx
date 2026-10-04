@@ -31,9 +31,8 @@ export default function AdminInsightsPage() {
     }
 
     return (
-        // From tablet width up, zoom scales the whole page down a notch;
-        // phones keep full-size type and touch targets.
-        <div className="sm:[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto">
+        // zoom scales the whole page down a notch on every screen size
+        <div className="[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto">
             <EarningsInsights bookings={bookings} expenses={expenses} />
         </div>
     )

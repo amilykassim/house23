@@ -28,11 +28,11 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 const navItems = [
-    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
     { href: "/admin/insights", label: "Insights", icon: TrendingUp, exact: false },
-    { href: "/admin/bookings", label: "Bookings", icon: BookOpen, exact: false },
     { href: "/admin/add", label: "Add booking", icon: CirclePlus, exact: false },
     { href: "/admin/expenses", label: "Expenses", icon: Receipt, exact: false },
+    { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+    { href: "/admin/bookings", label: "Bookings", icon: BookOpen, exact: false },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
     { href: "/admin/listing", label: "Listing", icon: ClipboardList, exact: false },
 ]

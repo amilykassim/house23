@@ -103,9 +103,8 @@ export default function AdminExpensesPage() {
     const fieldCard = "min-w-0 rounded-2xl border-2 bg-card px-3.5 sm:px-[17px] py-[15px] flex flex-col gap-1.5"
 
     return (
-        // From tablet width up, zoom scales the page down a notch (matching
-        // Add booking); phones keep full-size type and touch targets.
-        <div className="sm:[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
+        // zoom scales the whole page down a notch on every screen size
+        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
             <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">
                 Add an expense
             </h1>
@@ -181,7 +180,7 @@ export default function AdminExpensesPage() {
                             placeholder="e.g. plumber"
                             maxLength={200}
                             autoComplete="off"
-                            className="w-full bg-transparent text-[17px] font-medium text-foreground placeholder:text-[#B0B0B0] outline-none"
+                            className="w-full bg-transparent text-[19px] sm:text-[17px] font-medium text-foreground placeholder:text-[#B0B0B0] outline-none"
                         />
                     </label>
                 </div>
