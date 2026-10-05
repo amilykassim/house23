@@ -11,7 +11,7 @@ import type { Expense } from "@/lib/expenses"
 const BOOKING_COLUMNS = `
     id, house, house_name AS "houseName", guest_name AS "guestName",
     guest_email AS "guestEmail", guest_phone AS "guestPhone",
-    check_in AS "checkIn", check_out AS "checkOut", nights, guests,
+    check_in AS "checkIn", check_out AS "checkOut", nights, free_nights AS "freeNights", guests,
     price_per_night AS "pricePerNight", cleaning_fee AS "cleaningFee",
     service_fee AS "serviceFee", total, total_rwf AS "totalRwf",
     momo_transaction_id AS "momoTransactionId", special_requests AS "specialRequests",
@@ -49,14 +49,14 @@ export async function insertBooking(data: Omit<Booking, "id" | "createdAt">, tx:
         `INSERT INTO bookings (
             id, house, house_name, guest_name, guest_email, guest_phone, check_in, check_out,
             nights, guests, price_per_night, cleaning_fee, service_fee, total, total_rwf,
-            momo_transaction_id, special_requests, status, source
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+            momo_transaction_id, special_requests, status, source, free_nights
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING ${BOOKING_COLUMNS}`,
         [
             id, data.house, data.houseName, data.guestName, data.guestEmail, data.guestPhone,
             data.checkIn, data.checkOut, data.nights, data.guests, data.pricePerNight,
             data.cleaningFee, data.serviceFee, data.total, data.totalRwf,
-            data.momoTransactionId, data.specialRequests, data.status, data.source ?? null,
+            data.momoTransactionId, data.specialRequests, data.status, data.source ?? null, data.freeNights ?? 0,
         ]
     )
     return toBooking(rows[0])
@@ -212,7 +212,7 @@ export async function deleteExpense(id: string, tx: Db = db): Promise<boolean> {
 
 // ── Per-house settings ────────────────────────────────────────
 
-export type HouseSettingKey = "prices" | "photo-order" | "photo-categories" | "calendar-config"
+export type HouseSettingKey = "prices" | "photo-order" | "photo-categories" | "calendar-config" | "feed-reads"
 
 /** One setting for every house that has it: { "house-23": value, ... } */
 export async function getHouseSettings<T>(key: HouseSettingKey, tx: Db = db): Promise<Record<string, T>> {

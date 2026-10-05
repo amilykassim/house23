@@ -354,7 +354,7 @@ function BookingsDetail() {
                         </p>
                     )}
 
-                    {visible.map(({ booking, totalNights, nightsInPeriod, amountInPeriod }) => {
+                    {visible.map(({ booking, totalNights, nightsInPeriod, freeNights, amountInPeriod }) => {
                         const byHand = booking.source === "manual"
                         const contact = [booking.guestPhone, booking.guestEmail].filter(Boolean).join(" · ")
                         // By-hand bookings keep where they came from in their note
@@ -380,8 +380,13 @@ function BookingsDetail() {
                                 <div className="flex flex-col gap-0.5">
                                     <span className="text-[15px] text-foreground">
                                         {nightsInPeriod === totalNights ? plural(totalNights, "night") : `${nightsInPeriod} of ${totalNights} nights`}
+                                        {freeNights > 0 && ` · ${freeNights} free`}
                                     </span>
-                                    <span className="text-[13px] text-muted-foreground">{money(amountInPeriod / nightsInPeriod)} a night</span>
+                                    <span className="text-[13px] text-muted-foreground">
+                                        {freeNights > 0 && freeNights < totalNights
+                                            ? `${money(booking.totalRwf / (totalNights - freeNights))} a paid night`
+                                            : `${money(amountInPeriod / nightsInPeriod)} a night`}
+                                    </span>
                                 </div>
                                 <span
                                     className={`justify-self-start px-2.5 py-1 rounded-full text-xs font-semibold text-foreground border ${byHand ? "bg-muted border-muted" : "bg-card border-[#B0B0B0]"}`}

@@ -27,6 +27,7 @@ export interface EarningsBooking {
     status: "pending" | "confirmed" | "cancelled"
     createdAt: string
     source?: "website" | "manual"
+    freeNights?: number
     houseName?: string
     guestName?: string
     guestEmail?: string
@@ -39,6 +40,9 @@ export interface EarningsStay {
     booking: EarningsBooking
     totalNights: number
     nightsInPeriod: number
+    // Free nights of the whole stay, and those that fall inside the period
+    freeNights: number
+    freeNightsInPeriod: number
     amountInPeriod: number // RWF
 }
 
@@ -65,12 +69,13 @@ export interface EarningsSummary {
     previousTotal: number
     buckets: EarningsBucket[]
     nights: number
+    freeNights: number // part of `nights`
     capacity: number
     bookings: number
     byHand: number
     averageStay: number
     leadDays: number | null // website bookings only
-    byHouse: Record<string, { total: number; nights: number }>
+    byHouse: Record<string, { total: number; nights: number; freeNights: number }>
     weekdays: number[] // Monday first
     stays: EarningsStay[] // by check-in date
 }
@@ -115,7 +120,8 @@ const dayKey = (d: Date) => format(d, "yyyy-MM-dd")
 /**
  * Earnings for a period. A booking's total is spread evenly over its nights,
  * so a stay that crosses a week or month boundary is split between them.
- * Only confirmed bookings count as earned.
+ * Only confirmed bookings count as earned. Free nights are counted as the
+ * last nights of the stay; the money is still spread over every night.
  */
 export function summarizeEarnings(
     bookings: EarningsBooking[],
@@ -146,13 +152,14 @@ export function summarizeEarnings(
 
     const byHouse: EarningsSummary["byHouse"] = {}
     houseSlugs.forEach((slug) => {
-        byHouse[slug] = { total: 0, nights: 0 }
+        byHouse[slug] = { total: 0, nights: 0, freeNights: 0 }
     })
     const weekdays = [0, 0, 0, 0, 0, 0, 0]
 
     let total = 0
     let totalUsd = 0
     let nights = 0
+    let freeNights = 0
     let bookingCount = 0
     let byHand = 0
     let stayNights = 0
@@ -173,7 +180,9 @@ export function summarizeEarnings(
 
         const perNight = booking.totalRwf / stay
         const perNightUsd = booking.total / stay
+        const free = Math.min(Math.max(booking.freeNights || 0, 0), stay)
         let nightsInPeriod = 0
+        let freeNightsInPeriod = 0
 
         for (let i = 0; i < stay; i++) {
             const night = addDays(checkIn, i)
@@ -187,9 +196,14 @@ export function summarizeEarnings(
             nights += 1
             weekdays[(night.getDay() + 6) % 7] += perNight
 
-            const house = (byHouse[booking.house] ??= { total: 0, nights: 0 })
+            const house = (byHouse[booking.house] ??= { total: 0, nights: 0, freeNights: 0 })
             house.total += perNight
             house.nights += 1
+            if (i >= stay - free) {
+                freeNightsInPeriod += 1
+                freeNights += 1
+                house.freeNights += 1
+            }
 
             const index = bucketIndex.get(byDay ? key : key.slice(0, 7))
             if (index !== undefined) {
@@ -200,7 +214,14 @@ export function summarizeEarnings(
         }
 
         if (nightsInPeriod === 0) continue
-        stays.push({ booking, totalNights: stay, nightsInPeriod, amountInPeriod: perNight * nightsInPeriod })
+        stays.push({
+            booking,
+            totalNights: stay,
+            nightsInPeriod,
+            freeNights: free,
+            freeNightsInPeriod,
+            amountInPeriod: perNight * nightsInPeriod,
+        })
         bookingCount += 1
         stayNights += stay
         if (booking.source === "manual") {
@@ -220,6 +241,7 @@ export function summarizeEarnings(
         previousTotal,
         buckets,
         nights,
+        freeNights,
         capacity: days * houseSlugs.length,
         bookings: bookingCount,
         byHand,

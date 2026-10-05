@@ -27,6 +27,8 @@ export interface Booking {
     checkIn: string
     checkOut: string
     nights: number
+    // Nights of the stay given for free; counted in `nights`
+    freeNights?: number
     guests: number
     pricePerNight: number
     cleaningFee: number
@@ -115,6 +117,9 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
         return NextResponse.json({ error: "Check-out must be after check-in" }, { status: 400 })
     }
 
+    // At least one night is paid for
+    const freeNights = Math.min(Math.max(Math.round(Number(body.freeNights)) || 0, 0), stayDates.length - 1)
+
     // Conflicts are other bookings (confirmed, or pending from the website) and,
     // from today on, admin blocks. Airbnb holds don't stand in the way: this is
     // how an Airbnb stay gets recorded. Past nights ignore admin blocks so a
@@ -144,6 +149,7 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
             checkIn,
             checkOut,
             nights: stayDates.length,
+            freeNights,
             guests: Math.round(Number(body.guests)) || 1,
             pricePerNight: Number(body.pricePerNight) || 0,
             cleaningFee: Number(body.cleaningFee) || 0,

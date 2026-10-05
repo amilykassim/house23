@@ -517,13 +517,14 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                     <div className={`flex-1 ${CARD} gap-3.5`}>
                         <h3 className="text-[17px] font-semibold text-foreground">By house</h3>
                         {shownHouses.map((h) => {
-                            const house = summary.byHouse[h.slug] || { total: 0, nights: 0 }
+                            const house = summary.byHouse[h.slug] || { total: 0, nights: 0, freeNights: 0 }
                             return (
                                 <div key={h.slug} className="flex flex-col gap-1.5">
                                     <div className="flex justify-between gap-4 text-[15px] text-foreground">
                                         <span>{h.name}</span>
                                         <span className="font-semibold">
                                             {money(house.total)} · {plural(house.nights, "night")}
+                                            {house.freeNights > 0 && ` · ${house.freeNights} free`}
                                         </span>
                                     </div>
                                     <div className="h-2.5 rounded-full bg-muted">
@@ -561,6 +562,17 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
 
             <section className={TILE_GRID}>
                 <Tile label="Empty nights" value={String(emptyNights)} note={`worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`} />
+                <Tile
+                    label="Free nights"
+                    value={String(summary.freeNights)}
+                    note={
+                        summary.freeNights === 0
+                            ? "none given in this period"
+                            : shownHouses.length > 1
+                                ? shownHouses.map((h) => `${h.name}: ${summary.byHouse[h.slug]?.freeNights || 0}`).join(" · ")
+                                : `of ${plural(summary.nights, "night")} booked`
+                    }
+                />
                 <Tile
                     label="Average stay"
                     value={summary.bookings > 0 ? `${summary.averageStay.toFixed(1)} nights` : "–"}

@@ -57,6 +57,8 @@ export default function AdminAddBookingPage() {
     // Optional: left empty, the booking is saved as "Added by hand"
     const [guestName, setGuestName] = useState("")
     const [guests, setGuests] = useState(DEFAULT_GUESTS)
+    // Nights of the stay given for free; at least one night stays paid
+    const [freeNights, setFreeNights] = useState(0)
     const [unavailable, setUnavailable] = useState<Set<string>>(new Set())
     const [saving, setSaving] = useState(false)
     // Bumped to close the calendar and start the date cards afresh
@@ -95,7 +97,11 @@ export default function AdminAddBookingPage() {
     // and the server checks the dates again when the booking is saved.
 
     const nights = checkIn && checkOut ? differenceInCalendarDays(parseISO(checkOut), parseISO(checkIn)) : 0
-    const setPriceRwf = nights * ADMIN_NIGHTLY_PRICE_RWF
+    const maxFree = Math.max(nights - 1, 0)
+    // Held to the stay, so shortening the dates never leaves too many
+    const free = Math.min(freeNights, maxFree)
+    const paidNights = nights - free
+    const setPriceRwf = paidNights * ADMIN_NIGHTLY_PRICE_RWF
     const paid = Number(amount)
     const canSave = nights > 0 && paid > 0 && !saving
 
@@ -144,6 +150,7 @@ export default function AdminAddBookingPage() {
                     checkOut,
                     guestName: guestName.trim(),
                     guests,
+                    freeNights: free,
                     totalRwf: paid,
                     pricePerNight: Math.round((ADMIN_NIGHTLY_PRICE_RWF / USD_TO_RWF) * 100) / 100,
                     cleaningFee: 0,
@@ -179,6 +186,7 @@ export default function AdminAddBookingPage() {
             setAmount("")
             setGuestName("")
             setGuests(DEFAULT_GUESTS)
+            setFreeNights(0)
             fetchUnavailable()
         } catch {
             toast.error("Couldn't save the booking", { description: "Nothing was recorded. Try again." })
@@ -218,7 +226,7 @@ export default function AdminAddBookingPage() {
                 summary={
                     <p className="text-[15px] text-muted-foreground">
                         {nights > 0 && checkIn && checkOut
-                            ? `${dayLabel(checkIn)} to ${dayLabel(checkOut)} · ${nights} night${nights === 1 ? "" : "s"}`
+                            ? `${dayLabel(checkIn)} to ${dayLabel(checkOut)} · ${nights} night${nights === 1 ? "" : "s"}${free > 0 ? ` · ${free} free` : ""}`
                             : "Tap a card to pick the dates."}
                     </p>
                 }
@@ -268,6 +276,36 @@ export default function AdminAddBookingPage() {
                 </div>
             </div>
 
+            {/* Free nights */}
+            <div className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[14px] flex items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5">
+                    <span className="text-[13px] font-semibold text-muted-foreground">Free nights</span>
+                    <span className="text-[17px] leading-7 text-foreground" aria-live="polite">
+                        {free === 0 ? "None" : `${free} of ${nights}, ${paidNights} paid`}
+                    </span>
+                </div>
+                <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            aria-label="One free night fewer"
+                            onClick={() => setFreeNights(Math.max(0, free - 1))}
+                            disabled={free <= 0}
+                            className="h-10 w-10 rounded-full border border-[#B0B0B0] flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                            <Minus className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            aria-label="One free night more"
+                            onClick={() => setFreeNights(Math.min(maxFree, free + 1))}
+                            disabled={free >= maxFree}
+                            className="h-10 w-10 rounded-full border border-[#B0B0B0] flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                            <Plus className="h-4 w-4" />
+                        </button>
+                </div>
+            </div>
+
             {/* Amount */}
             <div className="flex flex-col gap-4">
                 <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[18px] flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
@@ -291,7 +329,7 @@ export default function AdminAddBookingPage() {
                         className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card text-sm font-semibold text-foreground hover:bg-[#F7F7F7] disabled:hover:bg-card"
                     >
                         {nights > 0
-                            ? `Use the set price · ${nights} × ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} RWF`
+                            ? `Use the set price · ${paidNights} × ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} RWF`
                             : "Pick the dates to see the set price"}
                     </button>
                 </div>

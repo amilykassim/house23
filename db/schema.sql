@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     check_in            date NOT NULL,
     check_out           date NOT NULL,
     nights              integer NOT NULL DEFAULT 0,
+    -- nights of the stay given for free (by-hand bookings); part of `nights`
+    free_nights         integer NOT NULL DEFAULT 0,
     guests              integer NOT NULL DEFAULT 1,
     price_per_night     double precision NOT NULL DEFAULT 0,
     cleaning_fee        double precision NOT NULL DEFAULT 0,
@@ -24,6 +26,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     source              text CHECK (source IN ('website', 'manual')),
     created_at          timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS free_nights integer NOT NULL DEFAULT 0;
 
 -- Numbers for booking ids, so two bookings made at once never share one
 CREATE SEQUENCE IF NOT EXISTS booking_number_seq;
@@ -54,7 +58,7 @@ CREATE TABLE IF NOT EXISTS expenses (
 );
 
 -- Per-house config documents. key is one of:
--- 'prices', 'photo-order', 'photo-categories', 'calendar-config'
+-- 'prices', 'photo-order', 'photo-categories', 'calendar-config', 'feed-reads'
 CREATE TABLE IF NOT EXISTS house_settings (
     key   text NOT NULL,
     house text NOT NULL,
