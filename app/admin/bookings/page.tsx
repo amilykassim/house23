@@ -23,6 +23,7 @@ import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { AnimatePresence, motion } from "motion/react"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
+import { forgetBookings, loadBookings } from "@/lib/admin-data"
 
 interface Booking {
     id: string
@@ -90,9 +91,8 @@ export default function AdminBookingsPage() {
 
     const fetchBookings = () => {
         setLoading(true)
-        fetch("/api/bookings")
-            .then((res) => res.json())
-            .then((data) => setBookings(data.bookings || []))
+        loadBookings<Booking>()
+            .then(setBookings)
             .catch(() => { })
             .finally(() => setLoading(false))
     }
@@ -110,6 +110,7 @@ export default function AdminBookingsPage() {
                 body: JSON.stringify({ id, status: newStatus, ...(rejectionReason ? { rejectionReason } : {}) }),
             })
             if (res.ok) {
+                forgetBookings()
                 const booking = bookings.find((b) => b.id === id)
                 setRejectingBooking(null)
                 setBookings((prev) =>
@@ -183,6 +184,7 @@ export default function AdminBookingsPage() {
                 method: "DELETE",
             })
             if (res.ok) {
+                forgetBookings()
                 setBookings((prev) => prev.filter((b) => b.id !== id))
                 setExpandedBooking(null)
                 setConfirmDelete(null)

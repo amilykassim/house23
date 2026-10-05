@@ -1,8 +1,10 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { format, parseISO, startOfDay } from "date-fns"
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
 import { DateRangePicker } from "@/components/date-range-picker"
@@ -20,6 +22,9 @@ import {
 
 // One fixed colour per house, in listing order (never reassigned by rank).
 const HOUSE_COLORS = ["#2A78D6", "#EB6834", "#1BAF7A", "#EDA100"]
+export const houseColor = (slug: string) => HOUSE_COLORS[houses.findIndex((h) => h.slug === slug)] ?? HOUSE_COLORS[0]
+// "all" or one house slug, for the house switch on Insights and its detail page
+export const HOUSE_FILTERS = [{ id: "all", label: "All houses" }, ...houses.map((h) => ({ id: h.slug, label: h.name }))]
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const PERIOD_KINDS: { id: Exclude<PeriodKind, "custom">; label: string }[] = [
     { id: "week", label: "Week" },
@@ -39,53 +44,51 @@ const scrub = (count: number, select: (index: number) => void) => (e: React.Poin
     select(Math.max(0, Math.min(count - 1, index)))
 }
 
-const money = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
-const houseName = (booking: EarningsBooking) =>
+// "yyyy-MM-dd"
+export const isDay = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d)
+export const money = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
+export const houseName = (booking: EarningsBooking) =>
     houses.find((h) => h.slug === booking.house)?.name ?? booking.houseName ?? booking.house
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
+export const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
 
 interface TileProps {
     label: string
     value: string
     note: string
-    /** Makes the tile a button that opens its details below the row */
-    onClick?: () => void
-    open?: boolean
+    /** Makes the tile a link to the page with its details */
+    href?: string
 }
 
-function Tile({ label, value, note, onClick, open = false }: TileProps) {
+function Tile({ label, value, note, href }: TileProps) {
     const content = (
         <>
             <span className="flex items-center justify-between gap-2 text-[13px] font-semibold text-muted-foreground">
                 {label}
-                {onClick && <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`} />}
+                {href && <ChevronRight className="h-4 w-4 shrink-0" />}
             </span>
             <span className="text-[19px] sm:text-[26px] leading-tight font-bold text-foreground">{value}</span>
             <span className="text-[13px] text-muted-foreground">{note}</span>
         </>
     )
-    if (!onClick) {
+    if (!href) {
         return (
             <div className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1">
                 {content}
             </div>
         )
     }
-    // The 2px border swaps for 1px less padding so the tile keeps its size
     return (
-        <button
-            type="button"
-            onClick={onClick}
-            aria-expanded={open}
-            className={`min-w-0 text-left rounded-2xl border-2 bg-card p-[13px] sm:p-[17px] flex flex-col gap-1 ${open ? "border-foreground" : "border-border hover:border-[#B0B0B0]"}`}
+        <Link
+            href={href}
+            className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1 hover:border-[#B0B0B0] transition-colors"
         >
             {content}
-        </button>
+        </Link>
     )
 }
 
 // "Sat 3 to Sat 10 Oct", or with both months when the stay crosses one
-function stayLabel(checkIn: string, checkOut: string) {
+export function stayLabel(checkIn: string, checkOut: string) {
     const start = parseISO(checkIn)
     const end = parseISO(checkOut)
     const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()
@@ -93,14 +96,49 @@ function stayLabel(checkIn: string, checkOut: string) {
 }
 
 export function EarningsInsights({ bookings, expenses = [] }: { bookings: EarningsBooking[]; expenses?: Expense[] }) {
-    const [kind, setKind] = useState<PeriodKind>("month")
-    const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
-    const [customStart, setCustomStart] = useState<string | null>(() => format(periodFor("month", new Date()).start, "yyyy-MM-dd"))
-    const [customEnd, setCustomEnd] = useState<string | null>(() => format(new Date(), "yyyy-MM-dd"))
+    // The view (period and house) lives in the URL, so coming back from a
+    // detail page or reloading shows the same thing.
+    const params = useSearchParams()
+    const [kind, setKind] = useState<PeriodKind>(() => {
+        const k = params.get("kind")
+        return k === "week" || k === "year" || k === "custom" ? k : "month"
+    })
+    const [anchor, setAnchor] = useState(() => {
+        const at = params.get("at")
+        return startOfDay(at && isDay(at) ? parseISO(at) : new Date())
+    })
+    const [customStart, setCustomStart] = useState<string | null>(() => {
+        const from = params.get("from")
+        return from && isDay(from) ? from : format(periodFor("month", new Date()).start, "yyyy-MM-dd")
+    })
+    const [customEnd, setCustomEnd] = useState<string | null>(() => {
+        const to = params.get("to")
+        return to && isDay(to) ? to : format(new Date(), "yyyy-MM-dd")
+    })
+    const [house, setHouse] = useState(() => {
+        const slug = params.get("house")
+        return houses.some((h) => h.slug === slug) ? (slug as string) : "all"
+    })
     const [hoveredBar, setHoveredBar] = useState<number | null>(null)
     const [hoveredDay, setHoveredDay] = useState<number | null>(null)
-    // Which tile's details are open under the tiles row
-    const [detail, setDetail] = useState<"nights" | "bookings" | null>(null)
+
+    const view = new URLSearchParams({ kind, house })
+    if (kind === "custom") {
+        if (customStart) view.set("from", customStart)
+        if (customEnd) view.set("to", customEnd)
+    } else {
+        view.set("at", format(anchor, "yyyy-MM-dd"))
+    }
+    const viewQuery = view.toString()
+    useEffect(() => {
+        window.history.replaceState(null, "", `?${viewQuery}`)
+    }, [viewQuery])
+
+    const shownHouses = useMemo(() => (house === "all" ? houses : houses.filter((h) => h.slug === house)), [house])
+    const shownBookings = useMemo(
+        () => (house === "all" ? bookings : bookings.filter((b) => b.house === house)),
+        [bookings, house]
+    )
     const period: Period | null = useMemo(() => {
         if (kind !== "custom") return periodFor(kind, anchor)
         if (!customStart || !customEnd || customEnd < customStart) return null
@@ -108,8 +146,8 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     }, [kind, anchor, customStart, customEnd])
 
     const summary = useMemo(
-        () => (period ? summarizeEarnings(bookings, period, houses.map((h) => h.slug)) : null),
-        [bookings, period]
+        () => (period ? summarizeEarnings(shownBookings, period, shownHouses.map((h) => h.slug)) : null),
+        [shownBookings, period, shownHouses]
     )
 
     const pickKind = (next: PeriodKind) => {
@@ -128,6 +166,16 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
         <div className="flex flex-wrap items-center justify-between gap-4">
             <h1 className="text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-foreground">Earnings</h1>
             <div className="flex flex-wrap items-center gap-3">
+                {houses.length > 1 && (
+                    <SegmentedControl
+                        options={HOUSE_FILTERS}
+                        value={house}
+                        onChange={(next) => {
+                            setHouse(next)
+                            setHoveredBar(null)
+                        }}
+                    />
+                )}
                 <SegmentedControl
                     options={PERIOD_KINDS}
                     value={kind === "custom" ? null : kind}
@@ -175,11 +223,26 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     }
 
     const { total, previousTotal } = summary
+    // The detail page shows this period and house, and links back to this view
+    const detailQuery = new URLSearchParams({
+        from: format(period.start, "yyyy-MM-dd"),
+        to: format(period.end, "yyyy-MM-dd"),
+        house,
+        back: viewQuery,
+    }).toString()
 
     // Expenses dated inside the period; one for "all houses" counts once.
+    // With one house picked: its own expenses, plus its equal share of any
+    // still recorded for all houses.
     const periodStart = format(period.start, "yyyy-MM-dd")
     const periodEnd = format(period.end, "yyyy-MM-dd")
-    const periodExpenses = expenses.filter((e) => e.date >= periodStart && e.date <= periodEnd)
+    const datedExpenses = expenses.filter((e) => e.date >= periodStart && e.date <= periodEnd)
+    const periodExpenses =
+        house === "all"
+            ? datedExpenses
+            : datedExpenses
+                .filter((e) => e.house === house || e.house === "all")
+                .map((e) => (e.house === "all" ? { ...e, amountRwf: e.amountRwf / houses.length } : e))
     const spent = periodExpenses.reduce((sum, e) => sum + e.amountRwf, 0)
     const profit = total - spent
     const spentByCategory: Record<string, number> = {}
@@ -206,11 +269,11 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     const weekendTotal = summary.weekdays[4] + summary.weekdays[5] + summary.weekdays[6]
     const weekendShare = weekdayTotal > 0 ? Math.round((weekendTotal / weekdayTotal) * 100) : 0
 
-    const days = summary.capacity / houses.length
-    const emptyByHouse = houses.map((h) => Math.max(days - (summary.byHouse[h.slug]?.nights || 0), 0))
+    const days = summary.capacity / shownHouses.length
+    const emptyByHouse = shownHouses.map((h) => Math.max(days - (summary.byHouse[h.slug]?.nights || 0), 0))
     const emptyNights = emptyByHouse.reduce((sum, v) => sum + v, 0)
     const emptyWorth = emptyNights * ADMIN_NIGHTLY_PRICE_RWF
-    const houseMax = Math.max(...houses.map((h) => summary.byHouse[h.slug]?.total || 0), 1)
+    const houseMax = Math.max(...shownHouses.map((h) => summary.byHouse[h.slug]?.total || 0), 1)
     const website = summary.bookings - summary.byHand
     const ranked = houses
         .map((h) => ({ name: h.name, total: summary.byHouse[h.slug]?.total || 0 }))
@@ -288,18 +351,18 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
             <section className={`${CARD} gap-4`}>
                 <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
                     <div className="flex gap-4 text-sm text-muted-foreground">
-                        {houses.map((h, i) => (
+                        {shownHouses.map((h) => (
                             <span key={h.slug} className="flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: HOUSE_COLORS[i] }} />
+                                <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: houseColor(h.slug) }} />
                                 {h.name}
                             </span>
                         ))}
                     </div>
                     <span className="text-sm font-semibold text-foreground min-h-5">
                         {hovered
-                            ? `${hovered.name} · ${money(hovered.total)} (${houses
-                                .map((h) => `${h.name} ${money(hovered.byHouse[h.slug] || 0)}`)
-                                .join(", ")})`
+                            ? `${hovered.name} · ${money(hovered.total)}${shownHouses.length > 1
+                                ? ` (${shownHouses.map((h) => `${h.name} ${money(hovered.byHouse[h.slug] || 0)}`).join(", ")})`
+                                : ""}`
                             : hasEarnings
                                 ? "Tap or hover a bar for the detail"
                                 : "No confirmed earnings in this period"}
@@ -314,7 +377,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 >
                     {summary.buckets.map((bucket, index) => {
                         const segments = houses
-                            .map((h, i) => ({ slug: h.slug, color: HOUSE_COLORS[i], value: bucket.byHouse[h.slug] || 0 }))
+                            .map((h) => ({ slug: h.slug, color: houseColor(h.slug), value: bucket.byHouse[h.slug] || 0 }))
                             .filter((s) => s.value > 0)
                         return (
                             <div
@@ -346,20 +409,18 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                     label="Nights booked"
                     value={String(summary.nights)}
                     note={`of ${summary.capacity} available`}
-                    onClick={() => setDetail(detail === "nights" ? null : "nights")}
-                    open={detail === "nights"}
+                    href={`/admin/insights/bookings?${detailQuery}&view=nights`}
                 />
                 <Tile
                     label="Occupancy"
                     value={`${Math.min(Math.round((summary.nights / Math.max(summary.capacity, 1)) * 100), 100)}%`}
-                    note={houses.length > 1 ? "all houses together" : "of the period"}
+                    note={shownHouses.length > 1 ? "all houses together" : "of the period"}
                 />
                 <Tile
                     label="Bookings"
                     value={String(summary.bookings)}
                     note={`${summary.byHand} added by hand`}
-                    onClick={() => setDetail(detail === "bookings" ? null : "bookings")}
-                    open={detail === "bookings"}
+                    href={`/admin/insights/bookings?${detailQuery}`}
                 />
                 <Tile
                     label="Average per booking"
@@ -367,126 +428,6 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                     note="earned in this period"
                 />
             </section>
-
-            {detail && (
-                <section className={`${CARD} gap-3 shadow-[0_6px_20px_rgba(0,0,0,0.08)]`}>
-                    <div className="flex items-center justify-between gap-4">
-                        <h2 className="text-[17px] font-semibold text-foreground">
-                            {detail === "nights"
-                                ? `${plural(summary.nights, "night")} booked`
-                                : plural(summary.bookings, "booking")}{" "}
-                            · {periodTitle(period)}
-                        </h2>
-                        <button
-                            type="button"
-                            onClick={() => setDetail(null)}
-                            className="min-h-11 px-2 text-sm font-semibold text-foreground underline"
-                        >
-                            Close
-                        </button>
-                    </div>
-
-                    {summary.stays.length === 0 && (
-                        <p className="text-sm text-muted-foreground">No confirmed bookings in this period.</p>
-                    )}
-
-                    {/* Nights: which ones are taken per house, then each stay's nightly rate */}
-                    {detail === "nights" && summary.stays.length > 0 && (
-                        <>
-                            {houses.map((h, i) => (
-                                <div key={h.slug} className="flex flex-col gap-1.5">
-                                    <div className="flex justify-between gap-4 text-sm">
-                                        <span className="font-semibold text-foreground">{h.name}</span>
-                                        <span className="text-muted-foreground">
-                                            {plural(summary.byHouse[h.slug]?.nights || 0, "night")}
-                                        </span>
-                                    </div>
-                                    <div className="flex gap-0.5">
-                                        {summary.buckets.map((bucket) => (
-                                            <div
-                                                key={bucket.key}
-                                                title={`${bucket.name}: ${(bucket.byHouse[h.slug] || 0) > 0 ? "booked" : "empty"}`}
-                                                className="flex-1 min-w-0 h-7 rounded bg-muted"
-                                                style={(bucket.byHouse[h.slug] || 0) > 0 ? { background: HOUSE_COLORS[i] } : undefined}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                            <div className="flex gap-0.5 text-xs text-muted-foreground text-center">
-                                {summary.buckets.map((bucket) => (
-                                    <span key={bucket.key} className="flex-1 min-w-0 whitespace-nowrap">
-                                        {bucket.label}
-                                    </span>
-                                ))}
-                            </div>
-                            <div className="flex flex-col">
-                                {summary.stays.map(({ booking, totalNights, nightsInPeriod, amountInPeriod }) => (
-                                    <div
-                                        key={booking.id}
-                                        className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1 py-3 border-t border-[#EBEBEB] text-[15px]"
-                                    >
-                                        <span className="font-semibold text-foreground">
-                                            {stayLabel(booking.checkIn, booking.checkOut)}
-                                        </span>
-                                        <span className="text-muted-foreground">
-                                            {houseName(booking)} ·{" "}
-                                            {nightsInPeriod === totalNights
-                                                ? plural(totalNights, "night")
-                                                : `${nightsInPeriod} of ${totalNights} nights in this period`}{" "}
-                                            · {money(amountInPeriod / nightsInPeriod)} a night
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-
-                    {/* Bookings: who, how to reach them, where it came from, what it earned */}
-                    {detail === "bookings" &&
-                        summary.stays.map(({ booking, totalNights, nightsInPeriod, amountInPeriod }) => {
-                            const byHand = booking.source === "manual"
-                            const guest = !byHand && booking.guestName ? booking.guestName : ""
-                            const contact = [booking.guestPhone, booking.guestEmail].filter(Boolean).join(" · ")
-                            return (
-                                <div
-                                    key={booking.id}
-                                    className="flex flex-wrap justify-between items-center gap-x-6 gap-y-2 py-3.5 border-t border-[#EBEBEB]"
-                                >
-                                    <div className="flex-[1_1_260px] min-w-0 flex flex-col gap-0.5">
-                                        <span className="text-[15px] font-semibold text-foreground">
-                                            {guest || "No guest details"}
-                                        </span>
-                                        <span className="text-[13px] text-muted-foreground [overflow-wrap:anywhere]">
-                                            {contact || (byHand ? "Added by hand without contact details" : "No contact details")}
-                                        </span>
-                                    </div>
-                                    <div className="flex-[1_1_200px] flex flex-col gap-0.5">
-                                        <span className="text-[15px] text-foreground">
-                                            {stayLabel(booking.checkIn, booking.checkOut)}
-                                        </span>
-                                        <span className="text-[13px] text-muted-foreground">
-                                            {houseName(booking)} ·{" "}
-                                            {nightsInPeriod === totalNights
-                                                ? plural(totalNights, "night")
-                                                : `${nightsInPeriod} of ${totalNights} nights in this period`}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className={`px-2.5 py-1 rounded-full text-xs font-semibold text-foreground border ${byHand ? "bg-muted border-muted" : "bg-card border-[#B0B0B0]"}`}
-                                        >
-                                            {byHand ? "By hand" : "Website"}
-                                        </span>
-                                        <span className="text-[15px] font-bold text-foreground whitespace-nowrap">
-                                            {money(amountInPeriod)}
-                                        </span>
-                                    </div>
-                                </div>
-                            )
-                        })}
-                </section>
-            )}
 
             <h2 className="mt-4 text-[22px] font-bold tracking-[-0.01em] text-foreground">Patterns</h2>
 
@@ -575,7 +516,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 <div className="flex-[1_1_300px] min-w-0 flex flex-col gap-4">
                     <div className={`flex-1 ${CARD} gap-3.5`}>
                         <h3 className="text-[17px] font-semibold text-foreground">By house</h3>
-                        {houses.map((h, i) => {
+                        {shownHouses.map((h) => {
                             const house = summary.byHouse[h.slug] || { total: 0, nights: 0 }
                             return (
                                 <div key={h.slug} className="flex flex-col gap-1.5">
@@ -588,7 +529,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                     <div className="h-2.5 rounded-full bg-muted">
                                         <div
                                             className="h-2.5 rounded-full"
-                                            style={{ width: `${Math.round((house.total / houseMax) * 100)}%`, background: HOUSE_COLORS[i] }}
+                                            style={{ width: `${Math.round((house.total / houseMax) * 100)}%`, background: houseColor(h.slug) }}
                                         />
                                     </div>
                                 </div>

@@ -1,9 +1,10 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { EarningsInsights } from "@/components/earnings-insights"
 import type { EarningsBooking } from "@/lib/earnings"
 import type { Expense } from "@/lib/expenses"
+import { loadBookings, loadExpenses } from "@/lib/admin-data"
 
 export default function AdminInsightsPage() {
     const [bookings, setBookings] = useState<EarningsBooking[]>([])
@@ -12,12 +13,12 @@ export default function AdminInsightsPage() {
 
     useEffect(() => {
         Promise.all([
-            fetch("/api/bookings").then((res) => res.json()).catch(() => ({})),
-            fetch("/api/expenses").then((res) => res.json()).catch(() => ({})),
+            loadBookings<EarningsBooking>().catch(() => []),
+            loadExpenses<Expense>().catch(() => []),
         ])
-            .then(([bookingData, expenseData]) => {
-                setBookings(bookingData.bookings || [])
-                setExpenses(expenseData.expenses || [])
+            .then(([bookings, expenses]) => {
+                setBookings(bookings)
+                setExpenses(expenses)
             })
             .finally(() => setLoading(false))
     }, [])
@@ -33,7 +34,10 @@ export default function AdminInsightsPage() {
     return (
         // zoom scales the whole page down a notch on every screen size
         <div className="[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto">
-            <EarningsInsights bookings={bookings} expenses={expenses} />
+            {/* EarningsInsights reads its view from the URL */}
+            <Suspense>
+                <EarningsInsights bookings={bookings} expenses={expenses} />
+            </Suspense>
         </div>
     )
 }

@@ -9,6 +9,7 @@ import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
 import { DateRangePicker, dayKey, dayLabel } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF, USD_TO_RWF } from "@/lib/currency"
+import { forgetBookings } from "@/lib/admin-data"
 
 type CheckState = "checking" | "ok" | "failed"
 
@@ -146,6 +147,7 @@ export default function AdminAddBookingPage() {
                 return
             }
             if (!res.ok) throw new Error("Request failed")
+            forgetBookings()
             const { booking } = await res.json()
             const today = dayKey(new Date())
             const upcoming = Array.from({ length: nights }, (_, i) => dayKey(addDays(parseISO(checkIn), i))).filter(

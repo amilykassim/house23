@@ -29,6 +29,7 @@ import { houses } from "@/lib/houses"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
 // ⚠️ TEMPORARY: Resend delivery tester — remove when done
 import { TestEmailPanel } from "@/components/test-email-panel"
+import { forgetBookings, loadBookings } from "@/lib/admin-data"
 
 
 interface Booking {
@@ -78,9 +79,8 @@ export default function AdminDashboardPage() {
     const today = startOfDay(new Date())
 
     const fetchBookings = () => {
-        fetch("/api/bookings")
-            .then((res) => res.json())
-            .then((data) => setBookings(data.bookings || []))
+        loadBookings<Booking>()
+            .then(setBookings)
             .catch(() => { })
             .finally(() => setLoading(false))
     }
@@ -98,6 +98,7 @@ export default function AdminDashboardPage() {
                 body: JSON.stringify({ id, status: action, ...(rejectionReason ? { rejectionReason } : {}) }),
             })
             if (res.ok) {
+                forgetBookings()
                 const booking = bookings.find((b) => b.id === id)
                 // Clear expanded states before updating bookings to avoid
                 // setState-during-render conflicts with toast/Sonner

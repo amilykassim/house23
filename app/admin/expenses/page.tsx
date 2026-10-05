@@ -5,8 +5,9 @@ import { format, parseISO, startOfMonth } from "date-fns"
 import { Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
-import { ALL_HOUSES, EXPENSE_CATEGORIES, type Expense, type ExpenseCategory } from "@/lib/expenses"
+import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type Expense, type ExpenseCategory } from "@/lib/expenses"
 import { SegmentedControl } from "@/components/segmented-control"
+import { forgetExpenses, loadExpenses } from "@/lib/admin-data"
 import { CalendarPanel, dayKey, dayLabel, monthCells } from "@/components/date-range-picker"
 
 const HOUSE_OPTIONS = [
@@ -35,9 +36,7 @@ export default function AdminExpensesPage() {
 
     const fetchExpenses = useCallback(async () => {
         try {
-            const res = await fetch("/api/expenses")
-            const data = await res.json()
-            setExpenses(data.expenses || [])
+            setExpenses(await loadExpenses<Expense>())
         } catch {
             // keep whatever is on screen
         } finally {
@@ -50,7 +49,15 @@ export default function AdminExpensesPage() {
     }, [fetchExpenses])
 
     const paid = Number(amount)
-    const canSave = paid > 0 && !saving
+    // An expense for all houses is saved as an equal share for each
+    const shares = house === ALL_HOUSES ? splitEvenly(Math.round(paid) || 0, houses.length) : []
+    const splitText =
+        shares.length === 0
+            ? ""
+            : shares.every((s) => s === shares[0])
+                ? `${rwf(shares[0])} for each house`
+                : shares.map((s, i) => `${rwf(s)} for ${houses[i].name}`).join(", ")
+    const canSave = paid > 0 && !saving && shares.every((s) => s > 0)
 
     // Expenses can't be dated in the future
     const cells = useMemo(() => monthCells(month, (key) => ({ disabled: key > today })), [month, today])
@@ -72,7 +79,13 @@ export default function AdminExpensesPage() {
                 body: JSON.stringify({ house, category, amountRwf: paid, date, note }),
             })
             if (!res.ok) throw new Error("Request failed")
-            toast.success("Expense saved", { description: `${rwf(paid)} for ${category.toLowerCase()} · ${houseLabel(house)}` })
+            forgetExpenses()
+            toast.success("Expense saved", {
+                description:
+                    house === ALL_HOUSES
+                        ? `${rwf(paid)} for ${category.toLowerCase()}, split: ${splitText}`
+                        : `${rwf(paid)} for ${category.toLowerCase()} · ${houseLabel(house)}`,
+            })
             setAmount("")
             setNote("")
             setDate(today)
@@ -90,6 +103,7 @@ export default function AdminExpensesPage() {
         try {
             const res = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: "DELETE" })
             if (!res.ok) throw new Error("Request failed")
+            forgetExpenses()
             setExpenses((prev) => prev.filter((e) => e.id !== id))
             toast.success("Expense deleted")
         } catch {
@@ -151,7 +165,9 @@ export default function AdminExpensesPage() {
                     placeholder="0"
                     className="w-full bg-transparent text-[34px] sm:text-[40px] leading-tight font-semibold text-foreground placeholder:text-[#B0B0B0] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                 />
-                <span className="text-[13px] text-muted-foreground">RWF</span>
+                <span className="text-[13px] text-muted-foreground">
+                    RWF{house === ALL_HOUSES && paid > 0 && ` · split between the houses: ${splitText}`}
+                </span>
             </label>
 
             {/* Date + note */}

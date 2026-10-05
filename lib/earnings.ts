@@ -31,6 +31,7 @@ export interface EarningsBooking {
     guestName?: string
     guestEmail?: string
     guestPhone?: string
+    specialRequests?: string
 }
 
 // A confirmed booking with at least one night inside the period

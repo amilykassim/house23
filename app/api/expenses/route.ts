@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import { transaction } from "@/lib/db"
 import { deleteExpense, insertExpense, listExpenses } from "@/lib/store"
 import { houses } from "@/lib/houses"
-import { ALL_HOUSES, EXPENSE_CATEGORIES, type Expense, type ExpenseCategory } from "@/lib/expenses"
+import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type ExpenseCategory } from "@/lib/expenses"
 
 export const dynamic = "force-dynamic"
 
@@ -36,16 +37,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 })
     }
 
-    const expense: Expense = await insertExpense({
-        id: `EX-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
-        house,
-        category,
-        amountRwf,
-        date,
-        note: typeof body.note === "string" ? body.note.trim().slice(0, 200) : "",
-    })
+    // One for all houses is split evenly: one expense per house
+    const slugs = house === ALL_HOUSES ? houses.map((h) => h.slug) : [house]
+    const shares = splitEvenly(amountRwf, slugs.length)
+    if (shares.some((share) => !(share > 0))) {
+        return NextResponse.json({ error: "The amount is too small to split between the houses" }, { status: 400 })
+    }
+    const note = typeof body.note === "string" ? body.note.trim().slice(0, 200) : ""
+    const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
 
-    return NextResponse.json({ expense }, { status: 201 })
+    const expenses = await transaction((tx) =>
+        Promise.all(
+            slugs.map((slug, i) =>
+                insertExpense(
+                    { id: `EX-${stamp}${slugs.length > 1 ? `-${i + 1}` : ""}`, house: slug, category, amountRwf: shares[i], date, note },
+                    tx
+                )
+            )
+        )
+    )
+
+    return NextResponse.json({ expense: expenses[0], expenses }, { status: 201 })
 }
 
 export async function DELETE(request: NextRequest) {
