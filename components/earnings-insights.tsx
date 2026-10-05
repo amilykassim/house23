@@ -249,7 +249,23 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     periodExpenses.forEach((e) => {
         spentByCategory[e.category] = (spentByCategory[e.category] || 0) + e.amountRwf
     })
-    const topCategory = Object.keys(spentByCategory).sort((x, y) => spentByCategory[y] - spentByCategory[x])[0] ?? ""
+    const categoriesBySpend = Object.keys(spentByCategory).sort((x, y) => spentByCategory[y] - spentByCategory[x])
+    const topCategory = categoriesBySpend[0] ?? ""
+    // What each shown house cost, with its share of anything recorded for all
+    const spentByHouse = shownHouses.map((h) => {
+        const amount = datedExpenses.reduce(
+            (sum, e) => sum + (e.house === h.slug ? e.amountRwf : e.house === "all" ? e.amountRwf / houses.length : 0),
+            0
+        )
+        const earned = summary.byHouse[h.slug]?.total || 0
+        const nights = summary.byHouse[h.slug]?.nights || 0
+        return { ...h, amount, earned, nights, perNight: nights > 0 ? amount / nights : null }
+    })
+    const houseSpendMax = Math.max(...spentByHouse.map((h) => h.amount), 1)
+    // Houses with a cost per booked night, dearest first
+    const byNightCost = spentByHouse
+        .filter((h) => h.perNight !== null && h.amount > 0)
+        .sort((x, y) => (y.perNight as number) - (x.perNight as number))
     const change = previousTotal > 0 ? Math.round(((total - previousTotal) / previousTotal) * 100) : null
     const previousName =
         kind === "week" ? "the week before" : kind === "month" ? "the month before" : kind === "year" ? "the year before" : "the period before"
@@ -581,7 +597,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 <Tile
                     label="Booked ahead"
                     value={summary.leadDays !== null ? plural(Math.round(summary.leadDays), "day") : "–"}
-                    note="before check-in, website bookings"
+                    note="before check-in, on average"
                 />
                 {ranked.length > 1 && (
                     <Tile
@@ -597,6 +613,98 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                     />
                 )}
             </section>
+
+            <h2 className="mt-4 text-[22px] font-bold tracking-[-0.01em] text-foreground">Expenses</h2>
+
+            {periodExpenses.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                    No expenses recorded in this period.{" "}
+                    <Link href="/admin/expenses" className="font-semibold text-foreground underline underline-offset-2">
+                        Add an expense
+                    </Link>
+                </p>
+            ) : (
+                <>
+                    <section className={TILE_GRID}>
+                        <Tile label="Spent" value={money(spent)} note={plural(periodExpenses.length, "expense")} />
+                        <Tile
+                            label="Share of revenue"
+                            value={total > 0 ? `${Math.round((spent / total) * 100)}%` : "–"}
+                            note={total > 0 ? `of ${money(total)} earned` : "nothing earned in this period"}
+                        />
+                        <Tile
+                            label="Cost per booked night"
+                            value={summary.nights > 0 ? money(spent / summary.nights) : "–"}
+                            note={summary.nights > 0 ? `over ${plural(summary.nights, "night")} booked` : "no nights booked in this period"}
+                        />
+                        <Tile
+                            label="Biggest cost"
+                            value={topCategory}
+                            note={`${money(spentByCategory[topCategory])}, ${Math.round((spentByCategory[topCategory] / spent) * 100)}% of spending`}
+                        />
+                    </section>
+
+                    <section className="flex flex-wrap items-stretch gap-4">
+                        <div className={`flex-[1_1_300px] min-w-0 ${CARD} gap-3.5`}>
+                            <h3 className="text-[17px] font-semibold text-foreground">By category</h3>
+                            {categoriesBySpend.map((category) => (
+                                <div key={category} className="flex flex-col gap-1.5">
+                                    <div className="flex justify-between gap-4 text-[15px] text-foreground">
+                                        <span>{category}</span>
+                                        <span className="font-semibold">
+                                            {money(spentByCategory[category])} · {Math.round((spentByCategory[category] / spent) * 100)}%
+                                        </span>
+                                    </div>
+                                    <div className="h-2.5 rounded-full bg-muted">
+                                        <div
+                                            className="h-2.5 rounded-full bg-foreground"
+                                            style={{ width: `${Math.max(Math.round((spentByCategory[category] / spentByCategory[topCategory]) * 100), 1)}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            <Link
+                                href="/admin/expenses"
+                                className="mt-auto pt-1 self-start text-[15px] font-semibold text-foreground underline underline-offset-2"
+                            >
+                                See all expenses
+                            </Link>
+                        </div>
+
+                        <div className={`flex-[1_1_300px] min-w-0 ${CARD} gap-3.5`}>
+                            <h3 className="text-[17px] font-semibold text-foreground">By house</h3>
+                            {spentByHouse.map((h) => (
+                                <div key={h.slug} className="flex flex-col gap-1.5">
+                                    <div className="flex justify-between gap-4 text-[15px] text-foreground">
+                                        <span className="flex items-center gap-2">
+                                            <span className="w-2.5 h-2.5 rounded-[3px]" style={{ background: houseColor(h.slug) }} />
+                                            {h.name}
+                                        </span>
+                                        <span className="font-semibold">{money(h.amount)}</span>
+                                    </div>
+                                    <div className="h-2.5 rounded-full bg-muted">
+                                        <div
+                                            className="h-2.5 rounded-full"
+                                            style={{ width: `${Math.round((h.amount / houseSpendMax) * 100)}%`, background: houseColor(h.slug) }}
+                                        />
+                                    </div>
+                                    <span className="text-[13px] text-muted-foreground">
+                                        {h.perNight !== null ? `${money(h.perNight)} per booked night` : "no nights booked"}
+                                        {h.earned > 0 && ` · ${Math.round((h.amount / h.earned) * 100)}% of what it earned`}
+                                    </span>
+                                </div>
+                            ))}
+                            {byNightCost.length > 1 && (
+                                <p className="mt-auto rounded-2xl bg-muted p-4 text-[15px] text-foreground">
+                                    {byNightCost[0].name} carried the highest cost per booked night: {money(byNightCost[0].perNight as number)} over{" "}
+                                    {plural(byNightCost[0].nights, "night")}, against {money(byNightCost[byNightCost.length - 1].perNight as number)} at{" "}
+                                    {byNightCost[byNightCost.length - 1].name}.
+                                </p>
+                            )}
+                        </div>
+                    </section>
+                </>
+            )}
         </div>
     )
 }

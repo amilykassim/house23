@@ -74,7 +74,7 @@ export interface EarningsSummary {
     bookings: number
     byHand: number
     averageStay: number
-    leadDays: number | null // website bookings only
+    leadDays: number | null // bookings made or recorded before check-in
     byHouse: Record<string, { total: number; nights: number; freeNights: number }>
     weekdays: number[] // Monday first
     stays: EarningsStay[] // by check-in date
@@ -224,14 +224,13 @@ export function summarizeEarnings(
         })
         bookingCount += 1
         stayNights += stay
-        if (booking.source === "manual") {
-            byHand += 1
-        } else {
-            const lead = differenceInCalendarDays(checkIn, parseISO(booking.createdAt))
-            if (lead >= 0) {
-                leadSum += lead
-                leadCount += 1
-            }
+        if (booking.source === "manual") byHand += 1
+        // A by-hand booking counts from the day it was recorded; one recorded
+        // after check-in says nothing about how far ahead it was booked.
+        const lead = differenceInCalendarDays(checkIn, parseISO(booking.createdAt))
+        if (lead >= 0) {
+            leadSum += lead
+            leadCount += 1
         }
     }
 
