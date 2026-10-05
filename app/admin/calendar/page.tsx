@@ -38,6 +38,8 @@ export default function AdminCalendarPage() {
     const [copied, setCopied] = useState(false)
     const [mounted, setMounted] = useState(false)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
+    // Latest downloads of this house's export feed (by Airbnb or anything else)
+    const [feedReads, setFeedReads] = useState<{ at: string; userAgent: string }[] | null>(null)
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
     const today = startOfDay(new Date())
@@ -71,11 +73,22 @@ export default function AdminCalendarPage() {
         }
     }, [selectedHouse])
 
+    const fetchFeedReads = useCallback(async () => {
+        try {
+            const res = await fetch(`/api/calendar/${selectedHouse}/reads`)
+            const data = await res.json()
+            setFeedReads(data.reads || [])
+        } catch {
+            setFeedReads(null)
+        }
+    }, [selectedHouse])
+
     useEffect(() => {
         fetchBlockedDates()
         fetchAirbnbDates()
+        fetchFeedReads()
         setSelectedDates(new Set())
-    }, [fetchBlockedDates, fetchAirbnbDates])
+    }, [fetchBlockedDates, fetchAirbnbDates, fetchFeedReads])
 
     // No background refresh here: an open admin tab would keep the database
     // awake. "Sync now" re-reads blocked dates and Airbnb on demand.
@@ -84,7 +97,7 @@ export default function AdminCalendarPage() {
         setSyncing(true)
         setMessage(null)
         try {
-            await Promise.all([fetchBlockedDates(), fetchAirbnbDates()])
+            await Promise.all([fetchBlockedDates(), fetchAirbnbDates(), fetchFeedReads()])
             setMessage({ type: "success", text: "Airbnb calendar synced successfully" })
         } catch {
             setMessage({ type: "error", text: "Failed to sync with Airbnb" })
@@ -474,6 +487,27 @@ export default function AdminCalendarPage() {
                             )}
                         </Button>
                     </div>
+                    {feedReads && (
+                        <div className="mt-3 text-xs text-muted-foreground">
+                            {feedReads.length === 0 ? (
+                                <p>
+                                    Nothing has read this calendar yet. If Airbnb has not read it within a few
+                                    hours, the import on Airbnb is missing or uses a different URL.
+                                </p>
+                            ) : (
+                                <>
+                                    <p className="font-semibold text-foreground">Last read by</p>
+                                    <ul className="mt-1 space-y-0.5">
+                                        {feedReads.map((read) => (
+                                            <li key={read.at} className="truncate">
+                                                {format(new Date(read.at), "EEE d MMM, HH:mm")} · {read.userAgent}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Airbnb Bookings */}

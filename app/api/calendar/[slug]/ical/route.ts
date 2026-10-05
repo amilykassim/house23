@@ -1,5 +1,24 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getBlockedDates } from "@/lib/store"
+import { getBlockedDates, getHouseSetting, setHouseSetting } from "@/lib/store"
+
+// One download of the feed. The last few are kept per house so the admin can
+// see whether Airbnb is reading it.
+export interface FeedRead {
+    at: string // ISO timestamp
+    userAgent: string
+}
+
+const FEED_READS_KEPT = 5
+
+async function recordFeedRead(slug: string, userAgent: string) {
+    try {
+        const reads = (await getHouseSetting<FeedRead[]>("feed-reads", slug)) ?? []
+        reads.unshift({ at: new Date().toISOString(), userAgent: userAgent.slice(0, 160) })
+        await setHouseSetting("feed-reads", slug, reads.slice(0, FEED_READS_KEPT))
+    } catch (error) {
+        console.error("[ical] could not record the feed read:", error)
+    }
+}
 
 function formatICalDate(dateStr: string): string {
     // dateStr is "yyyy-MM-dd", convert to "YYYYMMDD"
@@ -21,6 +40,11 @@ export async function GET(
 ) {
     const { slug } = await params
     const dates = await getBlockedDates(slug)
+
+    // "?check=1" is the admin panel verifying the feed, not a calendar reading it
+    if (!request.nextUrl.searchParams.has("check")) {
+        await recordFeedRead(slug, request.headers.get("user-agent") || "unknown")
+    }
 
     // Group consecutive dates into ranges for cleaner iCal output
     const ranges: { start: string; end: string }[] = []
