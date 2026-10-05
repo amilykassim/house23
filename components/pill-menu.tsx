@@ -14,6 +14,8 @@ interface PillMenuProps<T extends string | number> {
     /** Open above the pill instead of below, for one near the end of a page */
     above?: boolean
     className?: string
+    /** Extra classes for the open list, e.g. a height limit for a long one */
+    listClassName?: string
 }
 
 /**
@@ -28,6 +30,7 @@ export function PillMenu<T extends string | number>({
     heading,
     above = false,
     className = "",
+    listClassName = "",
 }: PillMenuProps<T>) {
     const [open, setOpen] = useState(false)
     const root = useRef<HTMLDivElement>(null)
@@ -69,7 +72,7 @@ export function PillMenu<T extends string | number>({
                     id={listId}
                     role="listbox"
                     aria-label={label}
-                    className={`absolute left-0 z-20 min-w-full w-max p-2 rounded-[20px] border border-border bg-card shadow-[0_6px_20px_rgba(0,0,0,0.12)] flex flex-col gap-0.5 ${above ? "bottom-full mb-2" : "top-full mt-2"}`}
+                    className={`absolute left-0 z-20 min-w-full w-max p-2 rounded-[20px] border border-border bg-card shadow-[0_6px_20px_rgba(0,0,0,0.12)] flex flex-col gap-0.5 ${above ? "bottom-full mb-2" : "top-full mt-2"} ${listClassName}`}
                 >
                     {heading && <span className="px-3 pt-2 pb-1 text-xs font-semibold text-muted-foreground">{heading}</span>}
                     {options.map((option) => (
@@ -82,7 +85,7 @@ export function PillMenu<T extends string | number>({
                                 onChange(option.id)
                                 setOpen(false)
                             }}
-                            className={`min-h-11 px-3 rounded-xl flex items-center justify-between gap-6 text-left text-[15px] text-foreground hover:bg-[#F7F7F7] ${option.id === value ? "font-semibold" : ""}`}
+                            className={`min-h-11 shrink-0 px-3 rounded-xl flex items-center justify-between gap-6 text-left text-[15px] text-foreground hover:bg-[#F7F7F7] ${option.id === value ? "font-semibold" : ""}`}
                         >
                             {option.label}
                             {option.id === value && <Check className="h-[18px] w-[18px] shrink-0" strokeWidth={2.4} />}

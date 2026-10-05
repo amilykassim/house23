@@ -1,13 +1,14 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { format, parseISO, startOfMonth, subMonths } from "date-fns"
+import { addMonths, format, parseISO, startOfMonth, subMonths } from "date-fns"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Check, Copy, Loader2, Trash2 } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Copy, Loader2, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type Expense, type ExpenseCategory } from "@/lib/expenses"
 import { SegmentedControl } from "@/components/segmented-control"
+import { PillMenu } from "@/components/pill-menu"
 import { forgetExpenses, loadExpenses } from "@/lib/admin-data"
 import { CalendarPanel, dayKey, dayLabel, monthCells } from "@/components/date-range-picker"
 
@@ -17,15 +18,22 @@ const HOUSE_OPTIONS = [
 ]
 const houseLabel = (id: string) => HOUSE_OPTIONS.find((h) => h.id === id)?.label ?? id
 const rwf = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
-const RECENT_COUNT = 3
+// Lines of a month shown before "Show more"
+const FIRST_LINES = 5
+// Other months offered as shortcuts under the list
+const MONTH_SHORTCUTS = 3
 // Months offered as the month to copy to: this one and the ones before it
 const TARGET_MONTHS = 12
+// The month pills fill their column, label left and arrow right
+const MONTH_MENU = "[&>button]:w-full [&>button]:justify-between [&>button]:min-h-12 [&>button]:text-[15px]"
 const monthLabel = (key: string) => format(parseISO(`${key}-01`), "MMMM yyyy")
 
-// One line of the "copy a month" list. An expense that was split between all
-// houses is offered as one line again, not one per house.
+// One line of a month's expenses, in the list and in "copy a month". An
+// expense that was split between all houses is one line again, not one per house.
 interface CopyLine {
     key: string
+    ids: string[] // the stored expenses behind the line
+    date: string
     house: string // house slug or ALL_HOUSES
     category: ExpenseCategory
     note: string
@@ -48,9 +56,19 @@ function copyLines(expenses: Expense[], month: string): CopyLine[] {
             rows.every((r) => r.category === rows[0].category && r.note === rows[0].note)
         if (shared) {
             const amountRwf = rows.reduce((sum, r) => sum + r.amountRwf, 0)
-            lines.push({ key, house: ALL_HOUSES, category: rows[0].category, note: rows[0].note, amountRwf })
+            lines.push({
+                key,
+                ids: rows.map((r) => r.id),
+                date: rows[0].date,
+                house: ALL_HOUSES,
+                category: rows[0].category,
+                note: rows[0].note,
+                amountRwf,
+            })
         } else {
-            rows.forEach((r) => lines.push({ key: r.id, house: r.house, category: r.category, note: r.note, amountRwf: r.amountRwf }))
+            rows.forEach((r) =>
+                lines.push({ key: r.id, ids: [r.id], date: r.date, house: r.house, category: r.category, note: r.note, amountRwf: r.amountRwf })
+            )
         }
     }
     return lines.sort((a, b) => b.amountRwf - a.amountRwf)
@@ -69,6 +87,8 @@ export default function AdminExpensesPage() {
     const [calendarOpen, setCalendarOpen] = useState(false)
     const [month, setMonth] = useState(() => startOfMonth(new Date()))
     const [saving, setSaving] = useState(false)
+    // Month whose expenses are listed ("yyyy-MM"), and whether all of them show
+    const [listMonth, setListMonth] = useState(today.slice(0, 7))
     const [showAll, setShowAll] = useState(false)
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
     const [deleting, setDeleting] = useState<string | null>(null)
@@ -105,11 +125,18 @@ export default function AdminExpensesPage() {
     const cells = useMemo(() => monthCells(month, (key) => ({ disabled: key > today })), [month, today])
 
     const monthKey = today.slice(0, 7)
-    const monthTotal = useMemo(
-        () => expenses.filter((e) => e.date.startsWith(monthKey)).reduce((sum, e) => sum + e.amountRwf, 0),
-        [expenses, monthKey]
-    )
-    const visible = showAll ? expenses : expenses.slice(0, RECENT_COUNT)
+    const monthLines = useMemo(() => copyLines(expenses, listMonth), [expenses, listMonth])
+    const monthTotal = monthLines.reduce((sum, line) => sum + line.amountRwf, 0)
+    const visible = showAll ? monthLines : monthLines.slice(0, FIRST_LINES)
+    const listMonthName = format(parseISO(`${listMonth}-01`), "MMMM")
+    // The arrows stop at the oldest month with an expense and at this month
+    const oldestMonth = expenses.reduce((oldest, e) => (e.date.slice(0, 7) < oldest ? e.date.slice(0, 7) : oldest), monthKey)
+    const showMonth = (key: string) => {
+        setListMonth(key)
+        setShowAll(false)
+        setConfirmDelete(null)
+    }
+    const stepMonth = (step: number) => showMonth(format(addMonths(parseISO(`${listMonth}-01`), step), "yyyy-MM"))
 
     const handleSave = async () => {
         if (!canSave) return
@@ -142,6 +169,10 @@ export default function AdminExpensesPage() {
 
     // Months that have expenses, newest first
     const sourceMonths = useMemo(() => [...new Set(expenses.map((e) => e.date.slice(0, 7)))].sort().reverse(), [expenses])
+    const otherMonths = sourceMonths
+        .filter((m) => m !== listMonth)
+        .slice(0, MONTH_SHORTCUTS)
+        .map((key) => ({ key, total: expenses.filter((e) => e.date.startsWith(key)).reduce((sum, e) => sum + e.amountRwf, 0) }))
     const targetMonths = useMemo(
         () => Array.from({ length: TARGET_MONTHS }, (_, i) => format(subMonths(new Date(), i), "yyyy-MM")),
         []
@@ -217,17 +248,26 @@ export default function AdminExpensesPage() {
         }
     }
 
-    const handleDelete = async (id: string) => {
-        setDeleting(id)
+    // Deletes a line: one expense, or every house's share of a split one
+    const handleDelete = async (line: CopyLine) => {
+        setDeleting(line.key)
+        const removed: string[] = []
         try {
-            const res = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: "DELETE" })
-            if (!res.ok) throw new Error("Request failed")
-            forgetExpenses()
-            setExpenses((prev) => prev.filter((e) => e.id !== id))
+            for (const id of line.ids) {
+                const res = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: "DELETE" })
+                if (!res.ok) throw new Error("Request failed")
+                removed.push(id)
+            }
             toast.success("Expense deleted")
         } catch {
-            toast.error("Couldn't delete the expense")
+            toast.error("Couldn't delete the expense", {
+                description: removed.length > 0 ? "Only part of it was deleted. Check the list and try again." : undefined,
+            })
         } finally {
+            if (removed.length > 0) {
+                forgetExpenses()
+                setExpenses((prev) => prev.filter((e) => !removed.includes(e.id)))
+            }
             setDeleting(null)
             setConfirmDelete(null)
         }
@@ -357,47 +397,80 @@ export default function AdminExpensesPage() {
                 </button>
             )}
 
-            {/* This month + recent expenses */}
-            <div className="rounded-[20px] bg-[#F7F7F7] p-5 flex flex-col gap-3">
-                <div className="flex justify-between items-baseline gap-4">
-                    <span className="text-[13px] font-semibold text-muted-foreground">
-                        Spent in {format(new Date(), "MMMM")}
-                    </span>
-                    <span className="text-xl font-bold text-foreground">{rwf(monthTotal)}</span>
+            {/* One month of expenses at a time */}
+            <div className="rounded-[20px] bg-[#F7F7F7] p-5 flex flex-col gap-3.5">
+                <div className="flex items-center justify-between gap-3">
+                    <button
+                        type="button"
+                        onClick={() => stepMonth(-1)}
+                        disabled={listMonth <= oldestMonth}
+                        aria-label="Previous month"
+                        className="w-11 h-11 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:text-[#B0B0B0] disabled:hover:bg-card"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-[17px] font-bold text-foreground">{monthLabel(listMonth)}</span>
+                        <span className="text-[13px] text-muted-foreground">
+                            {monthLines.length} expense{monthLines.length === 1 ? "" : "s"}
+                        </span>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => stepMonth(1)}
+                        disabled={listMonth >= monthKey}
+                        aria-label="Next month"
+                        className="w-11 h-11 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:text-[#B0B0B0] disabled:hover:bg-card"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
                 </div>
+
+                <div className="flex justify-between items-baseline gap-4 pb-3 border-b border-border">
+                    <span className="text-[13px] font-semibold text-muted-foreground">Spent in {listMonthName}</span>
+                    <span className="text-[22px] font-bold text-foreground">{rwf(monthTotal)}</span>
+                </div>
+
                 {loading ? (
                     <p className="text-sm text-muted-foreground">Loading…</p>
-                ) : expenses.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No expenses recorded yet.</p>
+                ) : monthLines.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        {expenses.length === 0 ? "No expenses recorded yet." : `No expenses recorded in ${listMonthName}.`}
+                    </p>
                 ) : (
-                    visible.map((e) => (
-                        <div key={e.id} className="flex flex-col gap-2">
-                            <div className="flex justify-between items-center gap-4 text-sm">
-                                <span className="min-w-0 text-muted-foreground">
-                                    {e.category}
-                                    {e.note ? ` (${e.note})` : ""} · {houseLabel(e.house)} · {dayLabel(e.date)}
-                                </span>
+                    visible.map((line) => (
+                        <div key={line.key} className="flex flex-col gap-2">
+                            <div className="flex justify-between items-center gap-4">
+                                <div className="min-w-0 flex flex-col gap-0.5">
+                                    <span className="text-[15px] font-semibold text-foreground [overflow-wrap:anywhere]">
+                                        {line.category}
+                                        {line.note ? ` (${line.note})` : ""}
+                                    </span>
+                                    <span className="text-[13px] text-muted-foreground">
+                                        {houseLabel(line.house)} · {dayLabel(line.date)}
+                                    </span>
+                                </div>
                                 <span className="flex items-center gap-1 shrink-0">
-                                    <span className="font-semibold text-foreground whitespace-nowrap">{rwf(e.amountRwf)}</span>
-                                    {showAll && (
-                                        <button
-                                            type="button"
-                                            onClick={() => setConfirmDelete(confirmDelete === e.id ? null : e.id)}
-                                            aria-label={`Delete ${e.category} expense of ${rwf(e.amountRwf)}`}
-                                            className="w-11 h-11 -my-2 -mr-2 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    )}
-                                </span>
-                            </div>
-                            {confirmDelete === e.id && (
-                                <div className="flex items-center justify-end gap-2 text-sm">
-                                    <span className="text-muted-foreground">Delete this expense?</span>
+                                    <span className="text-[15px] font-semibold text-foreground whitespace-nowrap">{rwf(line.amountRwf)}</span>
                                     <button
                                         type="button"
-                                        onClick={() => handleDelete(e.id)}
-                                        disabled={deleting === e.id}
+                                        onClick={() => setConfirmDelete(confirmDelete === line.key ? null : line.key)}
+                                        aria-label={`Delete ${line.category} expense of ${rwf(line.amountRwf)}`}
+                                        className="w-11 h-11 -my-2 -mr-2 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </span>
+                            </div>
+                            {confirmDelete === line.key && (
+                                <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
+                                    <span className="text-muted-foreground">
+                                        {line.ids.length > 1 ? `Delete this expense for ${houseLabel(line.house).toLowerCase()}?` : "Delete this expense?"}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleDelete(line)}
+                                        disabled={deleting === line.key}
                                         className="min-h-9 px-3 rounded-full bg-foreground text-background font-semibold disabled:opacity-50"
                                     >
                                         Delete
@@ -414,7 +487,7 @@ export default function AdminExpensesPage() {
                         </div>
                     ))
                 )}
-                {expenses.length > 0 && (
+                {monthLines.length > FIRST_LINES && (
                     <button
                         type="button"
                         onClick={() => {
@@ -423,16 +496,34 @@ export default function AdminExpensesPage() {
                         }}
                         className="self-start min-h-9 text-sm font-semibold text-foreground underline"
                     >
-                        {showAll ? "Show fewer" : `See all expenses (${expenses.length})`}
+                        {showAll ? "Show fewer" : `Show ${monthLines.length - FIRST_LINES} more from ${listMonthName}`}
                     </button>
                 )}
             </div>
+
+            {/* Shortcuts to the other months that have expenses */}
+            {otherMonths.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                    {otherMonths.map((m) => (
+                        <button
+                            key={m.key}
+                            type="button"
+                            onClick={() => showMonth(m.key)}
+                            className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card text-sm font-semibold text-foreground hover:bg-[#F7F7F7]"
+                        >
+                            {monthLabel(m.key)} · {rwf(m.total)}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Rendered in place (no portal) so it keeps the admin font and scale */}
             <DialogPrimitive.Root open={copy !== null} onOpenChange={(open) => !open && !copying && setCopy(null)}>
                 <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/50" />
                 <DialogPrimitive.Content
                     aria-describedby={undefined}
+                    // Escape closes an open month list first, not the whole dialog
+                    onEscapeKeyDown={(e) => document.querySelector('[role="listbox"]') && e.preventDefault()}
                     className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-[520px] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-6 sm:p-7 shadow-xl flex flex-col gap-5 outline-none"
                 >
                     {copy && (
@@ -442,34 +533,28 @@ export default function AdminExpensesPage() {
                             </DialogPrimitive.Title>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <label className={`${fieldCard} border-[#B0B0B0] focus-within:border-foreground`}>
+                                <div className="min-w-0 flex flex-col gap-1.5">
                                     <span className="text-[13px] font-semibold text-muted-foreground">Copy from</span>
-                                    <select
+                                    <PillMenu
+                                        options={sourceMonths.map((m) => ({ id: m, label: monthLabel(m) }))}
                                         value={copy.from}
-                                        onChange={(e) => startCopy(e.target.value, copy.to)}
-                                        className="w-full bg-transparent text-[17px] font-medium text-foreground outline-none"
-                                    >
-                                        {sourceMonths.map((m) => (
-                                            <option key={m} value={m}>
-                                                {monthLabel(m)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-                                <label className={`${fieldCard} border-[#B0B0B0] focus-within:border-foreground`}>
+                                        onChange={(m) => startCopy(m, copy.to)}
+                                        label="Month to copy from"
+                                        className={MONTH_MENU}
+                                        listClassName="max-h-60 overflow-y-auto"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex flex-col gap-1.5">
                                     <span className="text-[13px] font-semibold text-muted-foreground">Copy to</span>
-                                    <select
+                                    <PillMenu
+                                        options={targetMonths.map((m) => ({ id: m, label: monthLabel(m) }))}
                                         value={copy.to}
-                                        onChange={(e) => startCopy(copy.from, e.target.value)}
-                                        className="w-full bg-transparent text-[17px] font-medium text-foreground outline-none"
-                                    >
-                                        {targetMonths.map((m) => (
-                                            <option key={m} value={m}>
-                                                {monthLabel(m)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
+                                        onChange={(m) => startCopy(copy.from, m)}
+                                        label="Month to copy to"
+                                        className={MONTH_MENU}
+                                        listClassName="max-h-60 overflow-y-auto"
+                                    />
+                                </div>
                             </div>
 
                             {copy.from === copy.to ? (
