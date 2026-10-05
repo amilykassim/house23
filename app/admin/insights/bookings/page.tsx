@@ -64,7 +64,7 @@ function BookingsDetail() {
     })
     const [query, setQuery] = useState(() => params.get("q") ?? "")
     const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>(() => {
-        const wanted = params.get("sort") ?? (params.get("view") === "nights" ? "nights-desc" : "date-asc")
+        const wanted = params.get("sort") ?? "date-asc"
         const [key, dir] = wanted.split("-")
         if (!SORT_FIELDS.some((f) => f.id === key)) return { key: "date", dir: "asc" }
         return { key: key as SortKey, dir: dir === "asc" || dir === "desc" ? dir : firstDir(key as SortKey) }

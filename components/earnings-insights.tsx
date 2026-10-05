@@ -576,7 +576,9 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 </div>
             </section>
 
-            <section className={TILE_GRID}>
+            {/* Up to five tiles: narrower columns keep them on one line, and on a
+                phone an odd last tile takes the full width */}
+            <section className="grid grid-cols-2 gap-3 sm:gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(170px,1fr))] [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
                 <Tile label="Empty nights" value={String(emptyNights)} note={`worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`} />
                 <Tile
                     label="Free nights"
