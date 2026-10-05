@@ -58,21 +58,22 @@ export default function AdminAddBookingPage() {
     // The booking just saved, shown in the modal until it is closed
     const [saved, setSaved] = useState<SavedBooking | null>(null)
 
-    // Taken nights for the selected house. From today on: admin blocks,
-    // confirmed bookings and Airbnb. In the past only a confirmed booking
-    // counts, so a stay that already happened can still be recorded late.
+    // Taken nights for the selected house: confirmed bookings, website bookings
+    // still waiting for confirmation, and (from today on) admin blocks. Nights
+    // held by Airbnb stay selectable, since this form is where an Airbnb stay
+    // gets recorded by hand.
     const fetchUnavailable = useCallback(async () => {
-        const [blocked, airbnb, confirmed] = await Promise.all([
+        const [blocked, all] = await Promise.all([
             fetch(`/api/blocked-dates?house=${house}`).then((r) => r.json()).catch(() => ({ dates: [] })),
-            fetch(`/api/airbnb-sync?house=${house}`).then((r) => r.json()).catch(() => ({ dates: [] })),
-            fetch(`/api/bookings?house=${house}&status=confirmed`).then((r) => r.json()).catch(() => ({ bookings: [] })),
+            fetch(`/api/bookings?house=${house}`).then((r) => r.json()).catch(() => ({ bookings: [] })),
         ])
         const today = dayKey(new Date())
         const taken = new Set<string>()
-        for (const date of [...(blocked.dates || []), ...(airbnb.dates || [])] as string[]) {
+        for (const date of (blocked.dates || []) as string[]) {
             if (date >= today) taken.add(date)
         }
-        for (const booking of (confirmed.bookings || []) as { checkIn: string; checkOut: string }[]) {
+        for (const booking of (all.bookings || []) as { checkIn: string; checkOut: string; status: string }[]) {
+            if (booking.status === "cancelled") continue
             const nights = differenceInCalendarDays(parseISO(booking.checkOut), parseISO(booking.checkIn))
             for (let i = 0; i < nights; i++) taken.add(dayKey(addDays(parseISO(booking.checkIn), i)))
         }
@@ -115,7 +116,7 @@ export default function AdminAddBookingPage() {
                 .then((r) => (r.ok ? r.json() : Promise.reject()))
                 .then((data) => report({ website: covers(new Set<string>(data.dates || [])) }))
                 .catch(() => report({ website: "failed" })),
-            fetch(`/api/calendar/${booking.house}/ical`, { cache: "no-store" })
+            fetch(`/api/calendar/${booking.house}/ical?check=1`, { cache: "no-store" })
                 .then((r) => (r.ok ? r.text() : Promise.reject()))
                 .then((ical) => report({ airbnbFeed: covers(nightsInICal(ical)) }))
                 .catch(() => report({ airbnbFeed: "failed" })),

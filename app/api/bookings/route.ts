@@ -7,6 +7,7 @@ import {
     blockDates,
     deleteBooking,
     deleteGuideAccessOfBooking,
+    getBlockedDates,
     insertBooking,
     listBookings,
     setBookingStatus,
@@ -114,14 +115,15 @@ async function createManualBooking(request: NextRequest, body: Record<string, un
         return NextResponse.json({ error: "Check-out must be after check-in" }, { status: 400 })
     }
 
-    // A stay that already happened can be recorded late: for past nights only
-    // another confirmed booking is a conflict (admin blocks and Airbnb holds
-    // don't stand in the way). Today onwards uses full availability.
-    const confirmed = await listBookings({ house, status: "confirmed" })
-    const booked = new Set(confirmed.flatMap((b) => expandDateRange(b.checkIn, b.checkOut)))
-    const unavailable = await getUnavailableDates(house)
+    // Conflicts are other bookings (confirmed, or pending from the website) and,
+    // from today on, admin blocks. Airbnb holds don't stand in the way: this is
+    // how an Airbnb stay gets recorded. Past nights ignore admin blocks so a
+    // stay that already happened can be recorded late.
+    const active = (await listBookings({ house })).filter((b) => b.status !== "cancelled")
+    const booked = new Set(active.flatMap((b) => expandDateRange(b.checkIn, b.checkOut)))
+    const blocked = new Set(await getBlockedDates(house))
     const [today] = todayAndTomorrow()
-    const conflicts = stayDates.filter((d) => booked.has(d) || (d >= today && unavailable.has(d)))
+    const conflicts = stayDates.filter((d) => booked.has(d) || (d >= today && blocked.has(d)))
     if (conflicts.length > 0) {
         return NextResponse.json(
             {
