@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { addDays, differenceInCalendarDays, parseISO } from "date-fns"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { Check, ExternalLink, Loader2, TriangleAlert } from "lucide-react"
+import { Check, ExternalLink, Loader2, Minus, Plus, TriangleAlert } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
@@ -12,6 +12,9 @@ import { ADMIN_NIGHTLY_PRICE_RWF, USD_TO_RWF } from "@/lib/currency"
 import { forgetBookings } from "@/lib/admin-data"
 
 type CheckState = "checking" | "ok" | "failed"
+
+const DEFAULT_GUESTS = 2
+const MAX_GUESTS = 20
 
 // What the "Booking saved" modal reports on
 interface SavedBooking {
@@ -51,6 +54,9 @@ export default function AdminAddBookingPage() {
     const [checkOut, setCheckOut] = useState<string | null>(null)
     // Amount paid, in RWF
     const [amount, setAmount] = useState("")
+    // Optional: left empty, the booking is saved as "Added by hand"
+    const [guestName, setGuestName] = useState("")
+    const [guests, setGuests] = useState(DEFAULT_GUESTS)
     const [unavailable, setUnavailable] = useState<Set<string>>(new Set())
     const [saving, setSaving] = useState(false)
     // Bumped to close the calendar and start the date cards afresh
@@ -136,6 +142,8 @@ export default function AdminAddBookingPage() {
                     houseName: houses.find((h) => h.slug === house)?.name,
                     checkIn,
                     checkOut,
+                    guestName: guestName.trim(),
+                    guests,
                     totalRwf: paid,
                     pricePerNight: Math.round((ADMIN_NIGHTLY_PRICE_RWF / USD_TO_RWF) * 100) / 100,
                     cleaningFee: 0,
@@ -169,6 +177,8 @@ export default function AdminAddBookingPage() {
             if (upcoming.length > 0) verifyBlocked({ id: booking.id, house }, upcoming)
             resetDates()
             setAmount("")
+            setGuestName("")
+            setGuests(DEFAULT_GUESTS)
             fetchUnavailable()
         } catch {
             toast.error("Couldn't save the booking", { description: "Nothing was recorded. Try again." })
@@ -213,6 +223,50 @@ export default function AdminAddBookingPage() {
                     </p>
                 }
             />
+
+            {/* Guest */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[14px] flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
+                    <span className="text-[13px] font-semibold text-muted-foreground">Guest name</span>
+                    <input
+                        type="text"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Optional"
+                        autoComplete="off"
+                        maxLength={80}
+                        className="w-full bg-transparent text-[17px] leading-7 text-foreground placeholder:text-[#B0B0B0] outline-none"
+                    />
+                </label>
+                <div className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[14px] flex items-center justify-between gap-3">
+                    <div className="flex flex-col gap-0.5">
+                        <span className="text-[13px] font-semibold text-muted-foreground">Guests</span>
+                        <span className="text-[17px] leading-7 text-foreground" aria-live="polite">
+                            {guests}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            aria-label="One guest fewer"
+                            onClick={() => setGuests((n) => Math.max(1, n - 1))}
+                            disabled={guests <= 1}
+                            className="h-10 w-10 rounded-full border border-[#B0B0B0] flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                            <Minus className="h-4 w-4" />
+                        </button>
+                        <button
+                            type="button"
+                            aria-label="One guest more"
+                            onClick={() => setGuests((n) => Math.min(MAX_GUESTS, n + 1))}
+                            disabled={guests >= MAX_GUESTS}
+                            className="h-10 w-10 rounded-full border border-[#B0B0B0] flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:opacity-40 disabled:hover:bg-transparent"
+                        >
+                            <Plus className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+            </div>
 
             {/* Amount */}
             <div className="flex flex-col gap-4">
