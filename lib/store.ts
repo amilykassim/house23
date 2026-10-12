@@ -210,6 +210,24 @@ export async function deleteExpense(id: string, tx: Db = db): Promise<boolean> {
     return (result.rowCount ?? 0) > 0
 }
 
+/**
+ * Deletes an expense and every per-house share of it: the rows whose id is
+ * `id` or starts with `id-`. Returns how many rows went.
+ */
+export async function deleteExpensesByPrefix(id: string, tx: Db = db): Promise<number> {
+    const result = await tx.query(`DELETE FROM expenses WHERE id = $1 OR id LIKE $1 || '-%'`, [id])
+    return result.rowCount ?? 0
+}
+
+/** Total spent, every house together, on the days from `from` up to but not including `until`. */
+export async function sumExpenses(from: string, until: string, tx: Db = db): Promise<number> {
+    const { rows } = await tx.query(
+        `SELECT COALESCE(SUM(amount_rwf), 0)::bigint AS total FROM expenses WHERE date >= $1 AND date < $2`,
+        [from, until]
+    )
+    return Number(rows[0].total)
+}
+
 // ── Per-house settings ────────────────────────────────────────
 
 export type HouseSettingKey = "prices" | "photo-order" | "photo-categories" | "calendar-config" | "feed-reads"
