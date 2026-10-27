@@ -85,6 +85,14 @@ test("guest name is HTML-escaped in every email", async () => {
     }
 })
 
+test("the letterhead footer gives the street address", async () => {
+    for (const fn of ["sendBookingAcknowledgment", "sendBookingConfirmation", "sendBookingCancellation", "sendAdminNewBookingNotification"]) {
+        fakeResend.reset()
+        const m = await sendOne(fn, booking)
+        assert.match(m.html, /Velstays &middot; Kigali, Rwanda<\/p>\s*<p[^>]*>KK 460A St<\/p>\s*<p[^>]*>\+250 788 459 885<\/p>/, fn)
+    }
+})
+
 test("nothing is sent without RESEND_API_KEY", async () => {
     delete process.env.RESEND_API_KEY
     for (const fn of ["sendBookingAcknowledgment", "sendBookingConfirmation", "sendBookingCancellation"]) {

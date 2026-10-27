@@ -152,6 +152,7 @@ function stationeryEmail(opts: {
                 <!-- Footer -->
                 <div style="border-top:1px solid ${HAIRLINE};padding-top:18px;text-align:center;">
                     <p style="margin:0 0 4px;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${FAINT};">Velstays &middot; Kigali, Rwanda</p>
+                    <p style="margin:0 0 2px;font-size:12px;color:#6d665a;">KK 460A St</p>
                     <p style="margin:0;font-size:12px;color:#6d665a;">+250 788 459 885</p>
                 </div>
             </div>
