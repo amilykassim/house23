@@ -14,6 +14,7 @@ import {
     Receipt,
     TrendingUp,
     Home,
+    Mail,
     Menu,
     X,
 } from "lucide-react"
@@ -36,6 +37,7 @@ const navItems = [
     { href: "/admin/bookings", label: "Bookings", icon: BookOpen, exact: false },
     { href: "/admin/calendar", label: "Calendar", icon: CalendarDays, exact: false },
     { href: "/admin/listing", label: "Listing", icon: ClipboardList, exact: false },
+    { href: "/admin/emails", label: "Emails", icon: Mail, exact: false },
 ]
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -77,7 +79,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         key={item.href}
                                         href={item.href}
                                         aria-current={isActive ? "page" : undefined}
-                                        className={`px-3.5 py-2.5 rounded-full text-sm transition-colors ${isActive
+                                        className={`px-2.5 lg:px-3.5 py-2.5 rounded-full text-sm whitespace-nowrap transition-colors ${isActive
                                             ? "bg-muted font-semibold text-foreground"
                                             : "font-medium text-muted-foreground hover:text-foreground"
                                             }`}

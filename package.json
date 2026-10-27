@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "node --test tests/",
     "db:setup": "node --env-file=.env.local scripts/db.mjs setup",
     "db:import": "node --env-file=.env.local scripts/db.mjs import"
   },

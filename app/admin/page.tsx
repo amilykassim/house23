@@ -27,8 +27,6 @@ import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
-// ⚠️ TEMPORARY: Resend delivery tester — remove when done
-import { TestEmailPanel } from "@/components/test-email-panel"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
 
 
@@ -440,9 +438,6 @@ export default function AdminDashboardPage() {
 
                 {/* Right sidebar */}
                 <div className="space-y-6">
-                    {/* ⚠️ TEMPORARY: Resend delivery tester — remove when done */}
-                    <TestEmailPanel />
-
                     {/* Booking Status Breakdown */}
                     <div className="bg-card rounded-2xl border border-border p-5">
                         <h2 className="text-base font-semibold text-foreground mb-4">

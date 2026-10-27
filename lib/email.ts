@@ -163,30 +163,18 @@ function stationeryEmail(opts: {
 
 const introStyle = `text-align:center;font-size:13px;color:${MUTED};line-height:1.6;margin:0 auto 28px;max-width:360px;`
 
-export async function sendBookingAcknowledgment(data: BookingEmailData) {
-    if (EMAILS_DISABLED) {
-        console.log("[DEV] Email disabled — skipping acknowledgment email")
-        return
-    }
-    if (!process.env.RESEND_API_KEY) {
-        console.warn("RESEND_API_KEY not set — skipping acknowledgment email")
-        return
-    }
-
+export function buildBookingAcknowledgmentEmail(data: BookingEmailData): { subject: string; html: string } {
     const guestName = escapeHtml(data.guestName)
     const houseName = escapeHtml(data.houseName)
 
-    try {
-        await resend.emails.send({
-            from: FROM_EMAIL,
-            to: data.guestEmail,
-            subject: `We have your request — Velstays ${data.houseName}`,
-            html: stationeryEmail({
-                sealColor: FOREST,
-                title: "We have your request",
-                introHtml: `<p style="${introStyle}">Dear <strong>${guestName}</strong>, thank you for choosing Velstays. Your request for <strong>Velstays ${houseName}</strong> is being reviewed &mdash; expect our confirmation within the hour.</p>`,
-                chip: { label: "Pending Review", bg: "#f4ead2", color: "#7a5a17" },
-                bodyHtml: `
+    return {
+        subject: `We have your request — Velstays ${data.houseName}`,
+        html: stationeryEmail({
+            sealColor: FOREST,
+            title: "We have your request",
+            introHtml: `<p style="${introStyle}">Dear <strong>${guestName}</strong>, thank you for choosing Velstays. Your request for <strong>Velstays ${houseName}</strong> is being reviewed &mdash; expect our confirmation within the hour.</p>`,
+            chip: { label: "Pending Review", bg: "#f4ead2", color: "#7a5a17" },
+            bodyHtml: `
                 <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0;">
                     ${ledgerRow("Reservation", data.bookingId)}
                     ${ledgerRow("Residence", houseName)}
@@ -198,7 +186,27 @@ export async function sendBookingAcknowledgment(data: BookingEmailData) {
                 </table>
                 <p style="text-align:right;font-size:11px;color:${FAINT};margin:6px 0 26px;">&asymp; ${data.totalRwf.toLocaleString()} RWF</p>
                 ${data.specialRequests ? noteBox(`<strong style="color:${INK};">Special request.</strong> &ldquo;${escapeHtml(data.specialRequests)}&rdquo;`) : ""}`,
-            }),
+        }),
+    }
+}
+
+export async function sendBookingAcknowledgment(data: BookingEmailData) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping acknowledgment email")
+        return
+    }
+    if (!process.env.RESEND_API_KEY) {
+        console.warn("RESEND_API_KEY not set — skipping acknowledgment email")
+        return
+    }
+
+    try {
+        const { subject, html } = buildBookingAcknowledgmentEmail(data)
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: data.guestEmail,
+            subject,
+            html,
         })
     } catch (error: unknown) {
         console.error("Failed to send acknowledgment email:", error)
@@ -277,16 +285,7 @@ export async function sendBookingConfirmation(data: BookingEmailData) {
     }
 }
 
-export async function sendBookingCancellation(data: BookingEmailData) {
-    if (EMAILS_DISABLED) {
-        console.log("[DEV] Email disabled — skipping cancellation email")
-        return
-    }
-    if (!process.env.RESEND_API_KEY) {
-        console.warn("RESEND_API_KEY not set — skipping cancellation email")
-        return
-    }
-
+export function buildBookingCancellationEmail(data: BookingEmailData): { subject: string; html: string } {
     const guestName = escapeHtml(data.guestName)
     const houseName = escapeHtml(data.houseName)
 
@@ -300,19 +299,16 @@ export async function sendBookingCancellation(data: BookingEmailData) {
             ? `<strong style="color:${INK};">Your payment.</strong> If a payment was made, a full refund will be arranged. We'd be glad to help you find alternate dates &mdash; call us at <strong style="color:${INK};">+250 788 459 885</strong>.`
             : `<strong style="color:${INK};">Questions?</strong> Please contact us directly at <strong style="color:${INK};">+250 788 459 885</strong> &mdash; we're happy to help.`
 
-    try {
-        await resend.emails.send({
-            from: FROM_EMAIL,
-            to: data.guestEmail,
-            subject: `Booking Update — Velstays ${data.houseName}`,
-            html: stationeryEmail({
-                sealColor: BRICK,
-                title: "About your reservation",
-                introHtml: `
+    return {
+        subject: `Booking Update — Velstays ${data.houseName}`,
+        html: stationeryEmail({
+            sealColor: BRICK,
+            title: "About your reservation",
+            introHtml: `
                 <p style="text-align:center;font-size:13px;color:${MUTED};line-height:1.6;margin:0 auto 10px;max-width:360px;">Dear <strong>${guestName}</strong>,</p>
                 <p style="${introStyle}">${message}</p>`,
-                chip: { label: "Not Confirmed", bg: BRICK, color: IVORY },
-                bodyHtml: `
+            chip: { label: "Not Confirmed", bg: BRICK, color: IVORY },
+            bodyHtml: `
                 <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 26px;">
                     ${ledgerRow("Reservation", data.bookingId)}
                     ${ledgerRow("Residence", houseName)}
@@ -320,7 +316,27 @@ export async function sendBookingCancellation(data: BookingEmailData) {
                     ${ledgerRow("Departure", formatStayDate(data.checkOut))}
                 </table>
                 ${noteBox(refundNote)}`,
-            }),
+        }),
+    }
+}
+
+export async function sendBookingCancellation(data: BookingEmailData) {
+    if (EMAILS_DISABLED) {
+        console.log("[DEV] Email disabled — skipping cancellation email")
+        return
+    }
+    if (!process.env.RESEND_API_KEY) {
+        console.warn("RESEND_API_KEY not set — skipping cancellation email")
+        return
+    }
+
+    try {
+        const { subject, html } = buildBookingCancellationEmail(data)
+        await resend.emails.send({
+            from: FROM_EMAIL,
+            to: data.guestEmail,
+            subject,
+            html,
         })
     } catch (error) {
         console.error("Failed to send cancellation email:", error)
