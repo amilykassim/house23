@@ -13,6 +13,7 @@ import { CalendarDayButton } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { houses, type HouseData } from "@/lib/houses"
+import { savingsPercent, type PricingData } from "@/lib/pricing"
 import { usePolling } from "@/lib/use-polling"
 import type { DateRange } from "react-day-picker"
 import Link from "next/link"
@@ -57,7 +58,7 @@ export function BookingCard({
   const [otherBlockedDates, setOtherBlockedDates] = useState<Set<string>>(new Set())
   const [isReserving, setIsReserving] = useState(false)
   const [showHouseRequired, setShowHouseRequired] = useState(false)
-  const [dynamicPrices, setDynamicPrices] = useState<Record<string, { pricePerNight: number; cleaningFee: number; serviceFee: number; airbnbPricePerNight: number }> | null>(null)
+  const [dynamicPrices, setDynamicPrices] = useState<PricingData | null>(null)
 
   // Get the selected house's data
   const selectedHouse = houses.find((h) => h.slug === selectedSlug) || houses[0]
@@ -71,6 +72,8 @@ export function BookingCard({
   const rating = selectedHouse.rating
   const reviewCount = selectedHouse.reviewCount
   const maxGuests = selectedHouse.guests
+  // Percent off Airbnb for the "Lower price" tag; 20% until the prices arrive
+  const directSavings = dynamicPrices ? savingsPercent(dp) : 20
 
   const handleReserve = () => {
     if (!selectedSlug) {
@@ -255,7 +258,7 @@ export function BookingCard({
               >
                 <div className="flex flex-col items-start">
                   <span className="font-medium">{house.name}</span>
-                  <span className="text-xs text-muted-foreground">${house.pricePerNight}/night · Up to {house.guests} guests</span>
+                  <span className="text-xs text-muted-foreground">${dynamicPrices?.[house.slug]?.pricePerNight ?? house.pricePerNight}/night · Up to {house.guests} guests</span>
                 </div>
                 {selectedSlug === house.slug && <Check className="h-4 w-4 text-primary" />}
               </button>
@@ -671,7 +674,11 @@ export function BookingCard({
         <div>
           <p className="text-sm font-semibold text-foreground">Lower price</p>
           <p className="text-xs text-muted-foreground">
-            Booking directly with us saves you <b>20%</b>!
+            {directSavings !== null ? (
+              <>Booking directly with us saves you <b>{directSavings}%</b>!</>
+            ) : (
+              <>Booking directly with us means no middleman fees.</>
+            )}
           </p>
         </div>
       </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { X, Sparkles } from "lucide-react"
+import { DEFAULT_PRICING } from "@/lib/pricing"
 
 interface SavingsBannerProps {
   slug?: string
@@ -10,8 +11,8 @@ interface SavingsBannerProps {
 
 export function SavingsBanner({ slug = "house-23" }: SavingsBannerProps) {
   const [show, setShow] = useState(false)
-  const [directPrice, setDirectPrice] = useState(51)
-  const [airbnbPrice, setAirbnbPrice] = useState(61)
+  const [directPrice, setDirectPrice] = useState(DEFAULT_PRICING[slug]?.pricePerNight ?? 0)
+  const [airbnbPrice, setAirbnbPrice] = useState(DEFAULT_PRICING[slug]?.airbnbPricePerNight ?? 0)
 
   useEffect(() => {
     if (sessionStorage.getItem("savingsBannerSeen") === "true") return

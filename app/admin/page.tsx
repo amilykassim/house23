@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner"
 import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
+import { usePrices } from "@/lib/use-prices"
 import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
 
@@ -66,6 +67,7 @@ const statusDots: Record<string, string> = {
 
 export default function AdminDashboardPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
+    const prices = usePrices()
     const [loading, setLoading] = useState(true)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [expandedRecent, setExpandedRecent] = useState<string | null>(null)
@@ -419,7 +421,7 @@ export default function AdminDashboardPage() {
                                             <div className="flex items-center gap-3 text-xs text-muted-foreground">
                                                 <span>{bookingCount} bookings</span>
                                                 <span>·</span>
-                                                <span>${house.pricePerNight}/night</span>
+                                                <span>${prices?.[house.slug]?.pricePerNight ?? house.pricePerNight}/night</span>
                                                 <span>·</span>
                                                 <span className="flex items-center gap-0.5">
                                                     <Star className="h-3 w-3 fill-current" />

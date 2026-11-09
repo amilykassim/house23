@@ -1,36 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getHouseSettings, setHouseSetting } from "@/lib/store"
+import { resolvePricing, type HousePricing, type PricingData } from "@/lib/pricing"
 
 export const dynamic = "force-dynamic"
 
-export interface HousePricing {
-    pricePerNight: number
-    cleaningFee: number
-    serviceFee: number
-    airbnbPricePerNight: number
-}
+export type { HousePricing, PricingData }
 
-export type PricingData = Record<string, HousePricing>
-
-const DEFAULT_PRICING: PricingData = {
-    "house-23": {
-        pricePerNight: 51,
-        cleaningFee: 10,
-        serviceFee: 0,
-        airbnbPricePerNight: 61,
-    },
-    "house-22": {
-        pricePerNight: 51,
-        cleaningFee: 10,
-        serviceFee: 0,
-        airbnbPricePerNight: 51,
-    },
-}
-
-// Saved prices, or the defaults until any have been saved
+// Saved prices over the defaults (lib/pricing.ts) for any house not yet saved
 async function readPricing(): Promise<PricingData> {
     const pricing = await getHouseSettings<HousePricing>("prices")
-    return Object.keys(pricing).length > 0 ? pricing : DEFAULT_PRICING
+    return resolvePricing(pricing)
 }
 
 export async function GET() {

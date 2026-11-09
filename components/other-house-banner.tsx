@@ -8,6 +8,7 @@ import { SkeletonImage } from "@/components/skeleton-image"
 import { FadeIn } from "@/components/motion"
 import { SlidingHighlight } from "@/components/sliding-highlight"
 import type { HouseData } from "@/lib/houses"
+import { usePrices } from "@/lib/use-prices"
 
 interface OtherHouseBannerProps {
   currentSlug: string
@@ -17,6 +18,8 @@ interface OtherHouseBannerProps {
 export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerProps) {
   const imageRef = useRef(null)
   const isImageInView = useInView(imageRef, { once: true, amount: 0.3 })
+  const prices = usePrices()
+  const pricePerNight = prices?.[otherHouse.slug]?.pricePerNight ?? otherHouse.pricePerNight
 
   return (
     <section className="relative py-20 px-4 sm:px-6 lg:px-8 bg-background overflow-hidden">
@@ -111,7 +114,7 @@ export function OtherHouseBanner({ currentSlug, otherHouse }: OtherHouseBannerPr
                     {/* Price + CTA */}
                     <div className="flex items-center justify-between pt-4 border-t border-border/50">
                       <div>
-                        <span className="text-2xl font-semibold text-foreground">${otherHouse.pricePerNight}</span>
+                        <span className="text-2xl font-semibold text-foreground">${pricePerNight}</span>
                         <span className="text-muted-foreground text-sm"> / night</span>
                       </div>
                       <span className="inline-flex items-center gap-2 text-sm font-medium text-primary group-hover:gap-3 transition-all duration-300">
