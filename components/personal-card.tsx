@@ -136,9 +136,10 @@ export function PersonalCard({
                         <div className="px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
                             {leaf(`${month}-01`)}
                             <div className="min-w-0 flex-1 flex flex-col items-start gap-1">
-                                <span className="text-[15px] font-semibold text-foreground">Monthly stipend</span>
-                                <span className="px-2 py-0.5 rounded-full border border-[#B0B0B0] text-xs font-semibold text-foreground">
-                                    {!changed ? "Every month" : stipend === 0 ? `None in ${monthName}` : `Changed for ${monthName}`}
+                                <span className="text-[15px] font-semibold text-foreground whitespace-nowrap">Monthly stipend</span>
+                                <span className="px-2 py-0.5 rounded-full border border-[#B0B0B0] text-xs font-semibold text-foreground whitespace-nowrap">
+                                    {!changed ? "Every month" : stipend === 0 ? "None this month" : "Changed"}
+                                    {changed && <span className="sr-only"> for {monthName}</span>}
                                 </span>
                             </div>
                             <span className="shrink-0 text-[15px] font-bold text-foreground tabular-nums whitespace-nowrap">{rwf(stipend)}</span>
