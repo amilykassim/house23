@@ -12,6 +12,8 @@ import { type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
 import { houseColor } from "@/components/earnings-insights"
 import { BUTTON_DARK, BUTTON_OUTLINE, ConfirmPanel, Fold, RejectPanel, StatusPill } from "@/components/admin-booking-review"
+import { Skeleton, rise, useCountUp, useGrown } from "@/components/admin-motion"
+import { AnimatePresence, motion } from "motion/react"
 
 interface Booking {
     id: string
@@ -225,10 +227,23 @@ export default function AdminDashboardPage() {
 
     const maxRevenue = Math.max(...stats.monthlyRevenue.map((m) => m.revenue), 1)
 
+    // Motion: revenue counts up once when the page arrives; bars grow in
+    const shownRevenueRwf = useCountUp(stats.totalRevenueRwf, !loading)
+    const grown = useGrown(!loading)
+
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-[60vh]">
-                <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+            <div aria-label="Loading the dashboard" className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[1120px] mx-auto flex flex-col gap-6 sm:gap-7">
+                <Skeleton className="h-10 w-52 rounded-xl" />
+                <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {[0, 1, 2, 3].map((i) => (
+                        <Skeleton key={i} className="h-[118px] rounded-[20px]" />
+                    ))}
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <Skeleton className="h-[190px] rounded-2xl" />
+                    <Skeleton className="h-[190px] rounded-2xl" />
+                </div>
             </div>
         )
     }
@@ -239,28 +254,28 @@ export default function AdminDashboardPage() {
     return (
         // zoom scales the whole page down a notch on every screen size
         <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[1120px] mx-auto flex flex-col gap-6 sm:gap-7">
-            <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Dashboard</h1>
+            <h1 {...rise(0)} className="m-rise text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Dashboard</h1>
 
             {/* At a glance */}
             <section aria-label="At a glance" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className={`${TILE} bg-foreground text-background`}>
+                <div {...rise(1)} className={`${TILE} m-rise m-lift bg-foreground text-background`}>
                     <span className="text-[13px] font-semibold text-background/75">Revenue, all time</span>
-                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em]">{formatRwf(stats.totalRevenueRwf)}</span>
+                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] tabular-nums">{formatRwf(shownRevenueRwf)}</span>
                     <span className="text-[13px] text-background/75">≈ {formatUsd(stats.totalRevenue)}</span>
                 </div>
-                <div className={`${TILE} bg-[#F7F7F7]`}>
+                <div {...rise(2)} className={`${TILE} m-rise m-lift bg-[#F7F7F7]`}>
                     <span className="text-[13px] font-semibold text-muted-foreground">Bookings</span>
                     <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">{stats.totalBookings}</span>
                     <span className="text-[13px] text-muted-foreground">
                         {stats.pendingCount > 0 ? `${stats.pendingCount} waiting for review` : "none waiting for review"}
                     </span>
                 </div>
-                <div className={`${TILE} bg-[#F7F7F7]`}>
+                <div {...rise(3)} className={`${TILE} m-rise m-lift bg-[#F7F7F7]`}>
                     <span className="text-[13px] font-semibold text-muted-foreground">Occupancy</span>
                     <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">{stats.occupancyRate}%</span>
                     <span className="text-[13px] text-muted-foreground">this month</span>
                 </div>
-                <div className={`${TILE} bg-[#F7F7F7]`}>
+                <div {...rise(4)} className={`${TILE} m-rise m-lift bg-[#F7F7F7]`}>
                     <span className="text-[13px] font-semibold text-muted-foreground">Average stay</span>
                     <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">{plural(stats.avgStay, "night")}</span>
                     <span className="text-[13px] text-muted-foreground">per booking</span>
@@ -269,7 +284,7 @@ export default function AdminDashboardPage() {
 
             {/* Pending review: the one thing here that needs a decision */}
             {pending.length > 0 && (
-                <section aria-labelledby="pending-review" className="flex flex-col gap-3.5">
+                <section aria-labelledby="pending-review" {...rise(5)} className="m-rise flex flex-col gap-3.5">
                     <div className="flex items-baseline gap-3">
                         <h2 id="pending-review" className={SECTION_TITLE}>
                             Pending review
@@ -277,11 +292,17 @@ export default function AdminDashboardPage() {
                         <span className="text-sm text-muted-foreground">{stats.pendingCount} awaiting</span>
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+                        <AnimatePresence initial={false}>
                         {pending.map((b) => {
                             const key = `pending:${b.id}`
                             const busy = actionLoading === b.id
                             return (
-                                <div key={b.id} className="min-w-0 rounded-2xl border border-[#B0B0B0] bg-card p-5 flex flex-col gap-4">
+                                <motion.div
+                                    key={b.id}
+                                    layout
+                                    exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.28, ease: [0.65, 0, 0.35, 1] } }}
+                                    className="m-card min-w-0 rounded-2xl border border-[#B0B0B0] bg-card p-5 flex flex-col gap-4"
+                                >
                                     <div className="flex justify-between gap-4">
                                         <div className="min-w-0 flex flex-col gap-0.5">
                                             <span className="text-[17px] font-bold text-foreground [overflow-wrap:anywhere]">{b.guestName}</span>
@@ -330,17 +351,18 @@ export default function AdminDashboardPage() {
                                             busy={busy}
                                         />
                                     </Fold>
-                                </div>
+                                </motion.div>
                             )
                         })}
+                        </AnimatePresence>
                     </div>
                 </section>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <div {...rise(6)} className="m-rise grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
                 <div className="min-w-0 lg:col-span-2 flex flex-col gap-6">
                     {/* Revenue, last 6 months */}
-                    <section aria-labelledby="revenue" className={CARD}>
+                    <section aria-labelledby="revenue" className={`${CARD} m-card`}>
                         <div className="flex items-baseline justify-between gap-3">
                             <h2 id="revenue" className={CARD_TITLE}>
                                 Revenue
@@ -354,8 +376,8 @@ export default function AdminDashboardPage() {
                                     <div key={m.month} className="min-w-0 flex flex-col items-center gap-1.5">
                                         <span className="text-xs font-semibold text-muted-foreground truncate max-w-full">{compactRwf(m.revenue)}</span>
                                         <div
-                                            className={`w-full rounded-t-lg ${current ? "bg-foreground" : "bg-[#D4D4D4]"}`}
-                                            style={{ height: `${Math.max((m.revenue / maxRevenue) * 120, 4)}px` }}
+                                            className={`m-grow-h w-full rounded-t-lg ${current ? "bg-foreground" : "bg-[#D4D4D4]"}`}
+                                            style={{ height: grown ? `${Math.max((m.revenue / maxRevenue) * 120, 4)}px` : "4px" }}
                                         />
                                         <span className={`text-[13px] text-foreground ${current ? "font-bold" : "font-medium"}`}>{m.month}</span>
                                     </div>
@@ -365,7 +387,7 @@ export default function AdminDashboardPage() {
                     </section>
 
                     {/* Revenue and bookings by house */}
-                    <section aria-labelledby="by-house" className={CARD}>
+                    <section aria-labelledby="by-house" className={`${CARD} m-card`}>
                         <h2 id="by-house" className={CARD_TITLE}>
                             By house
                         </h2>
@@ -386,7 +408,7 @@ export default function AdminDashboardPage() {
                                         </span>
                                     </div>
                                     <div className="h-2 rounded-full bg-[#EBEBEB] overflow-hidden">
-                                        <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: houseColor(house.slug) }} />
+                                        <div className="m-grow-w h-2 rounded-full" style={{ width: grown ? `${pct}%` : "0%", background: houseColor(house.slug) }} />
                                     </div>
                                     <span className="text-[13px] text-muted-foreground">
                                         {plural(bookingCount, "booking")} · {formatRwf(usdLineToRwf(prices?.[house.slug]?.pricePerNight ?? house.pricePerNight))} a night
@@ -399,7 +421,7 @@ export default function AdminDashboardPage() {
 
                 <div className="min-w-0 flex flex-col gap-6">
                     {stats.currentlyHosting.length > 0 && (
-                        <section aria-labelledby="hosting" className={CARD}>
+                        <section aria-labelledby="hosting" className={`${CARD} m-card`}>
                             <h2 id="hosting" className={CARD_TITLE}>
                                 Currently hosting
                             </h2>
@@ -417,7 +439,7 @@ export default function AdminDashboardPage() {
                         </section>
                     )}
 
-                    <section aria-labelledby="booking-status" className={CARD}>
+                    <section aria-labelledby="booking-status" className={`${CARD} m-card`}>
                         <h2 id="booking-status" className={CARD_TITLE}>
                             Booking status
                         </h2>
@@ -448,7 +470,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* The five newest bookings */}
-            <section aria-labelledby="recent" className="flex flex-col">
+            <section aria-labelledby="recent" {...rise(7)} className="m-rise flex flex-col">
                 <div className="flex items-baseline justify-between gap-3 mb-2">
                     <h2 id="recent" className={SECTION_TITLE}>
                         Recent bookings
@@ -462,7 +484,7 @@ export default function AdminDashboardPage() {
                     const key = `recent:${booking.id}`
                     const busy = actionLoading === booking.id
                     return (
-                        <div key={booking.id} className="border-b border-[#EBEBEB] last:border-b-0">
+                        <div key={booking.id} className="m-row border-b border-[#EBEBEB] last:border-b-0">
                             <button
                                 type="button"
                                 onClick={() => setExpandedRecent(isExpanded ? null : booking.id)}

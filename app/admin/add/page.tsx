@@ -197,7 +197,7 @@ export default function AdminAddBookingPage() {
 
     return (
         // zoom scales the whole page down a notch on every screen size
-        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
+        <div className="m-stagger [zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
             <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">
                 Add a booking
             </h1>
@@ -354,10 +354,10 @@ export default function AdminAddBookingPage() {
 
             {/* Rendered in place (no portal) so it keeps the admin font and scale */}
             <DialogPrimitive.Root open={saved !== null} onOpenChange={(open) => !open && setSaved(null)}>
-                <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/50" />
+                <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
                 <DialogPrimitive.Content
                     aria-describedby={undefined}
-                    className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-[520px] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-6 sm:p-7 shadow-xl flex flex-col gap-5 outline-none"
+                    className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-[520px] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-6 sm:p-7 shadow-xl flex flex-col gap-5 outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200"
                 >
                     {saved && <SavedBookingReport saved={saved} />}
                     <DialogPrimitive.Close className="min-h-12 rounded-xl bg-primary text-primary-foreground text-base font-bold hover:bg-primary/90 transition-colors">

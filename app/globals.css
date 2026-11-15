@@ -250,6 +250,16 @@ html.light {
 @keyframes m-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .admin-motion .m-rise { animation: m-rise var(--m-slow) var(--m-ease) both; }
 
+/* A column whose blocks rise in one after another (dialogs rendered in place are left alone) */
+.admin-motion .m-stagger > :not([data-state]):not([role="dialog"]) { animation: m-rise var(--m-slow) var(--m-ease) both; }
+.admin-motion .m-stagger > :nth-child(2) { animation-delay: 50ms; }
+.admin-motion .m-stagger > :nth-child(3) { animation-delay: 100ms; }
+.admin-motion .m-stagger > :nth-child(4) { animation-delay: 150ms; }
+.admin-motion .m-stagger > :nth-child(5) { animation-delay: 200ms; }
+.admin-motion .m-stagger > :nth-child(6) { animation-delay: 250ms; }
+.admin-motion .m-stagger > :nth-child(7) { animation-delay: 300ms; }
+.admin-motion .m-stagger > :nth-child(n + 8) { animation-delay: 350ms; }
+
 /* Rows slide in from the side the page moved toward */
 @keyframes m-in-right { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
 @keyframes m-in-left { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }

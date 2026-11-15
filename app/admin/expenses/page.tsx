@@ -935,12 +935,12 @@ export default function AdminExpensesPage() {
 
             {/* Rendered in place (no portal) so it keeps the admin font and scale */}
             <DialogPrimitive.Root open={copy !== null} onOpenChange={(open) => !open && !copying && setCopy(null)}>
-                <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/50" />
+                <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
                 <DialogPrimitive.Content
                     aria-describedby={undefined}
                     // Escape closes an open month list first, not the whole dialog
                     onEscapeKeyDown={(e) => document.querySelector('[role="listbox"]') && e.preventDefault()}
-                    className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-[520px] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-6 sm:p-7 shadow-xl flex flex-col gap-5 outline-none"
+                    className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-[520px] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-6 sm:p-7 shadow-xl flex flex-col gap-5 outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200"
                 >
                     {copy && (
                         <>

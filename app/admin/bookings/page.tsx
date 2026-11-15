@@ -11,6 +11,7 @@ import { type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
 import { SegmentedControl } from "@/components/segmented-control"
 import { BUTTON_DARK, BUTTON_OUTLINE, ConfirmPanel, Fold, RejectPanel, StatusPill } from "@/components/admin-booking-review"
+import { Skeleton, rise } from "@/components/admin-motion"
 
 interface Booking {
     id: string
@@ -247,7 +248,7 @@ export default function AdminBookingsPage() {
     return (
         // zoom scales the whole page down a notch on every screen size
         <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[880px] mx-auto flex flex-col gap-6">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div {...rise(0)} className="m-rise flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Bookings</h1>
                 <Link
                     href="/admin/add"
@@ -259,7 +260,7 @@ export default function AdminBookingsPage() {
             </div>
 
             {/* Search */}
-            <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-3 flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
+            <label {...rise(1)} className="m-rise rounded-2xl border border-[#B0B0B0] bg-card px-5 py-3 flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
                 <span className="text-[13px] font-semibold text-muted-foreground">Search</span>
                 <input
                     type="text"
@@ -272,7 +273,7 @@ export default function AdminBookingsPage() {
             </label>
 
             {/* Filters */}
-            <div className="flex flex-col gap-3">
+            <div {...rise(2)} className="m-rise flex flex-col gap-3">
                 <div className="flex flex-wrap gap-3">
                     <div className="max-w-full overflow-x-auto rounded-full">
                         <SegmentedControl
@@ -303,16 +304,19 @@ export default function AdminBookingsPage() {
 
             {/* Bookings List */}
             {loading ? (
-                <div className="flex items-center justify-center py-20">
-                    <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+                <div aria-label="Loading the bookings" className="flex flex-col gap-3">
+                    {[0, 1, 2, 3, 4].map((i) => (
+                        <Skeleton key={i} className="h-[76px] rounded-2xl" />
+                    ))}
                 </div>
             ) : filtered.length === 0 ? (
                 <div className="rounded-2xl bg-[#F7F7F7] p-12 text-center">
                     <p className="text-[15px] text-muted-foreground">No bookings found</p>
                 </div>
             ) : (
-                <div className="flex flex-col gap-3">
-                    {paginatedBookings.map((booking) => {
+                // Keyed by filter and page (not search, which would replay on every key), so the rows rise in again
+                <div key={`${statusFilter}:${houseFilter}:${currentPage}`} className="flex flex-col gap-3">
+                    {paginatedBookings.map((booking, index) => {
                         const isExpanded = expandedBooking === booking.id
                         const checkOutPassed = isAfter(new Date(), parseISO(booking.checkOut))
                         const busy = updatingStatus === booking.id
@@ -320,7 +324,8 @@ export default function AdminBookingsPage() {
                         return (
                             <div
                                 key={booking.id}
-                                className={`rounded-2xl border bg-card overflow-hidden ${isExpanded ? "border-foreground ring-1 ring-foreground" : "border-border"}`}
+                                {...rise(index, 40)}
+                                className={`m-rise m-card rounded-2xl border bg-card overflow-hidden ${isExpanded ? "border-foreground ring-1 ring-foreground" : "border-border"}`}
                             >
                                 {/* Main row */}
                                 <button
