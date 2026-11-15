@@ -23,8 +23,8 @@ const houseLabel = (id: string) => HOUSE_OPTIONS.find((h) => h.id === id)?.label
 const rwf = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
 const pct = (share: number) => `${Math.round(share * 100)}%`
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
-// Lines of a month shown before "Show more"
-const FIRST_LINES = 5
+// Lines of a month on one page of the list
+const PAGE_SIZE = 5
 // Other months offered as shortcuts under the list
 const MONTH_SHORTCUTS = 3
 // Months offered as the month to copy to: this one and the ones before it
@@ -80,7 +80,8 @@ export default function AdminExpensesPage() {
     const [view, setView] = useState(houses.length > 1 ? ALL_HOUSES : houses[0].slug)
     // Month whose expenses are reported ("yyyy-MM"), and whether all of them show
     const [listMonth, setListMonth] = useState(today.slice(0, 7))
-    const [showAll, setShowAll] = useState(false)
+    // Page of the month's list, from 1
+    const [page, setPage] = useState(1)
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
     const [deleting, setDeleting] = useState<string | null>(null)
     // "Where it goes": the category opened to show its expenses, and the line being edited
@@ -126,14 +127,22 @@ export default function AdminExpensesPage() {
 
     const monthKey = today.slice(0, 7)
     const report = useMemo(() => expenseReport(expenses, bookings, listMonth, view), [expenses, bookings, listMonth, view])
-    const visible = showAll ? report.lines : report.lines.slice(0, FIRST_LINES)
+    const pageCount = Math.max(1, Math.ceil(report.lines.length / PAGE_SIZE))
+    // Held to the last page, so deleting its only line never leaves an empty page
+    const currentPage = Math.min(page, pageCount)
+    const firstShown = (currentPage - 1) * PAGE_SIZE
+    const visible = report.lines.slice(firstShown, firstShown + PAGE_SIZE)
+    const goToPage = (next: number) => {
+        setPage(next)
+        setConfirmDelete(null)
+    }
     const listMonthName = monthName(listMonth)
     const previousMonthName = monthName(shiftMonth(listMonth, -1))
     // The arrows stop at the oldest month with an expense and at this month
     const oldestMonth = expenses.reduce((oldest, e) => (e.date.slice(0, 7) < oldest ? e.date.slice(0, 7) : oldest), monthKey)
     const showMonth = (key: string) => {
         setListMonth(key)
-        setShowAll(false)
+        setPage(1)
         setConfirmDelete(null)
         setOpenCategory(null)
         setEditing(null)
@@ -461,7 +470,7 @@ export default function AdminExpensesPage() {
                     value={view}
                     onChange={(next) => {
                         setView(next)
-                        setShowAll(false)
+                        setPage(1)
                         setConfirmDelete(null)
                         setOpenCategory(null)
                         setEditing(null)
@@ -850,19 +859,44 @@ export default function AdminExpensesPage() {
                         })}
                     </ul>
                 )}
-                {report.lines.length > FIRST_LINES && (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setShowAll((all) => !all)
-                            setConfirmDelete(null)
-                        }}
-                        aria-expanded={showAll}
-                        className="w-full min-h-12 px-5 border-t border-border text-sm font-semibold text-foreground hover:bg-[#F7F7F7] flex items-center justify-center gap-1.5"
-                    >
-                        {showAll ? "Show fewer" : `Show ${report.lines.length - FIRST_LINES} more from ${listMonthName}`}
-                        <ChevronDown className={`h-4 w-4 transition-transform ${showAll ? "rotate-180" : ""}`} />
-                    </button>
+                {pageCount > 1 && (
+                    <nav aria-label="Pages of expenses" className="px-5 sm:px-6 py-3 border-t border-border flex flex-wrap items-center justify-between gap-3">
+                        <span className="text-[13px] text-muted-foreground tabular-nums">
+                            {firstShown + 1}–{firstShown + visible.length} of {report.lines.length}
+                        </span>
+                        <div className="flex items-center gap-1">
+                            <button
+                                type="button"
+                                onClick={() => goToPage(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                aria-label="Previous page"
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-foreground hover:bg-[#F2F2F2] disabled:text-[#B0B0B0] disabled:hover:bg-transparent"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                                <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => goToPage(n)}
+                                    aria-current={n === currentPage ? "page" : undefined}
+                                    aria-label={`Page ${n}`}
+                                    className={`h-10 min-w-10 px-2 rounded-full text-sm font-semibold tabular-nums ${n === currentPage ? "bg-foreground text-background" : "text-foreground hover:bg-[#F2F2F2]"}`}
+                                >
+                                    {n}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => goToPage(currentPage + 1)}
+                                disabled={currentPage === pageCount}
+                                aria-label="Next page"
+                                className="w-10 h-10 rounded-full flex items-center justify-center text-foreground hover:bg-[#F2F2F2] disabled:text-[#B0B0B0] disabled:hover:bg-transparent"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        </div>
+                    </nav>
                 )}
             </section>
 
