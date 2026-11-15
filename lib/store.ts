@@ -204,6 +204,24 @@ export async function insertExpense(expense: Omit<Expense, "createdAt">, tx: Db 
     return toExpense(rows[0])
 }
 
+/** The expenses with these ids, locked until the transaction ends. */
+export async function getExpensesForUpdate(ids: string[], tx: Db): Promise<Expense[]> {
+    const { rows } = await tx.query(`SELECT ${EXPENSE_COLUMNS} FROM expenses WHERE id = ANY($1::text[]) FOR UPDATE`, [ids])
+    return rows.map(toExpense)
+}
+
+/** Sets an expense's category, note, amount and date; its house and id stay. */
+export async function updateExpense(
+    expense: Pick<Expense, "id" | "category" | "note" | "amountRwf" | "date">,
+    tx: Db = db
+): Promise<Expense | null> {
+    const { rows } = await tx.query(
+        `UPDATE expenses SET category = $2, note = $3, amount_rwf = $4, date = $5 WHERE id = $1 RETURNING ${EXPENSE_COLUMNS}`,
+        [expense.id, expense.category, expense.note, expense.amountRwf, expense.date]
+    )
+    return rows[0] ? toExpense(rows[0]) : null
+}
+
 /** Returns false when the expense does not exist. */
 export async function deleteExpense(id: string, tx: Db = db): Promise<boolean> {
     const result = await tx.query(`DELETE FROM expenses WHERE id = $1`, [id])

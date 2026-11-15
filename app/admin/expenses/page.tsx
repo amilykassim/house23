@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { format, parseISO, startOfMonth, subMonths } from "date-fns"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Loader2, Plus, Trash2, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Loader2, Pencil, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type Expense, type ExpenseCategory } from "@/lib/expenses"
@@ -83,6 +83,10 @@ export default function AdminExpensesPage() {
     const [showAll, setShowAll] = useState(false)
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
     const [deleting, setDeleting] = useState<string | null>(null)
+    // "Where it goes": the category opened to show its expenses, and the line being edited
+    const [openCategory, setOpenCategory] = useState<string | null>(null)
+    const [editing, setEditing] = useState<ExpenseDraft | null>(null)
+    const [savingEdit, setSavingEdit] = useState(false)
     // Copying a month: null while the dialog is closed
     const [copy, setCopy] = useState<{ from: string; to: string; picked: Record<string, boolean>; amounts: Record<string, string> } | null>(null)
     const [copying, setCopying] = useState(false)
@@ -131,6 +135,8 @@ export default function AdminExpensesPage() {
         setListMonth(key)
         setShowAll(false)
         setConfirmDelete(null)
+        setOpenCategory(null)
+        setEditing(null)
     }
     const stepMonth = (step: number) => showMonth(shiftMonth(listMonth, step))
     const topCategory = report.categories[0]
@@ -270,6 +276,38 @@ export default function AdminExpensesPage() {
             }
             setDeleting(null)
             setConfirmDelete(null)
+        }
+    }
+
+    // Saves the line being edited: every stored row behind it changes together
+    const handleEdit = async (line: ExpenseLine) => {
+        if (!editing || editing.key !== line.key) return
+        setSavingEdit(true)
+        try {
+            const res = await fetch("/api/expenses", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ids: line.ids,
+                    category: editing.category,
+                    note: editing.note,
+                    amountRwf: Math.round(Number(editing.amount)),
+                    date: editing.date,
+                }),
+            })
+            if (!res.ok) throw new Error("Request failed")
+            forgetExpenses()
+            const movedTo = [
+                editing.category !== line.category && editing.category,
+                editing.date.slice(0, 7) !== line.date.slice(0, 7) && monthLabel(editing.date.slice(0, 7)),
+            ].filter(Boolean)
+            toast.success("Expense updated", { description: movedTo.length > 0 ? `Moved to ${movedTo.join(", ")}` : undefined })
+            setEditing(null)
+            await fetchExpenses()
+        } catch {
+            toast.error("Couldn't update the expense", { description: "Nothing was changed. Try again." })
+        } finally {
+            setSavingEdit(false)
         }
     }
 
@@ -425,6 +463,8 @@ export default function AdminExpensesPage() {
                         setView(next)
                         setShowAll(false)
                         setConfirmDelete(null)
+                        setOpenCategory(null)
+                        setEditing(null)
                     }}
                 />
             )}
@@ -492,32 +532,144 @@ export default function AdminExpensesPage() {
                                 <ul className="flex flex-col gap-4">
                                     {report.categories.map((row, i) => {
                                         const note = usualChip(row.usual)
+                                        const open = openCategory === row.category
+                                        const items = report.lines.filter((line) => line.category === row.category)
                                         return (
-                                            <li key={row.category} className="flex flex-col gap-2">
-                                                <div className="flex items-center justify-between gap-3">
-                                                    <span className="min-w-0 flex items-center gap-2">
-                                                        <span className="text-[15px] font-semibold text-foreground truncate">{row.category}</span>
-                                                        {note && (
-                                                            <span
-                                                                title={usualText(row.usual)}
-                                                                className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${note.className}`}
-                                                            >
-                                                                {note.label}
-                                                                <span className="sr-only"> ({usualText(row.usual)})</span>
-                                                            </span>
-                                                        )}
+                                            <li key={row.category} className="flex flex-col">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setOpenCategory(open ? null : row.category)
+                                                        setEditing(null)
+                                                        setConfirmDelete(null)
+                                                    }}
+                                                    aria-expanded={open}
+                                                    aria-controls={`category-${i}`}
+                                                    className="-mx-2 px-2 py-1.5 rounded-xl flex flex-col gap-2 text-left hover:bg-[#F7F7F7]"
+                                                >
+                                                    <span className="w-full flex items-center justify-between gap-3">
+                                                        <span className="min-w-0 flex items-center gap-2">
+                                                            <span className="text-[15px] font-semibold text-foreground truncate">{row.category}</span>
+                                                            {note && (
+                                                                <span
+                                                                    title={usualText(row.usual)}
+                                                                    className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${note.className}`}
+                                                                >
+                                                                    {note.label}
+                                                                    <span className="sr-only"> ({usualText(row.usual)})</span>
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <span className="shrink-0 flex items-center gap-2 tabular-nums">
+                                                            <span className="text-[15px] font-semibold text-foreground">{rwf(row.amount)}</span>
+                                                            <span className="w-9 text-right text-[13px] text-muted-foreground">{pct(row.share)}</span>
+                                                            <ChevronDown
+                                                                aria-hidden="true"
+                                                                className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+                                                            />
+                                                        </span>
                                                     </span>
-                                                    <span className="shrink-0 flex items-baseline gap-2 tabular-nums">
-                                                        <span className="text-[15px] font-semibold text-foreground">{rwf(row.amount)}</span>
-                                                        <span className="w-9 text-right text-[13px] text-muted-foreground">{pct(row.share)}</span>
+                                                    <span className="block w-full h-1.5 rounded-full bg-[#EBEBEB] overflow-hidden">
+                                                        <span
+                                                            className={`block h-full rounded-full ${i === 0 ? "bg-foreground" : "bg-[#6A6A6A]"}`}
+                                                            style={{ width: `${Math.max(row.share * 100, 1)}%` }}
+                                                        />
                                                     </span>
-                                                </div>
-                                                <div className="h-1.5 rounded-full bg-[#EBEBEB] overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full ${i === 0 ? "bg-foreground" : "bg-[#6A6A6A]"}`}
-                                                        style={{ width: `${Math.max(row.share * 100, 1)}%` }}
-                                                    />
-                                                </div>
+                                                </button>
+
+                                                {/* The category's expenses, each one editable */}
+                                                {open && (
+                                                    <ul id={`category-${i}`} className="mt-2 rounded-2xl bg-[#F7F7F7] divide-y divide-[#E5E5E5]">
+                                                        {items.map((line) => {
+                                                            const isEditing = editing?.key === line.key
+                                                            const deleteKey = `cat:${line.key}`
+                                                            return (
+                                                                <li key={line.key} className="px-3.5 py-3 flex flex-col gap-3">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className="min-w-0 flex-1 flex flex-col gap-0.5">
+                                                                            <span className="text-[15px] font-semibold text-foreground [overflow-wrap:anywhere]">
+                                                                                {line.note || <span className="font-normal text-muted-foreground">No name</span>}
+                                                                            </span>
+                                                                            <span className="text-[13px] text-muted-foreground">
+                                                                                {dayLabel(line.date)} · {houseLabel(line.house)}
+                                                                            </span>
+                                                                        </div>
+                                                                        <span className="shrink-0 text-[15px] font-bold text-foreground tabular-nums whitespace-nowrap">
+                                                                            {rwf(line.amountRwf)}
+                                                                        </span>
+                                                                        <span className="shrink-0 flex items-center -mr-1.5">
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setConfirmDelete(null)
+                                                                                    setEditing(
+                                                                                        isEditing
+                                                                                            ? null
+                                                                                            : { key: line.key, category: line.category, note: line.note, amount: String(line.amountRwf), date: line.date }
+                                                                                    )
+                                                                                }}
+                                                                                aria-label={`Edit ${line.category} expense of ${rwf(line.amountRwf)}`}
+                                                                                aria-expanded={isEditing}
+                                                                                className={`w-11 h-11 rounded-full flex items-center justify-center hover:bg-white hover:text-foreground ${isEditing ? "bg-white text-foreground" : "text-[#6A6A6A]"}`}
+                                                                            >
+                                                                                <Pencil className="h-4 w-4" />
+                                                                            </button>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => {
+                                                                                    setEditing(null)
+                                                                                    setConfirmDelete(confirmDelete === deleteKey ? null : deleteKey)
+                                                                                }}
+                                                                                aria-label={`Delete ${line.category} expense of ${rwf(line.amountRwf)}`}
+                                                                                aria-expanded={confirmDelete === deleteKey}
+                                                                                className={`w-11 h-11 rounded-full flex items-center justify-center hover:bg-white hover:text-foreground ${confirmDelete === deleteKey ? "bg-white text-foreground" : "text-[#6A6A6A]"}`}
+                                                                            >
+                                                                                <Trash2 className="h-4 w-4" />
+                                                                            </button>
+                                                                        </span>
+                                                                    </div>
+
+                                                                    {confirmDelete === deleteKey && (
+                                                                        <div className="px-3.5 py-3 rounded-xl bg-card flex flex-wrap items-center justify-between gap-2 text-sm">
+                                                                            <span className="font-semibold text-foreground">
+                                                                                {line.ids.length > 1 ? `Delete this expense for ${houseLabel(line.house).toLowerCase()}?` : "Delete this expense?"}
+                                                                            </span>
+                                                                            <span className="flex items-center gap-2">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setConfirmDelete(null)}
+                                                                                    className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card font-semibold text-foreground"
+                                                                                >
+                                                                                    Keep
+                                                                                </button>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => handleDelete(line)}
+                                                                                    disabled={deleting === line.key}
+                                                                                    className="min-h-11 px-4 rounded-full bg-primary text-primary-foreground font-bold disabled:opacity-50"
+                                                                                >
+                                                                                    Delete
+                                                                                </button>
+                                                                            </span>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {isEditing && editing && (
+                                                                        <EditExpenseForm
+                                                                            line={line}
+                                                                            value={editing}
+                                                                            onChange={setEditing}
+                                                                            onCancel={() => setEditing(null)}
+                                                                            onSave={() => handleEdit(line)}
+                                                                            saving={savingEdit}
+                                                                            today={today}
+                                                                        />
+                                                                    )}
+                                                                </li>
+                                                            )
+                                                        })}
+                                                    </ul>
+                                                )}
                                             </li>
                                         )
                                     })}
@@ -861,5 +1013,138 @@ export default function AdminExpensesPage() {
                 </DialogPrimitive.Content>
             </DialogPrimitive.Root>
         </div>
+    )
+}
+
+// An expense line being edited from "Where it goes"
+interface ExpenseDraft {
+    key: string
+    category: ExpenseCategory
+    note: string
+    amount: string
+    date: string
+}
+
+/** Rename, move to another category, change the amount or the date of one expense line. */
+function EditExpenseForm({
+    line,
+    value,
+    onChange,
+    onCancel,
+    onSave,
+    saving,
+    today,
+}: {
+    line: ExpenseLine
+    value: ExpenseDraft
+    onChange: (next: ExpenseDraft) => void
+    onCancel: () => void
+    onSave: () => void
+    saving: boolean
+    today: string
+}) {
+    const amount = Math.round(Number(value.amount))
+    const split = line.ids.length > 1
+    const shares = split && amount > 0 ? splitEvenly(amount, line.ids.length) : []
+    const changed =
+        value.category !== line.category || value.note.trim() !== line.note || amount !== line.amountRwf || value.date !== line.date
+    const valid = amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(value.date) && value.date <= today && shares.every((s) => s > 0)
+    const field = "rounded-xl border border-[#B0B0B0] bg-card px-3.5 py-2.5 flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground"
+    const input = "w-full bg-transparent text-[16px] text-foreground placeholder:text-[#8A8A8A] outline-none"
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault()
+                if (changed && valid && !saving) onSave()
+            }}
+            className="p-3.5 rounded-xl bg-card flex flex-col gap-3.5"
+        >
+            <label className={field}>
+                <span className="text-[13px] font-semibold text-muted-foreground">Name</span>
+                <input
+                    type="text"
+                    value={value.note}
+                    onChange={(e) => onChange({ ...value, note: e.target.value })}
+                    placeholder="e.g. plumber"
+                    maxLength={200}
+                    autoComplete="off"
+                    className={input}
+                />
+            </label>
+
+            <div className="flex flex-col gap-2">
+                <span className="text-[13px] font-semibold text-muted-foreground">Category</span>
+                <div className="flex flex-wrap gap-1.5">
+                    {EXPENSE_CATEGORIES.map((c) => (
+                        <button
+                            key={c}
+                            type="button"
+                            onClick={() => onChange({ ...value, category: c })}
+                            aria-pressed={value.category === c}
+                            className={`min-h-10 px-3.5 rounded-full border text-sm font-semibold ${value.category === c
+                                ? "border-foreground bg-foreground text-background"
+                                : "border-[#B0B0B0] bg-card text-foreground hover:bg-[#F7F7F7]"
+                                }`}
+                        >
+                            {c}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2.5">
+                <label className={field}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Amount, RWF</span>
+                    <input
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        value={value.amount}
+                        onChange={(e) => onChange({ ...value, amount: e.target.value })}
+                        className={`${input} tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                    />
+                </label>
+                <label className={field}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Date</span>
+                    <input
+                        type="date"
+                        value={value.date}
+                        max={today}
+                        onChange={(e) => onChange({ ...value, date: e.target.value })}
+                        className={input}
+                    />
+                </label>
+            </div>
+
+            {(split || line.key.startsWith("PW-")) && (
+                <div className="flex flex-col gap-1 text-[13px] text-muted-foreground">
+                    {split && shares.length > 0 && (
+                        <p>
+                            Split between the houses:{" "}
+                            {shares.every((s) => s === shares[0])
+                                ? `${rwf(shares[0])} each`
+                                : shares.map((s, i) => `${rwf(s)} for ${houses[i].name}`).join(", ")}
+                            .
+                        </p>
+                    )}
+                    {line.key.startsWith("PW-") && <p>Added by Pennywise. If it changes there, Pennywise sends it again and this edit is replaced.</p>}
+                </div>
+            )}
+
+            <div className="flex flex-wrap justify-end gap-2">
+                <button type="button" onClick={onCancel} className="min-h-11 px-5 rounded-full border border-[#B0B0B0] bg-card text-sm font-semibold text-foreground hover:bg-[#F7F7F7]">
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    disabled={!changed || !valid || saving}
+                    className="min-h-11 px-5 rounded-full bg-foreground text-background text-sm font-bold flex items-center gap-2 hover:bg-foreground/85 disabled:opacity-45"
+                >
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Save changes
+                </button>
+            </div>
+        </form>
     )
 }

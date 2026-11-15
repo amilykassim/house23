@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { transaction } from "@/lib/db"
-import { deleteExpense, insertExpense, listExpenses } from "@/lib/store"
+import { isValid, parseISO } from "date-fns"
+import { deleteExpense, getExpensesForUpdate, insertExpense, listExpenses, updateExpense } from "@/lib/store"
 import { houses } from "@/lib/houses"
-import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type ExpenseCategory } from "@/lib/expenses"
+import { ALL_HOUSES, EXPENSE_CATEGORIES, planExpenseEdit, splitEvenly, type ExpenseCategory } from "@/lib/expenses"
 
 export const dynamic = "force-dynamic"
 
@@ -90,6 +91,52 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ expense: expenses[0], expenses }, { status: 201 })
+}
+
+const MAX_IDS = 10
+
+// Changes one expense line: { ids, category, note, amountRwf, date }. `ids`
+// are the stored rows behind the line (one per house when it was split);
+// they all change together, or none does.
+export async function PATCH(request: NextRequest) {
+    const denied = unauthorized(request)
+    if (denied) return denied
+
+    let body: any
+    try {
+        body = await request.json()
+    } catch {
+        return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 })
+    }
+    const ids: unknown = body?.ids
+    const category = body?.category as ExpenseCategory
+    const amountRwf = Math.round(Number(body?.amountRwf))
+    const date = typeof body?.date === "string" ? body.date : ""
+    const validIds =
+        Array.isArray(ids) &&
+        ids.length > 0 &&
+        ids.length <= MAX_IDS &&
+        ids.every((id) => typeof id === "string" && id.length > 0) &&
+        new Set(ids).size === ids.length
+    if (!validIds || !EXPENSE_CATEGORIES.includes(category) || !(amountRwf > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !isValid(parseISO(date))) {
+        return NextResponse.json({ error: "Missing or invalid fields" }, { status: 400 })
+    }
+    const note = typeof body.note === "string" ? body.note.trim().slice(0, 200) : ""
+    const edit = { category, note, amountRwf, date }
+
+    const result = await transaction(async (tx) => {
+        const rows = await getExpensesForUpdate(ids as string[], tx)
+        if (rows.length !== (ids as string[]).length) return { status: 404, error: "Expense not found" }
+        const plan = planExpenseEdit(rows, edit, houses.map((h) => h.slug))
+        if (typeof plan === "string") return { status: 400, error: plan }
+        const expenses = []
+        for (const row of plan) expenses.push(await updateExpense(row, tx))
+        return { status: 200, expenses }
+    })
+
+    return result.status === 200
+        ? NextResponse.json({ expenses: result.expenses })
+        : NextResponse.json({ error: result.error }, { status: result.status })
 }
 
 export async function DELETE(request: NextRequest) {
