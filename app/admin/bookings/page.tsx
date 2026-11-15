@@ -1,29 +1,15 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import Link from "next/link"
 import { format, parseISO, isAfter } from "date-fns"
-import {
-    Search,
-    Filter,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    Phone,
-    Mail,
-    MessageSquare,
-    X,
-    Clock,
-    CheckCircle2,
-    XCircle,
-    AlertCircle,
-    MoreHorizontal,
-    ArrowUpDown,
-} from "lucide-react"
+import { ChevronDown, ChevronLeft, ChevronRight, Phone, Mail, AlertCircle, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
-import { AnimatePresence, motion } from "motion/react"
-import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
+import { type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
+import { SegmentedControl } from "@/components/segmented-control"
+import { BUTTON_DARK, BUTTON_OUTLINE, ConfirmPanel, Fold, RejectPanel, StatusPill } from "@/components/admin-booking-review"
 
 interface Booking {
     id: string
@@ -47,29 +33,19 @@ interface Booking {
     createdAt: string
 }
 
-const statusConfig: Record<
-    string,
-    { label: string; color: string; bg: string; icon: React.ElementType }
-> = {
-    pending: {
-        label: "Pending",
-        color: "text-amber-600 dark:text-amber-400",
-        bg: "bg-amber-500/10",
-        icon: Clock,
-    },
-    confirmed: {
-        label: "Confirmed",
-        color: "text-blue-600 dark:text-blue-400",
-        bg: "bg-blue-500/10",
-        icon: CheckCircle2,
-    },
-    cancelled: {
-        label: "Cancelled",
-        color: "text-red-600 dark:text-red-400",
-        bg: "bg-red-500/10",
-        icon: XCircle,
-    },
+const STATUS_LABEL: Record<Booking["status"], string> = {
+    pending: "Pending",
+    confirmed: "Confirmed",
+    cancelled: "Cancelled",
 }
+
+const PANEL = "min-w-0 rounded-xl bg-[#F7F7F7] p-4 flex flex-col gap-1.5 text-sm"
+const PANEL_TITLE = "text-[13px] font-semibold text-muted-foreground"
+const DELETE_LINK = "min-h-11 px-2 text-sm font-semibold text-primary underline underline-offset-4"
+const DELETE_YES = "min-h-11 px-4 rounded-full bg-primary text-primary-foreground text-sm font-bold hover:bg-primary/90 disabled:opacity-45"
+const DELETE_NO = "min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card text-sm font-semibold text-foreground hover:bg-[#F7F7F7]"
+const PAGE_ARROW =
+    "w-11 h-11 rounded-full border border-[#B0B0B0] bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:text-[#B0B0B0] disabled:border-[#DDDDDD] disabled:hover:bg-card disabled:cursor-not-allowed"
 
 const allStatuses = ["all", "pending", "confirmed", "cancelled"] as const
 const ITEMS_PER_PAGE = 10
@@ -255,71 +231,72 @@ export default function AdminBookingsPage() {
         .filter((b) => b.status !== "cancelled")
         .reduce((sum, b) => sum + b.total, 0)
 
+    const countOf = (status: string) => (status === "all" ? bookings.length : bookings.filter((b) => b.status === status).length)
+    const statusOptions = allStatuses.map((s) => ({
+        id: s as string,
+        label: `${s === "all" ? "All" : STATUS_LABEL[s]} · ${countOf(s)}`,
+    }))
+    const houseOptions = [
+        { id: "all", label: houses.length === 2 ? "Both houses" : "All houses" },
+        ...houses.map((h) => ({ id: h.slug as string, label: h.name })),
+    ]
+    const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
+
     return (
-        <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-6">
-                <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-1">
-                    Bookings
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Manage and track all bookings across your properties
-                </p>
+        // zoom scales the whole page down a notch on every screen size
+        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[880px] mx-auto flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+                <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Bookings</h1>
+                <Link
+                    href="/admin/add"
+                    className="min-h-13 px-5 rounded-xl bg-primary text-primary-foreground text-[15px] font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
+                >
+                    <Plus className="h-5 w-5" />
+                    Add a booking
+                </Link>
             </div>
 
+            {/* Search */}
+            <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-3 flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
+                <span className="text-[13px] font-semibold text-muted-foreground">Search</span>
+                <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Name, phone, booking or MoMo ID"
+                    autoComplete="off"
+                    className="w-full bg-transparent text-[17px] leading-7 text-foreground placeholder:text-[#8A8A8A] outline-none"
+                />
+            </label>
+
             {/* Filters */}
-            <div className="bg-card rounded-2xl border border-border p-4 mb-6">
-                <div className="flex flex-col sm:flex-row gap-3">
-                    {/* Search */}
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name or phone..."
-                            className="w-full h-10 pl-10 pr-4 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+            <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-3">
+                    <div className="max-w-full overflow-x-auto rounded-full">
+                        <SegmentedControl
+                            className="w-max"
+                            itemClassName="px-3.5 sm:px-[18px] whitespace-nowrap"
+                            options={statusOptions}
+                            value={statusFilter}
+                            onChange={setStatusFilter}
                         />
                     </div>
-
-                    {/* Status Filter */}
-                    <div className="flex gap-2">
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="h-10 px-3 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 cursor-pointer"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="confirmed">Confirmed</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-
-                        <select
-                            value={houseFilter}
-                            onChange={(e) => setHouseFilter(e.target.value)}
-                            className="h-10 px-3 rounded-xl border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 cursor-pointer"
-                        >
-                            <option value="all">All Properties</option>
-                            {houses.map((h) => (
-                                <option key={h.slug} value={h.slug}>
-                                    {h.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                    {houses.length > 1 && (
+                        <div className="max-w-full overflow-x-auto rounded-full">
+                            <SegmentedControl
+                                className="w-max"
+                                itemClassName="px-3.5 sm:px-[18px] whitespace-nowrap"
+                                options={houseOptions}
+                                value={houseFilter}
+                                onChange={setHouseFilter}
+                            />
+                        </div>
+                    )}
                 </div>
-
-                {/* Quick stats */}
-                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
-                    <span>
-                        <strong className="text-foreground">{filtered.length}</strong> bookings
-                    </span>
-                    <span>·</span>
-                    <span>
-                        <strong className="text-foreground">${totalRevenue}</strong> revenue
-                    </span>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                    <strong className="text-foreground">{filtered.length}</strong> {filtered.length === 1 ? "booking" : "bookings"} ·{" "}
+                    <strong className="text-foreground">${totalRevenue}</strong> revenue
+                </p>
             </div>
 
             {/* Bookings List */}
@@ -328,515 +305,290 @@ export default function AdminBookingsPage() {
                     <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
                 </div>
             ) : filtered.length === 0 ? (
-                <div className="bg-card rounded-2xl border border-border p-12 text-center">
-                    <AlertCircle className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">No bookings found</p>
+                <div className="rounded-2xl bg-[#F7F7F7] p-12 text-center">
+                    <p className="text-[15px] text-muted-foreground">No bookings found</p>
                 </div>
             ) : (
-                <div className="space-y-3">
+                <div className="flex flex-col gap-3">
                     {paginatedBookings.map((booking) => {
-                        const config = statusConfig[booking.status]
-                        const StatusIcon = config.icon
                         const isExpanded = expandedBooking === booking.id
                         const checkOutPassed = isAfter(new Date(), parseISO(booking.checkOut))
+                        const busy = updatingStatus === booking.id
 
                         return (
                             <div
                                 key={booking.id}
-                                className="bg-card rounded-2xl border border-border overflow-hidden transition-all"
+                                className={`rounded-2xl border bg-card overflow-hidden ${isExpanded ? "border-foreground ring-1 ring-foreground" : "border-border"}`}
                             >
                                 {/* Main row */}
                                 <button
-                                    onClick={() =>
-                                        setExpandedBooking(isExpanded ? null : booking.id)
-                                    }
-                                    className="w-full p-4 sm:p-5 flex items-center gap-4 text-left hover:bg-muted/30 transition-colors"
+                                    type="button"
+                                    onClick={() => setExpandedBooking(isExpanded ? null : booking.id)}
+                                    aria-expanded={isExpanded}
+                                    className="w-full px-4 sm:px-5 py-[18px] flex items-center gap-3 sm:gap-4 text-left hover:bg-[#F7F7F7] transition-colors"
                                 >
-                                    {/* Avatar */}
-                                    <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                        <span className="text-xs font-semibold text-foreground">
-                                            {booking.guestName
-                                                .split(" ")
-                                                .map((n) => n[0])
-                                                .join("")
-                                                .slice(0, 2)}
-                                        </span>
-                                    </div>
-
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-sm font-semibold text-foreground truncate">
-                                                {booking.guestName}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground hidden sm:inline">
-                                                {booking.id}
-                                            </span>
+                                    <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                        <div className="flex items-baseline gap-2 min-w-0">
+                                            <span className="text-[17px] font-semibold text-foreground truncate">{booking.guestName}</span>
+                                            <span className="shrink-0 text-[13px] text-muted-foreground hidden sm:inline">{booking.id}</span>
                                         </div>
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                            <span>{booking.houseName}</span>
-                                            <span>·</span>
-                                            <span>
-                                                {format(parseISO(booking.checkIn), "MMM d")} →{" "}
-                                                {format(parseISO(booking.checkOut), "MMM d")}
-                                            </span>
-                                            <span className="hidden sm:inline">·</span>
-                                            <span className="hidden sm:inline">
-                                                {booking.nights} night{booking.nights > 1 ? "s" : ""}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Status & Amount */}
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <span
-                                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium ${config.bg} ${config.color}`}
-                                        >
-                                            <StatusIcon className="h-3 w-3" />
-                                            <span className="hidden sm:inline">{config.label}</span>
+                                        <span className="text-sm text-muted-foreground">
+                                            {booking.houseName} · {format(parseISO(booking.checkIn), "MMM d")} →{" "}
+                                            {format(parseISO(booking.checkOut), "MMM d")}
+                                            <span className="hidden sm:inline"> · {plural(booking.nights, "night")}</span>
                                         </span>
-                                        <span className="text-sm font-bold text-foreground">
-                                            ${booking.total}
-                                        </span>
-                                        <ChevronDown
-                                            className={`h-4 w-4 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
-                                        />
                                     </div>
+                                    <StatusPill status={booking.status} />
+                                    <span className="w-14 text-right text-[17px] font-semibold text-foreground">${booking.total}</span>
+                                    <ChevronDown
+                                        className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
+                                    />
                                 </button>
 
                                 {/* Expanded details */}
-                                <AnimatePresence initial={false}>
-                                    {isExpanded && (
-                                        <motion.div
-                                            initial={{ height: 0, opacity: 0 }}
-                                            animate={{ height: "auto", opacity: 1 }}
-                                            exit={{ height: 0, opacity: 0 }}
-                                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                                            className="overflow-hidden"
-                                        >
-                                            <div className="px-4 sm:px-5 pb-5 border-t border-border pt-4">
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    {/* Guest details */}
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                            Guest
-                                                        </h4>
-                                                        <div className="space-y-1.5">
-                                                            <p className="text-sm text-foreground">
-                                                                {booking.guestName}
-                                                            </p>
-                                                            {booking.guestEmail && (
-                                                                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                                                    <Mail className="h-3 w-3" />
-                                                                    {booking.guestEmail}
-                                                                </p>
-                                                            )}
-                                                            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                                                <Phone className="h-3 w-3" />
-                                                                {booking.guestPhone}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {booking.guests} guest{booking.guests > 1 ? "s" : ""}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Stay details */}
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                            Stay
-                                                        </h4>
-                                                        <div className="space-y-1.5 text-sm">
-                                                            <p className="text-foreground">
-                                                                {format(parseISO(booking.checkIn), "EEE, MMM d, yyyy")}
-                                                            </p>
-                                                            <p className="text-muted-foreground">to</p>
-                                                            <p className="text-foreground">
-                                                                {format(parseISO(booking.checkOut), "EEE, MMM d, yyyy")}
-                                                            </p>
-                                                            <p className="text-muted-foreground">
-                                                                {booking.nights} night{booking.nights > 1 ? "s" : ""}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Payment details */}
-                                                    <div className="space-y-2">
-                                                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                                            Payment
-                                                        </h4>
-                                                        <div className="space-y-1.5 text-sm">
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">
-                                                                    ${booking.pricePerNight} × {booking.nights}
-                                                                </span>
-                                                                <span className="text-foreground">
-                                                                    ${booking.pricePerNight * booking.nights}
-                                                                </span>
-                                                            </div>
-                                                            {booking.cleaningFee > 0 && (
-                                                                <div className="flex justify-between">
-                                                                    <span className="text-muted-foreground">
-                                                                        Cleaning
-                                                                    </span>
-                                                                    <span className="text-foreground">
-                                                                        ${booking.cleaningFee}
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                            <div className="flex justify-between font-semibold border-t border-border pt-1.5">
-                                                                <span className="text-foreground">Total</span>
-                                                                <span className="text-foreground">
-                                                                    ${booking.total}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                ≈ {booking.totalRwf.toLocaleString()} RWF
-                                                            </p>
-                                                            {booking.momoTransactionId && (
-                                                                <p className="text-xs font-mono text-muted-foreground">
-                                                                    MoMo: {booking.momoTransactionId}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Special requests */}
-                                                {booking.specialRequests && (
-                                                    <div className="mt-4 p-3 rounded-xl bg-muted/40">
-                                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                                                            Special Requests
-                                                        </p>
-                                                        <p className="text-sm text-foreground">
-                                                            {booking.specialRequests}
-                                                        </p>
-                                                    </div>
+                                <Fold open={isExpanded}>
+                                    <div className="px-4 sm:px-5 pb-5 flex flex-col gap-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                            {/* Guest details */}
+                                            <div className={PANEL}>
+                                                <h4 className={PANEL_TITLE}>Guest</h4>
+                                                <p className="text-foreground [overflow-wrap:anywhere]">{booking.guestName}</p>
+                                                {booking.guestEmail && (
+                                                    <p className="text-muted-foreground flex items-start gap-1.5 [overflow-wrap:anywhere]">
+                                                        <Mail className="h-3.5 w-3.5 mt-[3px] shrink-0" />
+                                                        {booking.guestEmail}
+                                                    </p>
                                                 )}
-
-                                                {/* Review Actions for Pending */}
-                                                {booking.status === "pending" && (
-                                                    <div className="mt-4 pt-4 border-t border-border">
-                                                        {checkOutPassed ? (
-                                                            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                                                <AlertCircle className="h-3.5 w-3.5" />
-                                                                Check-out date has passed — no actions available
-                                                            </p>
-                                                        ) : (<>
-                                                            <div className="flex items-center gap-2 mb-3">
-                                                                <Clock className="h-4 w-4 text-amber-500" />
-                                                                <span className="text-sm font-semibold text-foreground">
-                                                                    Awaiting Review
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-xs text-muted-foreground mb-4">
-                                                                Review the booking details and payment info above, then accept or reject.
-                                                            </p>
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <button
-                                                                    onClick={() => handleStatusChange(booking.id, "confirmed")}
-                                                                    disabled={updatingStatus === booking.id}
-                                                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <CheckCircle2 className="h-4 w-4" />
-                                                                    Accept Booking
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                        setSelectedReason("dates_unavailable")
-                                                                    }}
-                                                                    disabled={updatingStatus === booking.id}
-                                                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-semibold bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <XCircle className="h-4 w-4" />
-                                                                    Reject Booking
-                                                                </button>
-                                                                <div className="ml-auto">
-                                                                    {confirmDelete === booking.id ? (
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-xs text-red-500 font-medium">Delete permanently?</span>
-                                                                            <button
-                                                                                onClick={() => handleDelete(booking.id)}
-                                                                                disabled={deletingBooking === booking.id}
-                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                            >
-                                                                                {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setConfirmDelete(null)}
-                                                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-                                                                        </div>
-                                                                    ) : (
-                                                                        <button
-                                                                            onClick={() => setConfirmDelete(booking.id)}
-                                                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
-                                                                        >
-                                                                            <X className="h-3 w-3" />
-                                                                            Delete
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                            <AnimatePresence initial={false}>
-                                                                {rejectingBooking === booking.id && (
-                                                                    <motion.div
-                                                                        initial={{ height: 0, opacity: 0 }}
-                                                                        animate={{ height: "auto", opacity: 1 }}
-                                                                        exit={{ height: 0, opacity: 0 }}
-                                                                        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                        className="overflow-hidden"
-                                                                    >
-                                                                        <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
-                                                                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                            <div className="space-y-1">
-                                                                                {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
-                                                                                    <button
-                                                                                        key={reason}
-                                                                                        onClick={() => setSelectedReason(reason)}
-                                                                                        className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
-                                                                                            ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                            : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                            }`}
-                                                                                    >
-                                                                                        {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
-                                                                                        {REJECTION_REASONS[reason].label}
-                                                                                    </button>
-                                                                                ))}
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2 pt-1">
-                                                                                <button
-                                                                                    onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
-                                                                                    disabled={updatingStatus === booking.id}
-                                                                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                                >
-                                                                                    <XCircle className="h-3.5 w-3.5" />
-                                                                                    Confirm Rejection
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={() => setRejectingBooking(null)}
-                                                                                    className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                                >
-                                                                                    Cancel
-                                                                                </button>
-                                                                            </div>
-                                                                        </div>
-                                                                    </motion.div>
-                                                                )}
-                                                            </AnimatePresence>
-                                                        </>)}
-                                                    </div>
-                                                )}
-
-                                                {/* Status Actions for non-pending */}
-                                                {booking.status !== "pending" && !checkOutPassed && (
-                                                    <div className="mt-4 pt-4 border-t border-border">
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className="text-xs font-medium text-muted-foreground mr-2">
-                                                                Change status:
-                                                            </span>
-                                                            {(["confirmed", "cancelled"] as const).map(
-                                                                (s) => {
-                                                                    const c = statusConfig[s]
-                                                                    const Icon = c.icon
-                                                                    const isActive = booking.status === s
-                                                                    return (
-                                                                        <button
-                                                                            key={s}
-                                                                            onClick={() => {
-                                                                                if (s === "cancelled") {
-                                                                                    setConfirmingBooking(null)
-                                                                                    setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                                    setSelectedReason("dates_unavailable")
-                                                                                } else if (s === "confirmed" && booking.status === "cancelled") {
-                                                                                    setRejectingBooking(null)
-                                                                                    setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
-                                                                                } else {
-                                                                                    handleStatusChange(booking.id, s)
-                                                                                }
-                                                                            }}
-                                                                            disabled={
-                                                                                isActive || updatingStatus === booking.id
-                                                                            }
-                                                                            className={`
-                                                                        inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                                                                        ${isActive
-                                                                                    ? `${c.bg} ${c.color} ring-2 ring-current/20`
-                                                                                    : "bg-muted text-muted-foreground hover:text-foreground"
-                                                                                }
-                                                                        disabled:opacity-50 disabled:cursor-not-allowed
-                                                                    `}
-                                                                        >
-                                                                            <Icon className="h-3 w-3" />
-                                                                            {c.label}
-                                                                        </button>
-                                                                    )
-                                                                }
-                                                            )}
-                                                        </div>
-                                                        <AnimatePresence initial={false}>
-                                                            {confirmingBooking === booking.id && (
-                                                                <motion.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: "auto", opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                    className="overflow-hidden"
-                                                                >
-                                                                    <div className="mt-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/10 space-y-3">
-                                                                        <div className="flex gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                                                            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                                                            <div className="space-y-1">
-                                                                                <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Double-check before confirming</p>
-                                                                                <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-                                                                                    This will send a confirmation email to <strong>{booking.guestName}</strong> and block the dates ({booking.checkIn} → {booking.checkOut}) on the calendar, preventing new bookings.
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 pt-1">
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    setConfirmingBooking(null)
-                                                                                    handleStatusChange(booking.id, "confirmed")
-                                                                                }}
-                                                                                disabled={updatingStatus === booking.id}
-                                                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
-                                                                            >
-                                                                                <CheckCircle2 className="h-3.5 w-3.5" />
-                                                                                Proceed
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setConfirmingBooking(null)}
-                                                                                className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                        <AnimatePresence initial={false}>
-                                                            {rejectingBooking === booking.id && (
-                                                                <motion.div
-                                                                    initial={{ height: 0, opacity: 0 }}
-                                                                    animate={{ height: "auto", opacity: 1 }}
-                                                                    exit={{ height: 0, opacity: 0 }}
-                                                                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                    className="overflow-hidden"
-                                                                >
-                                                                    <div className="mt-3 p-4 rounded-xl bg-red-500/5 border border-red-500/10 space-y-3">
-                                                                        {booking.status === "confirmed" && (
-                                                                            <div className="flex gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                                                                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                                                                <div className="space-y-1">
-                                                                                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Double-check before cancelling</p>
-                                                                                    <p className="text-[11px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-                                                                                        This will send a cancellation email to <strong>{booking.guestName}</strong> and unblock the dates ({booking.checkIn} → {booking.checkOut}) on the calendar, making them available again.
-                                                                                    </p>
-                                                                                </div>
-                                                                            </div>
-                                                                        )}
-                                                                        <p className="text-xs font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                        <div className="space-y-1">
-                                                                            {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
-                                                                                <button
-                                                                                    key={reason}
-                                                                                    onClick={() => setSelectedReason(reason)}
-                                                                                    className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-colors ${selectedReason === reason
-                                                                                        ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                        : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                        }`}
-                                                                                >
-                                                                                    {selectedReason === reason && <span className="mr-1.5">&#10003;</span>}
-                                                                                    {REJECTION_REASONS[reason].label}
-                                                                                </button>
-                                                                            ))}
-                                                                        </div>
-                                                                        <div className="flex items-center gap-2 pt-1">
-                                                                            <button
-                                                                                onClick={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
-                                                                                disabled={updatingStatus === booking.id}
-                                                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                            >
-                                                                                <XCircle className="h-3.5 w-3.5" />
-                                                                                Confirm Rejection
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => setRejectingBooking(null)}
-                                                                                className="px-4 py-2 rounded-xl text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                            >
-                                                                                Cancel
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                </motion.div>
-                                                            )}
-                                                        </AnimatePresence>
-                                                    </div>
-                                                )}
-
-                                                {/* Past checkout notice for non-pending */}
-                                                {booking.status !== "pending" && checkOutPassed && (
-                                                    <div className="mt-4 pt-4 border-t border-border">
-                                                        <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                                                            <AlertCircle className="h-3.5 w-3.5" />
-                                                            Check-out date has passed — no actions available
-                                                        </p>
-                                                    </div>
-                                                )}
-
-                                                {/* Booked at timestamp */}
-                                                <p className="text-[10px] text-muted-foreground mt-3">
-                                                    Booked on{" "}
-                                                    {format(
-                                                        parseISO(booking.createdAt),
-                                                        "MMM d, yyyy 'at' h:mm a"
-                                                    )}
+                                                <p className="text-muted-foreground flex items-start gap-1.5">
+                                                    <Phone className="h-3.5 w-3.5 mt-[3px] shrink-0" />
+                                                    {booking.guestPhone}
                                                 </p>
+                                                <p className="text-muted-foreground">{plural(booking.guests, "guest")}</p>
+                                            </div>
 
-                                                {/* Delete: pending bookings still under review have it beside Accept / Reject */}
-                                                {!(booking.status === "pending" && !checkOutPassed) && (
-                                                    <div className="mt-3 pt-3 border-t border-border flex flex-wrap items-center justify-end gap-2">
-                                                        {confirmDelete === booking.id ? (
-                                                            <>
-                                                                <span className="text-xs text-red-500 font-medium mr-auto">
-                                                                    {booking.status === "confirmed"
-                                                                        ? "Delete permanently? Its dates open up again and it leaves the earnings. No email is sent."
-                                                                        : "Delete permanently?"}
-                                                                </span>
-                                                                <button
-                                                                    onClick={() => handleDelete(booking.id)}
-                                                                    disabled={deletingBooking === booking.id}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setConfirmDelete(null)}
-                                                                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                                >
-                                                                    Cancel
-                                                                </button>
-                                                            </>
-                                                        ) : (
-                                                            <button
-                                                                onClick={() => setConfirmDelete(booking.id)}
-                                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-red-500 transition-colors"
-                                                            >
-                                                                <X className="h-3 w-3" />
-                                                                Delete booking
-                                                            </button>
-                                                        )}
+                                            {/* Stay details */}
+                                            <div className={PANEL}>
+                                                <h4 className={PANEL_TITLE}>Stay</h4>
+                                                <p className="text-foreground">{format(parseISO(booking.checkIn), "EEE, MMM d, yyyy")}</p>
+                                                <p className="text-muted-foreground">to</p>
+                                                <p className="text-foreground">{format(parseISO(booking.checkOut), "EEE, MMM d, yyyy")}</p>
+                                                <p className="text-muted-foreground">
+                                                    {plural(booking.nights, "night")} · {booking.id}
+                                                </p>
+                                            </div>
+
+                                            {/* Payment details */}
+                                            <div className={PANEL}>
+                                                <h4 className={PANEL_TITLE}>Payment</h4>
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-muted-foreground">
+                                                        ${booking.pricePerNight} × {booking.nights}
+                                                    </span>
+                                                    <span className="text-foreground">${booking.pricePerNight * booking.nights}</span>
+                                                </div>
+                                                {booking.cleaningFee > 0 && (
+                                                    <div className="flex justify-between gap-2">
+                                                        <span className="text-muted-foreground">Cleaning</span>
+                                                        <span className="text-foreground">${booking.cleaningFee}</span>
                                                     </div>
+                                                )}
+                                                <div className="flex justify-between gap-2 font-bold border-t border-border pt-1.5">
+                                                    <span className="text-foreground">Total</span>
+                                                    <span className="text-foreground">${booking.total}</span>
+                                                </div>
+                                                <p className="text-[13px] text-muted-foreground">≈ {booking.totalRwf.toLocaleString()} RWF</p>
+                                                {booking.momoTransactionId && (
+                                                    <p className="text-[13px] font-mono text-muted-foreground [overflow-wrap:anywhere]">
+                                                        MoMo: {booking.momoTransactionId}
+                                                    </p>
                                                 )}
                                             </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
+                                        </div>
+
+                                        {/* Special requests */}
+                                        {booking.specialRequests && (
+                                            <p className="text-sm text-foreground">
+                                                <span className="font-semibold">Special requests: </span>
+                                                {booking.specialRequests}
+                                            </p>
+                                        )}
+
+                                        {/* Review Actions for Pending */}
+                                        {booking.status === "pending" && (
+                                            <div className="pt-4 border-t border-[#EBEBEB]">
+                                                {checkOutPassed ? (
+                                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                                        <AlertCircle className="h-4 w-4" />
+                                                        Check-out date has passed — no actions available
+                                                    </p>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-sm text-muted-foreground mb-3">
+                                                            Review the booking details and payment info above, then accept or reject.
+                                                        </p>
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleStatusChange(booking.id, "confirmed")}
+                                                                disabled={busy}
+                                                                className={BUTTON_DARK}
+                                                            >
+                                                                Accept Booking
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                    setSelectedReason("dates_unavailable")
+                                                                }}
+                                                                disabled={busy}
+                                                                aria-expanded={rejectingBooking === booking.id}
+                                                                className={BUTTON_OUTLINE}
+                                                            >
+                                                                Reject Booking
+                                                            </button>
+                                                            <div className="ml-auto flex flex-wrap items-center gap-2">
+                                                                {confirmDelete === booking.id ? (
+                                                                    <>
+                                                                        <span className="text-sm font-semibold text-primary">Delete permanently?</span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDelete(booking.id)}
+                                                                            disabled={deletingBooking === booking.id}
+                                                                            className={DELETE_YES}
+                                                                        >
+                                                                            {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
+                                                                        </button>
+                                                                        <button type="button" onClick={() => setConfirmDelete(null)} className={DELETE_NO}>
+                                                                            Cancel
+                                                                        </button>
+                                                                    </>
+                                                                ) : (
+                                                                    <button type="button" onClick={() => setConfirmDelete(booking.id)} className={DELETE_LINK}>
+                                                                        Delete
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <Fold open={rejectingBooking === booking.id}>
+                                                            <RejectPanel
+                                                                selected={selectedReason}
+                                                                onSelect={setSelectedReason}
+                                                                onConfirm={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
+                                                                onCancel={() => setRejectingBooking(null)}
+                                                                busy={busy}
+                                                            />
+                                                        </Fold>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Status Actions for non-pending */}
+                                        {booking.status !== "pending" && !checkOutPassed && (
+                                            <div className="pt-4 border-t border-[#EBEBEB]">
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className="text-sm font-semibold text-muted-foreground mr-1">Change status:</span>
+                                                    {(["confirmed", "cancelled"] as const).map((s) => {
+                                                        const isActive = booking.status === s
+                                                        return (
+                                                            <button
+                                                                key={s}
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    if (s === "cancelled") {
+                                                                        setConfirmingBooking(null)
+                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
+                                                                        setSelectedReason("dates_unavailable")
+                                                                    } else if (s === "confirmed" && booking.status === "cancelled") {
+                                                                        setRejectingBooking(null)
+                                                                        setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
+                                                                    } else {
+                                                                        handleStatusChange(booking.id, s)
+                                                                    }
+                                                                }}
+                                                                disabled={isActive || busy}
+                                                                aria-pressed={isActive}
+                                                                className={`min-h-11 px-4 rounded-full border text-sm font-semibold disabled:cursor-not-allowed ${isActive
+                                                                    ? "border-foreground bg-foreground text-background"
+                                                                    : "border-[#B0B0B0] bg-card text-foreground hover:bg-[#F7F7F7] disabled:opacity-45"
+                                                                    }`}
+                                                            >
+                                                                {STATUS_LABEL[s]}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                                <Fold open={confirmingBooking === booking.id}>
+                                                    <ConfirmPanel
+                                                        booking={booking}
+                                                        onConfirm={() => {
+                                                            setConfirmingBooking(null)
+                                                            handleStatusChange(booking.id, "confirmed")
+                                                        }}
+                                                        onCancel={() => setConfirmingBooking(null)}
+                                                        busy={busy}
+                                                    />
+                                                </Fold>
+                                                <Fold open={rejectingBooking === booking.id}>
+                                                    <RejectPanel
+                                                        booking={booking.status === "confirmed" ? booking : undefined}
+                                                        selected={selectedReason}
+                                                        onSelect={setSelectedReason}
+                                                        onConfirm={() => handleStatusChange(booking.id, "cancelled", selectedReason)}
+                                                        onCancel={() => setRejectingBooking(null)}
+                                                        busy={busy}
+                                                    />
+                                                </Fold>
+                                            </div>
+                                        )}
+
+                                        {/* Past checkout notice for non-pending */}
+                                        {booking.status !== "pending" && checkOutPassed && (
+                                            <p className="pt-4 border-t border-[#EBEBEB] text-sm text-muted-foreground flex items-center gap-1.5">
+                                                <AlertCircle className="h-4 w-4" />
+                                                Check-out date has passed — no actions available
+                                            </p>
+                                        )}
+
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            {/* Booked at timestamp */}
+                                            <p className="text-[13px] text-muted-foreground">
+                                                Booked on {format(parseISO(booking.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                                            </p>
+
+                                            {/* Delete: pending bookings still under review have it beside Accept / Reject */}
+                                            {!(booking.status === "pending" && !checkOutPassed) && (
+                                                <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                                                    {confirmDelete === booking.id ? (
+                                                        <>
+                                                            <span className="text-sm font-semibold text-primary">
+                                                                {booking.status === "confirmed"
+                                                                    ? "Delete permanently? Its dates open up again and it leaves the earnings. No email is sent."
+                                                                    : "Delete permanently?"}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDelete(booking.id)}
+                                                                disabled={deletingBooking === booking.id}
+                                                                className={DELETE_YES}
+                                                            >
+                                                                {deletingBooking === booking.id ? "Deleting..." : "Yes, delete"}
+                                                            </button>
+                                                            <button type="button" onClick={() => setConfirmDelete(null)} className={DELETE_NO}>
+                                                                Cancel
+                                                            </button>
+                                                        </>
+                                                    ) : (
+                                                        <button type="button" onClick={() => setConfirmDelete(booking.id)} className={DELETE_LINK}>
+                                                            Delete booking
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </Fold>
                             </div>
                         )
                     })}
@@ -845,39 +597,47 @@ export default function AdminBookingsPage() {
 
             {/* Pagination */}
             {!loading && filtered.length > ITEMS_PER_PAGE && (
-                <div className="flex items-center justify-between mt-6 bg-card rounded-2xl border border-border px-4 py-3">
-                    <p className="text-xs text-muted-foreground">
-                        Showing <strong className="text-foreground">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong>–<strong className="text-foreground">{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</strong> of <strong className="text-foreground">{filtered.length}</strong>
+                <nav aria-label="Pages" className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm text-muted-foreground">
+                        <strong className="text-foreground">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</strong> to{" "}
+                        <strong className="text-foreground">{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)}</strong> of{" "}
+                        <strong className="text-foreground">{filtered.length}</strong>
                     </p>
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
                         <button
+                            type="button"
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage === 1}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Previous page"
+                            className={PAGE_ARROW}
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </button>
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                             <button
                                 key={page}
+                                type="button"
                                 onClick={() => setCurrentPage(page)}
-                                className={`inline-flex items-center justify-center h-8 min-w-8 rounded-lg text-xs font-medium transition-colors ${page === currentPage
-                                        ? "bg-foreground text-background"
-                                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                aria-current={page === currentPage ? "page" : undefined}
+                                className={`h-11 min-w-11 px-2 rounded-full text-sm font-semibold transition-colors ${page === currentPage
+                                    ? "bg-foreground text-background"
+                                    : "text-foreground hover:bg-[#F2F2F2]"
                                     }`}
                             >
                                 {page}
                             </button>
                         ))}
                         <button
+                            type="button"
                             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                             disabled={currentPage === totalPages}
-                            className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            aria-label="Next page"
+                            className={PAGE_ARROW}
                         >
                             <ChevronRight className="h-4 w-4" />
                         </button>
                     </div>
-                </div>
+                </nav>
             )}
         </div>
     )

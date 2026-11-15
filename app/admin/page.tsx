@@ -2,34 +2,15 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { format, parseISO, isAfter, isBefore, startOfDay, differenceInDays } from "date-fns"
-import {
-    DollarSign,
-    Users,
-    CalendarCheck,
-    TrendingUp,
-    ArrowUpRight,
-    ArrowDownRight,
-    Clock,
-    Home,
-    ChevronRight,
-    ChevronDown,
-    Bed,
-    Star,
-    CircleDot,
-    CheckCircle2,
-    XCircle,
-    Phone,
-    Undo2,
-    AlertCircle,
-} from "lucide-react"
+import { format, parseISO, isAfter, startOfDay } from "date-fns"
+import { ChevronDown } from "lucide-react"
 import { toast } from "sonner"
-import { AnimatePresence, motion } from "motion/react"
 import { houses } from "@/lib/houses"
 import { usePrices } from "@/lib/use-prices"
-import { REJECTION_REASONS, type RejectionReason } from "@/lib/rejection-reasons"
+import { type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
-
+import { houseColor } from "@/components/earnings-insights"
+import { BUTTON_DARK, BUTTON_OUTLINE, ConfirmPanel, Fold, RejectPanel, StatusPill } from "@/components/admin-booking-review"
 
 interface Booking {
     id: string
@@ -53,17 +34,10 @@ interface Booking {
     createdAt: string
 }
 
-const statusColors: Record<string, string> = {
-    pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    confirmed: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-    cancelled: "bg-red-500/10 text-red-600 dark:text-red-400",
-}
-
-const statusDots: Record<string, string> = {
-    pending: "bg-amber-500",
-    confirmed: "bg-blue-500",
-    cancelled: "bg-red-500",
-}
+const SECTION_TITLE = "text-[22px] font-bold tracking-[-0.02em] leading-tight text-foreground"
+const TILE = "min-w-0 rounded-[20px] p-5 flex flex-col gap-1.5"
+const CARD = "rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col gap-4"
+const CARD_TITLE = "text-[17px] font-bold tracking-[-0.01em] text-foreground"
 
 export default function AdminDashboardPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
@@ -71,7 +45,8 @@ export default function AdminDashboardPage() {
     const [loading, setLoading] = useState(true)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [expandedRecent, setExpandedRecent] = useState<string | null>(null)
-    const [expandedPending, setExpandedPending] = useState<string | null>(null)
+    // "pending:<id>" or "recent:<id>": a booking can show in both lists, and
+    // only the one whose Reject was pressed opens its panel
     const [rejectingBooking, setRejectingBooking] = useState<string | null>(null)
     const [confirmingBooking, setConfirmingBooking] = useState<string | null>(null)
     const [selectedReason, setSelectedReason] = useState<RejectionReason>("dates_unavailable")
@@ -102,7 +77,6 @@ export default function AdminDashboardPage() {
                 const booking = bookings.find((b) => b.id === id)
                 // Clear expanded states before updating bookings to avoid
                 // setState-during-render conflicts with toast/Sonner
-                setExpandedPending(null)
                 setExpandedRecent(null)
                 setRejectingBooking(null)
                 setBookings((prev) =>
@@ -257,726 +231,369 @@ export default function AdminDashboardPage() {
             </div>
         )
     }
+    const pending = bookings.filter((b) => b.status === "pending")
+    const stay = (b: Booking) => `${format(parseISO(b.checkIn), "MMM d")} → ${format(parseISO(b.checkOut), "MMM d")}`
+    const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`
 
     return (
-        <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-8">
-                <h1 className="font-serif text-2xl sm:text-3xl font-semibold text-foreground mb-1">
-                    Dashboard
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Overview of your properties and bookings
-                </p>
-            </div>
+        // zoom scales the whole page down a notch on every screen size
+        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[1120px] mx-auto flex flex-col gap-6 sm:gap-7">
+            <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Dashboard</h1>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {/* Total Revenue */}
-                <div className="bg-card rounded-2xl border border-border p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                            <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
-                        </div>
-                        <span className="flex items-center gap-1 text-xs font-medium text-green-600 dark:text-green-400">
-                            <ArrowUpRight className="h-3 w-3" />
-                            All time
-                        </span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">${stats.totalRevenue}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                        ≈ {stats.totalRevenueRwf.toLocaleString()} RWF
-                    </p>
+            {/* At a glance */}
+            <section aria-label="At a glance" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className={`${TILE} bg-foreground text-background`}>
+                    <span className="text-[13px] font-semibold text-background/75">Revenue, all time</span>
+                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em]">${stats.totalRevenue.toLocaleString("en-US")}</span>
+                    <span className="text-[13px] text-background/75">≈ {stats.totalRevenueRwf.toLocaleString("en-US")} RWF</span>
                 </div>
-
-                {/* Total Bookings */}
-                <div className="bg-card rounded-2xl border border-border p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                            <CalendarCheck className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground">
-                            {stats.pendingCount} pending
-                        </span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{stats.totalBookings}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Total bookings</p>
+                <div className={`${TILE} bg-[#F7F7F7]`}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Bookings</span>
+                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">{stats.totalBookings}</span>
+                    <span className="text-[13px] text-muted-foreground">
+                        {stats.pendingCount > 0 ? `${stats.pendingCount} waiting for review` : "none waiting for review"}
+                    </span>
                 </div>
-
-                {/* Occupancy Rate */}
-                <div className="bg-card rounded-2xl border border-border p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                            <TrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <span className="text-xs font-medium text-muted-foreground">
-                            This month
-                        </span>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{stats.occupancyRate}%</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Occupancy rate</p>
+                <div className={`${TILE} bg-[#F7F7F7]`}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Occupancy</span>
+                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">{stats.occupancyRate}%</span>
+                    <span className="text-[13px] text-muted-foreground">this month</span>
                 </div>
-
-                {/* Average Stay */}
-                <div className="bg-card rounded-2xl border border-border p-5">
-                    <div className="flex items-center justify-between mb-3">
-                        <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                            <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                        </div>
-                    </div>
-                    <p className="text-2xl font-bold text-foreground">{stats.avgStay}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">Avg. nights per stay</p>
+                <div className={`${TILE} bg-[#F7F7F7]`}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Average stay</span>
+                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">{plural(stats.avgStay, "night")}</span>
+                    <span className="text-[13px] text-muted-foreground">per booking</span>
                 </div>
-            </div>
+            </section>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left: Revenue Chart + House Performance + Pricing */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Revenue Chart */}
-                    <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <div>
-                                <h2 className="text-base font-semibold text-foreground">Revenue</h2>
-                                <p className="text-xs text-muted-foreground">Last 6 months</p>
-                            </div>
-                        </div>
-                        <div className="flex items-end gap-2 sm:gap-3 h-40">
-                            {stats.monthlyRevenue.map((m) => (
-                                <div key={m.month} className="flex-1 flex flex-col items-center gap-2">
-                                    <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">
-                                        ${m.revenue}
-                                    </span>
-                                    <div className="w-full relative">
-                                        <div
-                                            className="w-full bg-foreground/10 rounded-t-lg transition-all duration-500 ease-out"
-                                            style={{
-                                                height: `${Math.max((m.revenue / maxRevenue) * 120, 4)}px`,
-                                            }}
-                                        >
-                                            <div
-                                                className="absolute inset-0 bg-foreground rounded-t-lg transition-all duration-500 ease-out"
-                                                style={{
-                                                    height: `${Math.max((m.revenue / maxRevenue) * 120, 4)}px`,
-                                                    opacity: m.revenue > 0 ? 0.8 : 0.15,
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                    <span className="text-[10px] sm:text-xs text-muted-foreground">
-                                        {m.month}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Property Performance */}
-                    <div className="bg-card rounded-2xl border border-border p-5 sm:p-6">
-                        <div className="flex items-center justify-between mb-5">
-                            <div>
-                                <h2 className="text-base font-semibold text-foreground">
-                                    Property Performance
-                                </h2>
-                                <p className="text-xs text-muted-foreground">
-                                    Revenue & bookings by property
-                                </p>
-                            </div>
-                        </div>
-                        <div className="space-y-4">
-                            {houses.map((house) => {
-                                const revenue = stats.revenueByHouse[house.slug] || 0
-                                const bookingCount = stats.bookingsByHouse[house.slug] || 0
-                                const totalRevAll = stats.totalRevenue || 1
-                                const pct = Math.round((revenue / totalRevAll) * 100)
-
-                                return (
-                                    <div
-                                        key={house.slug}
-                                        className="flex items-center gap-4 p-4 rounded-xl bg-muted/40"
-                                    >
-                                        <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0">
-                                            <img
-                                                src={house.heroImage}
-                                                alt={house.name}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center justify-between mb-1.5">
-                                                <h3 className="text-sm font-semibold text-foreground">
-                                                    {house.name}
-                                                </h3>
-                                                <span className="text-sm font-bold text-foreground">
-                                                    ${revenue}
-                                                </span>
-                                            </div>
-                                            {/* Progress bar */}
-                                            <div className="w-full h-1.5 bg-foreground/10 rounded-full overflow-hidden mb-1.5">
-                                                <div
-                                                    className="h-full bg-foreground/70 rounded-full transition-all duration-500"
-                                                    style={{ width: `${pct}%` }}
-                                                />
-                                            </div>
-                                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                                                <span>{bookingCount} bookings</span>
-                                                <span>·</span>
-                                                <span>${prices?.[house.slug]?.pricePerNight ?? house.pricePerNight}/night</span>
-                                                <span>·</span>
-                                                <span className="flex items-center gap-0.5">
-                                                    <Star className="h-3 w-3 fill-current" />
-                                                    {house.rating}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    </div>
-
-
-                </div>
-
-                {/* Right sidebar */}
-                <div className="space-y-6">
-                    {/* Booking Status Breakdown */}
-                    <div className="bg-card rounded-2xl border border-border p-5">
-                        <h2 className="text-base font-semibold text-foreground mb-4">
-                            Booking Status
+            {/* Pending review: the one thing here that needs a decision */}
+            {pending.length > 0 && (
+                <section aria-labelledby="pending-review" className="flex flex-col gap-3.5">
+                    <div className="flex items-baseline gap-3">
+                        <h2 id="pending-review" className={SECTION_TITLE}>
+                            Pending review
                         </h2>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                                    <span className="text-sm text-foreground">Pending</span>
-                                </div>
-                                <span className="text-sm font-semibold text-foreground">
-                                    {stats.pendingCount}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-                                    <span className="text-sm text-foreground">Confirmed</span>
-                                </div>
-                                <span className="text-sm font-semibold text-foreground">
-                                    {stats.confirmedCount}
-                                </span>
-                            </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                                        <span className="text-sm text-foreground">Cancelled</span>
-                                    </div>
-                                    <span className="text-sm font-semibold text-foreground">
-                                        {stats.cancelledCount}
-                                    </span>
-                                </div>
-                        </div>
-
-                        {/* Visual bar */}
-                        {stats.totalBookingsAll > 0 && (
-                            <div className="mt-4 flex h-2 rounded-full overflow-hidden gap-0.5">
-                                {stats.confirmedCount > 0 && (
-                                    <div
-                                        className="bg-blue-500 rounded-full"
-                                        style={{
-                                            width: `${(stats.confirmedCount / stats.totalBookingsAll) * 100}%`,
-                                        }}
-                                    />
-                                )}
-                                {stats.pendingCount > 0 && (
-                                    <div
-                                        className="bg-amber-500 rounded-full"
-                                        style={{
-                                            width: `${(stats.pendingCount / stats.totalBookingsAll) * 100}%`,
-                                        }}
-                                    />
-                                )}
-                                {stats.cancelledCount > 0 && (
-                                    <div
-                                        className="bg-red-500 rounded-full"
-                                        style={{
-                                            width: `${(stats.cancelledCount / stats.totalBookingsAll) * 100}%`,
-                                        }}
-                                    />
-                                )}
-                            </div>
-                        )}
+                        <span className="text-sm text-muted-foreground">{stats.pendingCount} awaiting</span>
                     </div>
-
-                    {/* Pending Review */}
-                    {stats.pendingCount > 0 && (
-                        <div className="bg-card rounded-2xl border border-border p-5">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                    <h2 className="text-base font-semibold text-foreground">
-                                        Pending Review
-                                    </h2>
-                                </div>
-                                <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                    {stats.pendingCount} awaiting
-                                </span>
-                            </div>
-                            <div className="space-y-2">
-                                {bookings
-                                    .filter((b) => b.status === "pending")
-                                    .map((b) => {
-                                        const isPendingExpanded = expandedPending === b.id
-                                        return (
-                                            <div key={b.id} className="rounded-xl overflow-hidden bg-amber-500/5 border border-amber-500/10">
-                                                <button
-                                                    onClick={() => setExpandedPending(isPendingExpanded ? null : b.id)}
-                                                    className="w-full flex items-center gap-3 p-3 hover:bg-amber-500/10 transition-colors text-left"
-                                                >
-                                                    <div className="w-9 h-9 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                                                        <span className="text-xs font-semibold text-foreground">
-                                                            {b.guestName
-                                                                .split(" ")
-                                                                .map((n) => n[0])
-                                                                .join("")
-                                                                .slice(0, 2)}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <p className="text-sm font-medium text-foreground truncate">
-                                                            {b.guestName}
-                                                        </p>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            {b.houseName} ·{" "}
-                                                            {format(parseISO(b.checkIn), "MMM d")} →{" "}
-                                                            {format(parseISO(b.checkOut), "MMM d")}
-                                                        </p>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 shrink-0">
-                                                        <p className="text-sm font-semibold text-foreground">
-                                                            ${b.total}
-                                                        </p>
-                                                        <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${isPendingExpanded ? "rotate-180" : ""}`} />
-                                                    </div>
-                                                </button>
-                                                <AnimatePresence initial={false}>
-                                                    {isPendingExpanded && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: "auto", opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                                                            className="overflow-hidden"
-                                                        >
-                                                            <div className="px-3 pb-3 pt-1 space-y-2.5">
-                                                                <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-muted-foreground">Phone</span>
-                                                                        <span className="text-foreground flex items-center gap-1">
-                                                                            <Phone className="h-3 w-3" />
-                                                                            {b.guestPhone}
-                                                                        </span>
-                                                                    </div>
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-muted-foreground">Guests</span>
-                                                                        <span className="text-foreground">{b.guests}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-muted-foreground">Nights</span>
-                                                                        <span className="text-foreground">{b.nights} night{b.nights > 1 ? "s" : ""}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between">
-                                                                        <span className="text-muted-foreground">Total</span>
-                                                                        <span className="text-foreground font-semibold">${b.total} · {b.totalRwf.toLocaleString()} RWF</span>
-                                                                    </div>
-                                                                    {b.momoTransactionId && (
-                                                                        <div className="flex justify-between">
-                                                                            <span className="text-muted-foreground">MoMo</span>
-                                                                            <span className="text-foreground font-mono">{b.momoTransactionId}</span>
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                                <div className="flex flex-wrap items-center gap-1.5">
-                                                                    <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
-                                                                    <button
-                                                                        onClick={() => handleReview(b.id, "confirmed")}
-                                                                        disabled={actionLoading === b.id}
-                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <CheckCircle2 className="h-3 w-3" />
-                                                                        Accept
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setRejectingBooking(rejectingBooking === b.id ? null : b.id)
-                                                                            setSelectedReason("dates_unavailable")
-                                                                        }}
-                                                                        disabled={actionLoading === b.id}
-                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <XCircle className="h-3 w-3" />
-                                                                        Reject
-                                                                    </button>
-                                                                </div>
-                                                                <AnimatePresence initial={false}>
-                                                                    {rejectingBooking === b.id && (
-                                                                        <motion.div
-                                                                            initial={{ height: 0, opacity: 0 }}
-                                                                            animate={{ height: "auto", opacity: 1 }}
-                                                                            exit={{ height: 0, opacity: 0 }}
-                                                                            transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                            className="overflow-hidden"
-                                                                        >
-                                                                            <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
-                                                                                <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                                <div className="space-y-1">
-                                                                                    {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
-                                                                                        <button
-                                                                                            key={reason}
-                                                                                            onClick={() => setSelectedReason(reason)}
-                                                                                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
-                                                                                                ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                                : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                                }`}
-                                                                                        >
-                                                                                            {selectedReason === reason && <span className="mr-1">&#10003;</span>}
-                                                                                            {REJECTION_REASONS[reason].label}
-                                                                                        </button>
-                                                                                    ))}
-                                                                                </div>
-                                                                                <div className="flex items-center gap-1.5 pt-1">
-                                                                                    <button
-                                                                                        onClick={() => handleReview(b.id, "cancelled", selectedReason)}
-                                                                                        disabled={actionLoading === b.id}
-                                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                                    >
-                                                                                        <XCircle className="h-3 w-3" />
-                                                                                        Confirm Rejection
-                                                                                    </button>
-                                                                                    <button
-                                                                                        onClick={() => setRejectingBooking(null)}
-                                                                                        className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                                    >
-                                                                                        Cancel
-                                                                                    </button>
-                                                                                </div>
-                                                                            </div>
-                                                                        </motion.div>
-                                                                    )}
-                                                                </AnimatePresence>
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </div>
-                                        )
-                                    })}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Currently Hosting (moved from full-width section) */}
-                    {stats.currentlyHosting.length > 0 && (
-                        <div className="bg-card rounded-2xl border border-border p-5">
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <h2 className="text-base font-semibold text-foreground">
-                                    Currently Hosting
-                                </h2>
-                            </div>
-                            <div className="space-y-3">
-                                {stats.currentlyHosting.map((b) => (
-                                    <div
-                                        key={b.id}
-                                        className="p-3 rounded-xl bg-green-500/5 border border-green-500/10"
-                                    >
-                                        <div className="flex items-center justify-between mb-1">
-                                            <span className="text-sm font-medium text-foreground">
-                                                {b.guestName}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                                {b.houseName}
-                                            </span>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                            Checks out {format(parseISO(b.checkOut), "MMM d")} · {b.guests} guest{b.guests > 1 ? "s" : ""}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                </div>
-            </div>
-
-            {/* Full-width section: Recent Bookings */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                {/* Recent Bookings - spans both columns */}
-                <div className="bg-card rounded-2xl border border-border p-5 lg:col-span-2">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-base font-semibold text-foreground">
-                            Recent Bookings
-                        </h2>
-                        <Link
-                            href="/admin/bookings"
-                            className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-                        >
-                            View all
-                            <ChevronRight className="h-3 w-3" />
-                        </Link>
-                    </div>
-                    <div className="space-y-2">
-                        {bookings.slice(0, 5).map((booking) => {
-                            const isExpanded = expandedRecent === booking.id
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+                        {pending.map((b) => {
+                            const key = `pending:${b.id}`
+                            const busy = actionLoading === b.id
                             return (
-                                <div key={booking.id} className="rounded-xl overflow-hidden">
-                                    <button
-                                        onClick={() => setExpandedRecent(isExpanded ? null : booking.id)}
-                                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
-                                    >
-                                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                            <span className="text-xs font-semibold text-foreground">
-                                                {booking.guestName
-                                                    .split(" ")
-                                                    .map((n) => n[0])
-                                                    .join("")
-                                                    .slice(0, 2)}
+                                <div key={b.id} className="min-w-0 rounded-2xl border border-[#B0B0B0] bg-card p-5 flex flex-col gap-4">
+                                    <div className="flex justify-between gap-4">
+                                        <div className="min-w-0 flex flex-col gap-0.5">
+                                            <span className="text-[17px] font-bold text-foreground [overflow-wrap:anywhere]">{b.guestName}</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {b.houseName} · {stay(b)} · {plural(b.nights, "night")}
                                             </span>
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-foreground truncate">
-                                                {booking.guestName}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">
-                                                {booking.houseName} ·{" "}
-                                                {format(parseISO(booking.checkIn), "MMM d")} →{" "}
-                                                {format(parseISO(booking.checkOut), "MMM d")}
-                                            </p>
+                                        <div className="shrink-0 flex flex-col items-end gap-0.5">
+                                            <span className="text-[17px] font-bold text-foreground">${b.total}</span>
+                                            <span className="text-[13px] text-muted-foreground whitespace-nowrap">{b.totalRwf.toLocaleString()} RWF</span>
                                         </div>
-                                        <div className="flex items-center gap-2 shrink-0">
-                                            <div className="text-right">
-                                                <p className="text-sm font-semibold text-foreground">
-                                                    ${booking.total}
-                                                </p>
-                                                <span
-                                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium ${statusColors[booking.status]}`}
-                                                >
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${statusDots[booking.status]}`} />
-                                                    {booking.status}
-                                                </span>
-                                            </div>
-                                            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
-                                        </div>
-                                    </button>
-                                    <AnimatePresence initial={false}>
-                                        {isExpanded && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="px-3 pb-3 pt-1 space-y-2.5">
-                                                    <div className="p-3 rounded-lg bg-muted/40 space-y-1.5 text-xs">
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">Phone</span>
-                                                            <span className="text-foreground flex items-center gap-1">
-                                                                <Phone className="h-3 w-3" />
-                                                                {booking.guestPhone}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">Guests</span>
-                                                            <span className="text-foreground">{booking.guests}</span>
-                                                        </div>
-                                                        <div className="flex justify-between">
-                                                            <span className="text-muted-foreground">Total</span>
-                                                            <span className="text-foreground font-semibold">${booking.total} · {booking.totalRwf.toLocaleString()} RWF</span>
-                                                        </div>
-                                                        {booking.momoTransactionId && (
-                                                            <div className="flex justify-between">
-                                                                <span className="text-muted-foreground">MoMo</span>
-                                                                <span className="text-foreground font-mono">{booking.momoTransactionId}</span>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {/* Quick status change */}
-                                                    <div className="flex flex-wrap items-center gap-1.5">
-                                                        <span className="text-[10px] font-medium text-muted-foreground mr-1">Action:</span>
-                                                        {isAfter(new Date(), parseISO(booking.checkOut)) ? (
-                                                            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                                                <AlertCircle className="h-3 w-3" />
-                                                                Check-out passed — no actions
-                                                            </span>
-                                                        ) : (<>
-                                                            {booking.status === "confirmed" && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setConfirmingBooking(null)
-                                                                        setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                        setSelectedReason("dates_unavailable")
-                                                                    }}
-                                                                    disabled={actionLoading === booking.id}
-                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <Undo2 className="h-3 w-3" />
-                                                                    Undo Accept
-                                                                </button>
-                                                            )}
-                                                            {booking.status === "cancelled" && (
-                                                                <button
-                                                                    onClick={() => {
-                                                                        setRejectingBooking(null)
-                                                                        setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
-                                                                    }}
-                                                                    disabled={actionLoading === booking.id}
-                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
-                                                                >
-                                                                    <Undo2 className="h-3 w-3" />
-                                                                    Undo Reject
-                                                                </button>
-                                                            )}
-                                                            {booking.status === "pending" && (
-                                                                <>
-                                                                    <button
-                                                                        onClick={() => handleReview(booking.id, "confirmed")}
-                                                                        disabled={actionLoading === booking.id}
-                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <CheckCircle2 className="h-3 w-3" />
-                                                                        Accept
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            setConfirmingBooking(null)
-                                                                            setRejectingBooking(rejectingBooking === booking.id ? null : booking.id)
-                                                                            setSelectedReason("dates_unavailable")
-                                                                        }}
-                                                                        disabled={actionLoading === booking.id}
-                                                                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                                                                    >
-                                                                        <XCircle className="h-3 w-3" />
-                                                                        Reject
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                        </>)}
-                                                        <Link
-                                                            href="/admin/bookings"
-                                                            className="ml-auto text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                                                        >
-                                                            Full details →
-                                                        </Link>
-                                                    </div>
-                                                    <AnimatePresence initial={false}>
-                                                        {confirmingBooking === booking.id && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: "auto", opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="mt-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 space-y-2.5">
-                                                                    <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                                                                        <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                                                        <div className="space-y-0.5">
-                                                                            <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before confirming</p>
-                                                                            <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-                                                                                This will send a confirmation email to <strong>{booking.guestName}</strong> and block the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
-                                                                            </p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1.5 pt-1">
-                                                                        <button
-                                                                            onClick={() => {
-                                                                                setConfirmingBooking(null)
-                                                                                handleReview(booking.id, "confirmed")
-                                                                            }}
-                                                                            disabled={actionLoading === booking.id}
-                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-black text-white hover:bg-black/80 transition-colors disabled:opacity-50"
-                                                                        >
-                                                                            <CheckCircle2 className="h-3 w-3" />
-                                                                            Proceed
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setConfirmingBooking(null)}
-                                                                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                        >
-                                                                            Cancel
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                    <AnimatePresence initial={false}>
-                                                        {rejectingBooking === booking.id && (
-                                                            <motion.div
-                                                                initial={{ height: 0, opacity: 0 }}
-                                                                animate={{ height: "auto", opacity: 1 }}
-                                                                exit={{ height: 0, opacity: 0 }}
-                                                                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                                                                className="overflow-hidden"
-                                                            >
-                                                                <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/10 space-y-2.5">
-                                                                    {booking.status === "confirmed" && (
-                                                                        <div className="flex gap-2 p-2.5 rounded-md bg-amber-500/10 border border-amber-500/20">
-                                                                            <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                                                                            <div className="space-y-0.5">
-                                                                                <p className="text-[11px] font-semibold text-amber-700 dark:text-amber-300">Double-check before cancelling</p>
-                                                                                <p className="text-[10px] text-amber-600/80 dark:text-amber-400/80 leading-relaxed">
-                                                                                    This will send a cancellation email to <strong>{booking.guestName}</strong> and unblock the dates ({booking.checkIn} → {booking.checkOut}) on the calendar.
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    )}
-                                                                    <p className="text-[11px] font-semibold text-red-600 dark:text-red-400">Select rejection reason:</p>
-                                                                    <div className="space-y-1">
-                                                                        {(Object.keys(REJECTION_REASONS) as RejectionReason[]).map((reason) => (
-                                                                            <button
-                                                                                key={reason}
-                                                                                onClick={() => setSelectedReason(reason)}
-                                                                                className={`w-full text-left px-2.5 py-1.5 rounded-md text-[11px] transition-colors ${selectedReason === reason
-                                                                                    ? "bg-red-500/15 text-red-700 dark:text-red-300 font-medium"
-                                                                                    : "text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400"
-                                                                                    }`}
-                                                                            >
-                                                                                {selectedReason === reason && <span className="mr-1">&#10003;</span>}
-                                                                                {REJECTION_REASONS[reason].label}
-                                                                            </button>
-                                                                        ))}
-                                                                    </div>
-                                                                    <div className="flex items-center gap-1.5 pt-1">
-                                                                        <button
-                                                                            onClick={() => handleReview(booking.id, "cancelled", selectedReason)}
-                                                                            disabled={actionLoading === booking.id}
-                                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                                                                        >
-                                                                            <XCircle className="h-3 w-3" />
-                                                                            Confirm Rejection
-                                                                        </button>
-                                                                        <button
-                                                                            onClick={() => setRejectingBooking(null)}
-                                                                            className="px-2.5 py-1 rounded-lg text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
-                                                                        >
-                                                                            Cancel
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </motion.div>
-                                                        )}
-                                                    </AnimatePresence>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                                    </div>
+                                    <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                                        {b.guestPhone && <span>{b.guestPhone}</span>}
+                                        <span>{plural(b.guests, "guest")}</span>
+                                        {b.momoTransactionId && <span className="[overflow-wrap:anywhere]">MoMo {b.momoTransactionId}</span>}
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleReview(b.id, "confirmed")}
+                                            disabled={busy}
+                                            className={`${BUTTON_DARK} flex-1`}
+                                        >
+                                            Accept
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setRejectingBooking(rejectingBooking === key ? null : key)
+                                                setSelectedReason("dates_unavailable")
+                                            }}
+                                            disabled={busy}
+                                            aria-expanded={rejectingBooking === key}
+                                            className={`${BUTTON_OUTLINE} flex-1`}
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
+                                    <Fold open={rejectingBooking === key}>
+                                        <RejectPanel
+                                            selected={selectedReason}
+                                            onSelect={setSelectedReason}
+                                            onConfirm={() => handleReview(b.id, "cancelled", selectedReason)}
+                                            onCancel={() => setRejectingBooking(null)}
+                                            busy={busy}
+                                        />
+                                    </Fold>
                                 </div>
                             )
                         })}
                     </div>
+                </section>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                <div className="min-w-0 lg:col-span-2 flex flex-col gap-6">
+                    {/* Revenue, last 6 months */}
+                    <section aria-labelledby="revenue" className={CARD}>
+                        <div className="flex items-baseline justify-between gap-3">
+                            <h2 id="revenue" className={CARD_TITLE}>
+                                Revenue
+                            </h2>
+                            <span className="text-[13px] text-muted-foreground">Last 6 months</span>
+                        </div>
+                        <div className="grid grid-cols-6 gap-2 sm:gap-3 items-end">
+                            {stats.monthlyRevenue.map((m, i) => {
+                                const current = i === stats.monthlyRevenue.length - 1
+                                return (
+                                    <div key={m.month} className="min-w-0 flex flex-col items-center gap-1.5">
+                                        <span className="text-xs font-semibold text-muted-foreground truncate max-w-full">${m.revenue}</span>
+                                        <div
+                                            className={`w-full rounded-t-lg ${current ? "bg-foreground" : "bg-[#D4D4D4]"}`}
+                                            style={{ height: `${Math.max((m.revenue / maxRevenue) * 120, 4)}px` }}
+                                        />
+                                        <span className={`text-[13px] text-foreground ${current ? "font-bold" : "font-medium"}`}>{m.month}</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </section>
+
+                    {/* Revenue and bookings by house */}
+                    <section aria-labelledby="by-house" className={CARD}>
+                        <h2 id="by-house" className={CARD_TITLE}>
+                            By house
+                        </h2>
+                        {houses.map((house) => {
+                            const revenue = stats.revenueByHouse[house.slug] || 0
+                            const bookingCount = stats.bookingsByHouse[house.slug] || 0
+                            const pct = Math.round((revenue / (stats.totalRevenue || 1)) * 100)
+                            return (
+                                <div key={house.slug} className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-center gap-3 text-[15px] text-foreground">
+                                        <span className="flex items-center gap-2 font-semibold">
+                                            <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: houseColor(house.slug) }} />
+                                            {house.name}
+                                        </span>
+                                        <span>
+                                            <span className="font-semibold">${revenue}</span>
+                                            <span className="text-muted-foreground"> · {pct}%</span>
+                                        </span>
+                                    </div>
+                                    <div className="h-2 rounded-full bg-[#EBEBEB] overflow-hidden">
+                                        <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: houseColor(house.slug) }} />
+                                    </div>
+                                    <span className="text-[13px] text-muted-foreground">
+                                        {plural(bookingCount, "booking")} · ${prices?.[house.slug]?.pricePerNight ?? house.pricePerNight} a night
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </section>
+                </div>
+
+                <div className="min-w-0 flex flex-col gap-6">
+                    {stats.currentlyHosting.length > 0 && (
+                        <section aria-labelledby="hosting" className={CARD}>
+                            <h2 id="hosting" className={CARD_TITLE}>
+                                Currently hosting
+                            </h2>
+                            {stats.currentlyHosting.map((b) => (
+                                <div key={b.id} className="px-4 py-3.5 rounded-xl bg-[#F7F7F7] flex flex-col gap-0.5">
+                                    <div className="flex justify-between gap-3 text-[15px]">
+                                        <span className="min-w-0 font-semibold text-foreground [overflow-wrap:anywhere]">{b.guestName}</span>
+                                        <span className="shrink-0 text-muted-foreground">{b.houseName}</span>
+                                    </div>
+                                    <span className="text-[13px] text-muted-foreground">
+                                        Checks out {format(parseISO(b.checkOut), "MMM d")} · {plural(b.guests, "guest")}
+                                    </span>
+                                </div>
+                            ))}
+                        </section>
+                    )}
+
+                    <section aria-labelledby="booking-status" className={CARD}>
+                        <h2 id="booking-status" className={CARD_TITLE}>
+                            Booking status
+                        </h2>
+                        {stats.totalBookingsAll > 0 && (
+                            <div className="flex h-2 gap-0.5" aria-hidden="true">
+                                {stats.confirmedCount > 0 && <div className="rounded-full bg-[#1E40AF]" style={{ flexGrow: stats.confirmedCount }} />}
+                                {stats.pendingCount > 0 && <div className="rounded-full bg-[#D97706]" style={{ flexGrow: stats.pendingCount }} />}
+                                {stats.cancelledCount > 0 && <div className="rounded-full bg-[#B0B0B0]" style={{ flexGrow: stats.cancelledCount }} />}
+                            </div>
+                        )}
+                        {(
+                            [
+                                ["Confirmed", stats.confirmedCount, "bg-[#1E40AF]"],
+                                ["Pending", stats.pendingCount, "bg-[#D97706]"],
+                                ["Cancelled", stats.cancelledCount, "bg-[#B0B0B0]"],
+                            ] as const
+                        ).map(([label, count, dot]) => (
+                            <div key={label} className="flex justify-between text-[15px] text-foreground">
+                                <span className="flex items-center gap-2">
+                                    <span aria-hidden="true" className={`w-2.5 h-2.5 rounded-full ${dot}`} />
+                                    {label}
+                                </span>
+                                <span className="font-semibold">{count}</span>
+                            </div>
+                        ))}
+                    </section>
                 </div>
             </div>
+
+            {/* The five newest bookings */}
+            <section aria-labelledby="recent" className="flex flex-col">
+                <div className="flex items-baseline justify-between gap-3 mb-2">
+                    <h2 id="recent" className={SECTION_TITLE}>
+                        Recent bookings
+                    </h2>
+                    <Link href="/admin/bookings" className="min-h-11 flex items-center text-sm font-semibold text-foreground underline underline-offset-4">
+                        View all
+                    </Link>
+                </div>
+                {bookings.slice(0, 5).map((booking) => {
+                    const isExpanded = expandedRecent === booking.id
+                    const key = `recent:${booking.id}`
+                    const busy = actionLoading === booking.id
+                    return (
+                        <div key={booking.id} className="border-b border-[#EBEBEB] last:border-b-0">
+                            <button
+                                type="button"
+                                onClick={() => setExpandedRecent(isExpanded ? null : booking.id)}
+                                aria-expanded={isExpanded}
+                                className="w-full py-3.5 flex items-center gap-3 sm:gap-4 text-left"
+                            >
+                                <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                                    <span className="text-base font-semibold text-foreground truncate">{booking.guestName}</span>
+                                    <span className="text-[13px] text-muted-foreground">
+                                        {booking.houseName} · {stay(booking)}
+                                    </span>
+                                </div>
+                                <StatusPill status={booking.status} />
+                                <span className="w-14 text-right text-base font-semibold text-foreground">${booking.total}</span>
+                                <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
+                            </button>
+                            <Fold open={isExpanded}>
+                                <div className="pb-4 flex flex-col gap-3">
+                                    <div className="p-4 rounded-xl bg-[#F7F7F7] flex flex-col gap-1.5 text-sm">
+                                        <div className="flex justify-between gap-3">
+                                            <span className="text-muted-foreground">Phone</span>
+                                            <span className="text-foreground text-right">{booking.guestPhone}</span>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <span className="text-muted-foreground">Guests</span>
+                                            <span className="text-foreground">{booking.guests}</span>
+                                        </div>
+                                        <div className="flex justify-between gap-3">
+                                            <span className="text-muted-foreground">Total</span>
+                                            <span className="text-foreground font-semibold text-right">
+                                                ${booking.total} · {booking.totalRwf.toLocaleString()} RWF
+                                            </span>
+                                        </div>
+                                        {booking.momoTransactionId && (
+                                            <div className="flex justify-between gap-3">
+                                                <span className="text-muted-foreground">MoMo</span>
+                                                <span className="text-foreground font-mono text-right [overflow-wrap:anywhere]">{booking.momoTransactionId}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {isAfter(new Date(), parseISO(booking.checkOut)) ? (
+                                            <span className="text-sm text-muted-foreground">Check-out passed — no actions</span>
+                                        ) : (
+                                            <>
+                                                {booking.status === "confirmed" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setConfirmingBooking(null)
+                                                            setRejectingBooking(rejectingBooking === key ? null : key)
+                                                            setSelectedReason("dates_unavailable")
+                                                        }}
+                                                        disabled={busy}
+                                                        className={BUTTON_OUTLINE}
+                                                    >
+                                                        Undo Accept
+                                                    </button>
+                                                )}
+                                                {booking.status === "cancelled" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setRejectingBooking(null)
+                                                            setConfirmingBooking(confirmingBooking === booking.id ? null : booking.id)
+                                                        }}
+                                                        disabled={busy}
+                                                        className={BUTTON_OUTLINE}
+                                                    >
+                                                        Undo Reject
+                                                    </button>
+                                                )}
+                                                {booking.status === "pending" && (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleReview(booking.id, "confirmed")}
+                                                            disabled={busy}
+                                                            className={BUTTON_DARK}
+                                                        >
+                                                            Accept
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setConfirmingBooking(null)
+                                                                setRejectingBooking(rejectingBooking === key ? null : key)
+                                                                setSelectedReason("dates_unavailable")
+                                                            }}
+                                                            disabled={busy}
+                                                            className={BUTTON_OUTLINE}
+                                                        >
+                                                            Reject
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </>
+                                        )}
+                                        <Link
+                                            href="/admin/bookings"
+                                            className="ml-auto min-h-11 flex items-center text-sm font-semibold text-foreground underline underline-offset-4"
+                                        >
+                                            Full details
+                                        </Link>
+                                    </div>
+                                    <Fold open={confirmingBooking === booking.id}>
+                                        <ConfirmPanel
+                                            booking={booking}
+                                            onConfirm={() => {
+                                                setConfirmingBooking(null)
+                                                handleReview(booking.id, "confirmed")
+                                            }}
+                                            onCancel={() => setConfirmingBooking(null)}
+                                            busy={busy}
+                                        />
+                                    </Fold>
+                                    <Fold open={rejectingBooking === key}>
+                                        <RejectPanel
+                                            booking={booking.status === "confirmed" ? booking : undefined}
+                                            selected={selectedReason}
+                                            onSelect={setSelectedReason}
+                                            onConfirm={() => handleReview(booking.id, "cancelled", selectedReason)}
+                                            onCancel={() => setRejectingBooking(null)}
+                                            busy={busy}
+                                        />
+                                    </Fold>
+                                </div>
+                            </Fold>
+                        </div>
+                    )
+                })}
+            </section>
         </div>
     )
 }

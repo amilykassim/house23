@@ -273,7 +273,7 @@ export default function AdminExpensesPage() {
 
     return (
         // zoom scales the whole page down a notch on every screen size
-        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] mx-auto flex flex-col gap-6 sm:gap-7">
+        <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] lg:max-w-[1040px] mx-auto flex flex-col gap-6 sm:gap-7">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Expenses</h1>
                 <button
@@ -289,7 +289,7 @@ export default function AdminExpensesPage() {
             </div>
 
             {formOpen && (
-                <div id="add-expense" className="rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-5">
+                <div id="add-expense" className="w-full max-w-[592px] rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-5">
                     {/* House */}
                     <SegmentedControl
                         className="self-start max-w-full"
@@ -429,7 +429,7 @@ export default function AdminExpensesPage() {
             ) : (
                 <>
                     {/* The month at a glance */}
-                    <section aria-label={`${listMonthName} at a glance`} className="grid grid-cols-1 min-[480px]:grid-cols-2 gap-3">
+                    <section aria-label={`${listMonthName} at a glance`} className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className={`${TILE} bg-foreground text-background`}>
                             <span className="text-[13px] font-semibold text-background/75">Spent in {listMonthName}</span>
                             <span className="text-[26px] leading-tight font-bold tracking-[-0.02em]">{rwf(report.total)}</span>
@@ -461,7 +461,7 @@ export default function AdminExpensesPage() {
                     {!hasSpending ? (
                         <p className="text-sm text-muted-foreground">The breakdown appears once {listMonthName} has an expense.</p>
                     ) : (
-                        <>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 sm:gap-y-7 items-start">
                             {/* By category, largest first */}
                             <section aria-labelledby="where-it-goes" className="flex flex-col gap-3.5">
                                 <h2 id="where-it-goes" className={SECTION_TITLE}>
@@ -580,7 +580,7 @@ export default function AdminExpensesPage() {
                                     })}
                                 </div>
                             </section>
-                        </>
+                        </div>
                     )}
                 </>
             )}
