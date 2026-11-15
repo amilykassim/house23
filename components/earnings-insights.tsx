@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useId, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { format, parseISO, startOfDay } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
-import { useCountUp, useGrown } from "@/components/admin-motion"
+import { AnimatePresence, MotionConfig, motion } from "motion/react"
+import { useCountUp, useGrown, useTween } from "@/components/admin-motion"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF } from "@/lib/currency"
 import type { Expense } from "@/lib/expenses"
@@ -28,6 +29,70 @@ export const houseColor = (slug: string) => HOUSE_COLORS[houses.findIndex((h) =>
 // "all" or one house slug, for the house switch on Insights and its detail page
 export const HOUSE_FILTERS = [{ id: "all", label: "All houses" }, ...houses.map((h) => ({ id: h.slug, label: h.name }))]
 const NO_PERSONAL = { expenses: [], stipends: [] }
+
+/** A money figure that glides to its new value when `trigger` flips; "−" in front when signed and below zero. */
+function Glide({ value, trigger, arrive, signed = false }: { value: number; trigger: unknown; arrive: number; signed?: boolean }) {
+    const shown = useTween(value, trigger)
+    return (
+        <>
+            {signed && shown < 0 ? "−" : ""}
+            {money((signed ? Math.abs(shown) : shown) * arrive)}
+        </>
+    )
+}
+
+/** Text that fades across when `swapKey` changes; other changes show at once. */
+function Swap({ swapKey, className, children }: { swapKey: boolean; className: string; children: React.ReactNode }) {
+    return (
+        <MotionConfig reducedMotion="user">
+            <AnimatePresence mode="wait" initial={false}>
+                <motion.span
+                    key={String(swapKey)}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.16, ease: "easeOut" }}
+                    className={`block ${className}`}
+                >
+                    {children}
+                </motion.span>
+            </AnimatePresence>
+        </MotionConfig>
+    )
+}
+
+/** Before | After personal money: a white thumb slides to the one shown. */
+function PersonalSwitch({ after, onChange }: { after: boolean; onChange: (after: boolean) => void }) {
+    const thumbId = useId()
+    return (
+        <MotionConfig reducedMotion="user">
+            <div role="group" aria-label="Profit before or after personal money" className="shrink-0 flex gap-0.5 p-0.5 rounded-full border border-background/35">
+                {[false, true].map((option) => {
+                    const selected = after === option
+                    return (
+                        <button
+                            key={String(option)}
+                            type="button"
+                            onClick={() => onChange(option)}
+                            aria-pressed={selected}
+                            aria-label={option ? "After personal money" : "Before personal money"}
+                            className={`relative min-h-8 px-3 rounded-full text-[12px] font-semibold transition-colors duration-200 ${selected ? "text-foreground" : "text-background/75 hover:text-background"}`}
+                        >
+                            {selected && (
+                                <motion.span
+                                    layoutId={thumbId}
+                                    className="absolute inset-0 rounded-full bg-background"
+                                    transition={{ type: "spring", stiffness: 480, damping: 38 }}
+                                />
+                            )}
+                            <span className="relative">{option ? "After" : "Before"}</span>
+                        </button>
+                    )
+                })}
+            </div>
+        </MotionConfig>
+    )
+}
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const PERIOD_KINDS: { id: Exclude<PeriodKind, "custom">; label: string }[] = [
     { id: "week", label: "Week" },
@@ -362,38 +427,28 @@ export function EarningsInsights({
                     <div className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
                         <span className="text-[13px] font-semibold text-muted-foreground">Expenses</span>
                         <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">
-                            {money(costs * arrive)}
+                            <Glide value={costs} trigger={afterStipend} arrive={arrive} />
                         </span>
-                        <span className="text-[13px] text-muted-foreground">
+                        <Swap swapKey={afterStipend} className="text-[13px] text-muted-foreground">
                             {afterStipend
                                 ? `${plural(periodExpenses.length, "expense")} and ${money(personalShare)} personal`
                                 : periodExpenses.length === 0
                                     ? "none recorded"
                                     : `${plural(periodExpenses.length, "expense")}, mostly ${topCategory.toLowerCase()}`}
-                        </span>
+                        </Swap>
                     </div>
                     <div className="m-lift col-span-2 sm:col-span-1 min-w-0 rounded-[20px] bg-foreground p-4 sm:p-5 flex flex-col gap-1">
-                        <div className="flex items-start justify-between gap-2">
-                            <span className="text-[13px] font-semibold text-background/75">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                            <Swap swapKey={afterStipend} className="text-[13px] font-semibold text-background/75">
                                 {profit < 0 ? "Loss" : "Profit"}
                                 {afterStipend ? " after personal" : ""}
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => setAfterStipend((v) => !v)}
-                                aria-label={afterStipend
-                                    ? "Showing profit after personal money. Switch to before"
-                                    : "Showing profit before personal money. Switch to after"}
-                                className="shrink-0 rounded-full border border-background/40 px-3 py-1 text-[12px] font-semibold text-background hover:bg-background/10 transition-colors"
-                            >
-                                {afterStipend ? "After personal" : "Before personal"}
-                            </button>
+                            </Swap>
+                            <PersonalSwitch after={afterStipend} onChange={setAfterStipend} />
                         </div>
                         <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background tabular-nums">
-                            {profit < 0 ? "−" : ""}
-                            {money(Math.abs(profit) * arrive)}
+                            <Glide value={profit} trigger={afterStipend} arrive={arrive} signed />
                         </span>
-                        <span className="text-[13px] text-background/75">
+                        <Swap swapKey={afterStipend} className="text-[13px] text-background/75">
                             {afterStipend
                                 ? `${money(personalShare)} personal taken off${total > 0 && profit >= 0 ? ` · ${Math.round((profit / total) * 100)}% kept` : ""}`
                                 : total > 0
@@ -401,7 +456,7 @@ export function EarningsInsights({
                                         ? `${Math.round((profit / total) * 100)}% of revenue kept`
                                         : "expenses were higher than revenue"
                                     : "revenue minus expenses"}
-                        </span>
+                        </Swap>
                     </div>
                 </div>
             </section>

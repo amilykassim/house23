@@ -284,10 +284,9 @@ html.light {
 .admin-motion .m-grow-w { transition: width 900ms var(--m-ease); }
 .admin-motion .m-grow-h { transition: height 900ms var(--m-ease), background-color var(--m-med) var(--m-ease); }
 
-/* Tiles lift and rows tint on hover; no shadows */
+/* Cards and tiles stay still on hover; rows tint */
 .admin-motion .m-lift { transition: transform var(--m-med) var(--m-ease), box-shadow var(--m-med) var(--m-ease); }
 @media (hover: hover) {
-  .admin-motion .m-lift:hover { transform: translateY(-3px); }
   .admin-motion .m-row:hover { background: #FAFAFA; }
   /* Row actions stay quiet until the row is pointed at */
   .admin-motion .m-quiet { opacity: 0.55; }

@@ -50,6 +50,58 @@ export function useCountUp(target: number, ready: boolean, duration = 950): numb
     return ready && done.current ? shown : 0
 }
 
+/**
+ * A number that glides from its old value to its new one, but only when
+ * `trigger` changes (e.g. a Before/After switch). Any other change shows at
+ * once, like useCountUp. Reduced motion: always at once.
+ */
+export function useTween(value: number, trigger: unknown, duration = 650): number {
+    const [shown, setShown] = useState(value)
+    const [moving, setMoving] = useState(false)
+    const lastTrigger = useRef(trigger)
+    const shownRef = useRef(value)
+    const frame = useRef<number | null>(null)
+    // The render where the trigger flipped holds the old figure until the glide starts
+    const flipped = lastTrigger.current !== trigger
+
+    useEffect(() => {
+        const animate = lastTrigger.current !== trigger
+        console.warn('TWEEN effect', value, String(trigger), 'animate', animate, 'reduce', prefersReducedMotion())
+        lastTrigger.current = trigger
+        if (frame.current !== null) cancelAnimationFrame(frame.current)
+        frame.current = null
+        if (!animate || prefersReducedMotion() || typeof requestAnimationFrame !== "function") {
+            shownRef.current = value
+            setShown(value)
+            setMoving(false)
+            return
+        }
+        const from = shownRef.current
+        const start = performance.now()
+        setMoving(true)
+        const step = () => {
+            const t = Math.min(1, (performance.now() - start) / duration)
+            shownRef.current = from + (value - from) * (1 - Math.pow(1 - t, 4))
+            setShown(shownRef.current)
+            if (t < 1) {
+                frame.current = requestAnimationFrame(step)
+            } else {
+                frame.current = null
+                setMoving(false)
+            }
+        }
+        frame.current = requestAnimationFrame(step)
+    }, [value, trigger, duration])
+
+    useEffect(() => () => {
+        if (frame.current !== null) cancelAnimationFrame(frame.current)
+    }, [])
+
+    console.warn('TWEEN render', value, String(trigger), 'flipped', flipped, 'moving', moving, 'shown', shown)
+    if (flipped) return shownRef.current
+    return moving ? shown : value
+}
+
 /** False until shortly after `ready`, so bars can grow from nothing to their size. */
 export function useGrown(ready: boolean, delay = 120): boolean {
     const [grown, setGrown] = useState(false)
