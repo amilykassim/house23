@@ -369,10 +369,12 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                             <button
                                 type="button"
                                 onClick={() => setAfterStipend((v) => !v)}
-                                aria-pressed={afterStipend}
+                                aria-label={afterStipend
+                                    ? "Showing profit after stipend. Switch to before stipend"
+                                    : "Showing profit before stipend. Switch to after stipend"}
                                 className="shrink-0 rounded-full border border-background/40 px-3 py-1 text-[12px] font-semibold text-background hover:bg-background/10 transition-colors"
                             >
-                                {afterStipend ? "Before stipend" : "After stipend"}
+                                {afterStipend ? "After stipend" : "Before stipend"}
                             </button>
                         </div>
                         <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background tabular-nums">
