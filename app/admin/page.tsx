@@ -6,6 +6,7 @@ import { format, parseISO, isAfter, startOfDay } from "date-fns"
 import { ChevronDown } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
+import { compactRwf, formatRwf, formatUsd, usdLineToRwf } from "@/lib/currency"
 import { usePrices } from "@/lib/use-prices"
 import { type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
@@ -160,7 +161,7 @@ export default function AdminDashboardPage() {
         const revenueByHouse: Record<string, number> = {}
         const bookingsByHouse: Record<string, number> = {}
         activeBookings.forEach((b) => {
-            revenueByHouse[b.house] = (revenueByHouse[b.house] || 0) + b.total
+            revenueByHouse[b.house] = (revenueByHouse[b.house] || 0) + b.totalRwf
             bookingsByHouse[b.house] = (bookingsByHouse[b.house] || 0) + 1
         })
 
@@ -176,7 +177,7 @@ export default function AdminDashboardPage() {
             )
             monthlyRevenue.push({
                 month: monthLabel,
-                revenue: monthBookings.reduce((sum, b) => sum + b.total, 0),
+                revenue: monthBookings.reduce((sum, b) => sum + b.totalRwf, 0),
                 bookings: monthBookings.length,
             })
         }
@@ -244,8 +245,8 @@ export default function AdminDashboardPage() {
             <section aria-label="At a glance" className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className={`${TILE} bg-foreground text-background`}>
                     <span className="text-[13px] font-semibold text-background/75">Revenue, all time</span>
-                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em]">${stats.totalRevenue.toLocaleString("en-US")}</span>
-                    <span className="text-[13px] text-background/75">≈ {stats.totalRevenueRwf.toLocaleString("en-US")} RWF</span>
+                    <span className="text-[26px] leading-tight font-bold tracking-[-0.02em]">{formatRwf(stats.totalRevenueRwf)}</span>
+                    <span className="text-[13px] text-background/75">≈ {formatUsd(stats.totalRevenue)}</span>
                 </div>
                 <div className={`${TILE} bg-[#F7F7F7]`}>
                     <span className="text-[13px] font-semibold text-muted-foreground">Bookings</span>
@@ -289,8 +290,8 @@ export default function AdminDashboardPage() {
                                             </span>
                                         </div>
                                         <div className="shrink-0 flex flex-col items-end gap-0.5">
-                                            <span className="text-[17px] font-bold text-foreground">${b.total}</span>
-                                            <span className="text-[13px] text-muted-foreground whitespace-nowrap">{b.totalRwf.toLocaleString()} RWF</span>
+                                            <span className="text-[17px] font-bold text-foreground whitespace-nowrap">{formatRwf(b.totalRwf)}</span>
+                                            <span className="text-[13px] text-muted-foreground whitespace-nowrap">{formatUsd(b.total)}</span>
                                         </div>
                                     </div>
                                     <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
@@ -344,14 +345,14 @@ export default function AdminDashboardPage() {
                             <h2 id="revenue" className={CARD_TITLE}>
                                 Revenue
                             </h2>
-                            <span className="text-[13px] text-muted-foreground">Last 6 months</span>
+                            <span className="text-[13px] text-muted-foreground">Last 6 months · RWF</span>
                         </div>
                         <div className="grid grid-cols-6 gap-2 sm:gap-3 items-end">
                             {stats.monthlyRevenue.map((m, i) => {
                                 const current = i === stats.monthlyRevenue.length - 1
                                 return (
                                     <div key={m.month} className="min-w-0 flex flex-col items-center gap-1.5">
-                                        <span className="text-xs font-semibold text-muted-foreground truncate max-w-full">${m.revenue}</span>
+                                        <span className="text-xs font-semibold text-muted-foreground truncate max-w-full">{compactRwf(m.revenue)}</span>
                                         <div
                                             className={`w-full rounded-t-lg ${current ? "bg-foreground" : "bg-[#D4D4D4]"}`}
                                             style={{ height: `${Math.max((m.revenue / maxRevenue) * 120, 4)}px` }}
@@ -371,7 +372,7 @@ export default function AdminDashboardPage() {
                         {houses.map((house) => {
                             const revenue = stats.revenueByHouse[house.slug] || 0
                             const bookingCount = stats.bookingsByHouse[house.slug] || 0
-                            const pct = Math.round((revenue / (stats.totalRevenue || 1)) * 100)
+                            const pct = Math.round((revenue / (stats.totalRevenueRwf || 1)) * 100)
                             return (
                                 <div key={house.slug} className="flex flex-col gap-2">
                                     <div className="flex justify-between items-center gap-3 text-[15px] text-foreground">
@@ -380,7 +381,7 @@ export default function AdminDashboardPage() {
                                             {house.name}
                                         </span>
                                         <span>
-                                            <span className="font-semibold">${revenue}</span>
+                                            <span className="font-semibold">{formatRwf(revenue)}</span>
                                             <span className="text-muted-foreground"> · {pct}%</span>
                                         </span>
                                     </div>
@@ -388,7 +389,7 @@ export default function AdminDashboardPage() {
                                         <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: houseColor(house.slug) }} />
                                     </div>
                                     <span className="text-[13px] text-muted-foreground">
-                                        {plural(bookingCount, "booking")} · ${prices?.[house.slug]?.pricePerNight ?? house.pricePerNight} a night
+                                        {plural(bookingCount, "booking")} · {formatRwf(usdLineToRwf(prices?.[house.slug]?.pricePerNight ?? house.pricePerNight))} a night
                                     </span>
                                 </div>
                             )
@@ -475,7 +476,7 @@ export default function AdminDashboardPage() {
                                     </span>
                                 </div>
                                 <StatusPill status={booking.status} />
-                                <span className="w-14 text-right text-base font-semibold text-foreground">${booking.total}</span>
+                                <span className="min-w-14 text-right text-base font-semibold text-foreground whitespace-nowrap">{formatRwf(booking.totalRwf)}</span>
                                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
                             </button>
                             <Fold open={isExpanded}>
@@ -492,7 +493,7 @@ export default function AdminDashboardPage() {
                                         <div className="flex justify-between gap-3">
                                             <span className="text-muted-foreground">Total</span>
                                             <span className="text-foreground font-semibold text-right">
-                                                ${booking.total} · {booking.totalRwf.toLocaleString()} RWF
+                                                {formatRwf(booking.totalRwf)} · {formatUsd(booking.total)}
                                             </span>
                                         </div>
                                         {booking.momoTransactionId && (

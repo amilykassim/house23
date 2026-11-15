@@ -6,6 +6,7 @@ import { format, parseISO, isAfter } from "date-fns"
 import { ChevronDown, ChevronLeft, ChevronRight, Phone, Mail, AlertCircle, Plus } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
+import { formatRwf, formatUsd, usdLineToRwf } from "@/lib/currency"
 import { type RejectionReason } from "@/lib/rejection-reasons"
 import { forgetBookings, loadBookings } from "@/lib/admin-data"
 import { SegmentedControl } from "@/components/segmented-control"
@@ -27,6 +28,7 @@ interface Booking {
     serviceFee: number
     total: number
     totalRwf: number
+    source?: "website" | "manual"
     momoTransactionId: string
     specialRequests: string
     status: "pending" | "confirmed" | "cancelled"
@@ -229,7 +231,7 @@ export default function AdminBookingsPage() {
 
     const totalRevenue = filtered
         .filter((b) => b.status !== "cancelled")
-        .reduce((sum, b) => sum + b.total, 0)
+        .reduce((sum, b) => sum + b.totalRwf, 0)
 
     const countOf = (status: string) => (status === "all" ? bookings.length : bookings.filter((b) => b.status === status).length)
     const statusOptions = allStatuses.map((s) => ({
@@ -295,7 +297,7 @@ export default function AdminBookingsPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                     <strong className="text-foreground">{filtered.length}</strong> {filtered.length === 1 ? "booking" : "bookings"} ·{" "}
-                    <strong className="text-foreground">${totalRevenue}</strong> revenue
+                    <strong className="text-foreground">{formatRwf(totalRevenue)}</strong> revenue
                 </p>
             </div>
 
@@ -339,7 +341,7 @@ export default function AdminBookingsPage() {
                                         </span>
                                     </div>
                                     <StatusPill status={booking.status} />
-                                    <span className="w-14 text-right text-[17px] font-semibold text-foreground">${booking.total}</span>
+                                    <span className="min-w-14 text-right text-[17px] font-semibold text-foreground whitespace-nowrap">{formatRwf(booking.totalRwf)}</span>
                                     <ChevronDown
                                         className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
                                     />
@@ -382,21 +384,21 @@ export default function AdminBookingsPage() {
                                                 <h4 className={PANEL_TITLE}>Payment</h4>
                                                 <div className="flex justify-between gap-2">
                                                     <span className="text-muted-foreground">
-                                                        ${booking.pricePerNight} × {booking.nights}
+                                                        {formatRwf(usdLineToRwf(booking.pricePerNight, booking.source === "manual"))} × {booking.nights}
                                                     </span>
-                                                    <span className="text-foreground">${booking.pricePerNight * booking.nights}</span>
+                                                    <span className="text-foreground">{formatRwf(usdLineToRwf(booking.pricePerNight, booking.source === "manual") * booking.nights)}</span>
                                                 </div>
                                                 {booking.cleaningFee > 0 && (
                                                     <div className="flex justify-between gap-2">
                                                         <span className="text-muted-foreground">Cleaning</span>
-                                                        <span className="text-foreground">${booking.cleaningFee}</span>
+                                                        <span className="text-foreground">{formatRwf(usdLineToRwf(booking.cleaningFee, booking.source === "manual"))}</span>
                                                     </div>
                                                 )}
                                                 <div className="flex justify-between gap-2 font-bold border-t border-border pt-1.5">
                                                     <span className="text-foreground">Total</span>
-                                                    <span className="text-foreground">${booking.total}</span>
+                                                    <span className="text-foreground">{formatRwf(booking.totalRwf)}</span>
                                                 </div>
-                                                <p className="text-[13px] text-muted-foreground">≈ {booking.totalRwf.toLocaleString()} RWF</p>
+                                                <p className="text-[13px] text-muted-foreground">≈ {formatUsd(booking.total)}</p>
                                                 {booking.momoTransactionId && (
                                                     <p className="text-[13px] font-mono text-muted-foreground [overflow-wrap:anywhere]">
                                                         MoMo: {booking.momoTransactionId}
