@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useId, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { format, parseISO, startOfDay } from "date-fns"
@@ -13,6 +13,7 @@ import { DateRangePicker } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF } from "@/lib/currency"
 import type { Expense } from "@/lib/expenses"
 import { personalForPeriod, type PersonalExpense, type StipendMonth } from "@/lib/personal"
+import { readSavedAfterPersonal, resolveAfterPersonal, saveAfterPersonal } from "@/lib/personal-view"
 import {
     periodFor,
     periodTitle,
@@ -61,36 +62,34 @@ function Swap({ swapKey, className, children }: { swapKey: boolean; className: s
     )
 }
 
-/** Before | After personal money: a white thumb slides to the one shown. */
-function PersonalSwitch({ after, onChange }: { after: boolean; onChange: (after: boolean) => void }) {
-    const thumbId = useId()
+/** On/off for taking personal money off Expenses and Profit. */
+function PersonalToggle({ after, onChange }: { after: boolean; onChange: (after: boolean) => void }) {
     return (
-        <MotionConfig reducedMotion="user">
-            <div role="group" aria-label="Profit before or after personal money" className="shrink-0 flex gap-0.5 p-0.5 rounded-full border border-background/35">
-                {[false, true].map((option) => {
-                    const selected = after === option
-                    return (
-                        <button
-                            key={String(option)}
-                            type="button"
-                            onClick={() => onChange(option)}
-                            aria-pressed={selected}
-                            aria-label={option ? "After personal money" : "Before personal money"}
-                            className={`relative min-h-8 px-3 rounded-full text-[12px] font-semibold transition-colors duration-200 ${selected ? "text-foreground" : "text-background/75 hover:text-background"}`}
-                        >
-                            {selected && (
-                                <motion.span
-                                    layoutId={thumbId}
-                                    className="absolute inset-0 rounded-full bg-background"
-                                    transition={{ type: "spring", stiffness: 480, damping: 38 }}
-                                />
-                            )}
-                            <span className="relative">{option ? "After" : "Before"}</span>
-                        </button>
-                    )
-                })}
-            </div>
-        </MotionConfig>
+        <button
+            type="button"
+            role="switch"
+            aria-checked={after}
+            onClick={() => onChange(!after)}
+            className={`min-h-11 pl-2.5 pr-4 rounded-full border bg-card flex items-center gap-2.5 text-sm font-semibold text-foreground ${after ? "border-foreground ring-1 ring-foreground" : "border-[#B0B0B0]"}`}
+        >
+            <span className={`relative w-9 h-[22px] shrink-0 rounded-full transition-colors duration-200 motion-reduce:transition-none ${after ? "bg-foreground" : "bg-[#C9C9C9]"}`}>
+                <span
+                    className={`absolute top-[3px] left-[3px] w-4 h-4 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.25)] transition-transform duration-200 motion-reduce:transition-none ${after ? "translate-x-[14px]" : ""}`}
+                />
+            </span>
+            Take off personal
+        </button>
+    )
+}
+
+/** "after personal" tag on a headline card while personal money is taken off. */
+function AfterPersonalTag({ onDark = false }: { onDark?: boolean }) {
+    return (
+        <span
+            className={`ml-1.5 inline-block align-[1px] px-2 py-px rounded-full text-[11px] font-bold ${onDark ? "bg-background/15 text-background" : "bg-card border border-border text-foreground"}`}
+        >
+            after personal
+        </span>
     )
 }
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
@@ -198,9 +197,17 @@ export function EarningsInsights({
     })
     const [hoveredBar, setHoveredBar] = useState<number | null>(null)
     const [hoveredDay, setHoveredDay] = useState<number | null>(null)
-    // Profit before (default) or after the money we took for ourselves: the
-    // stipend plus personal expenses ("stipend" stays the URL name, for old links)
-    const [afterStipend, setAfterStipend] = useState(() => params.get("stipend") === "after")
+    // Expenses and Profit before (default) or after the money we took for
+    // ourselves: the stipend plus personal expenses. The choice is remembered
+    // on this device; a link's "stipend" value wins ("stipend" stays the URL
+    // name, for old links).
+    const [afterStipend, setAfterStipendState] = useState(() =>
+        resolveAfterPersonal(params.get("stipend"), readSavedAfterPersonal(globalThis.localStorage))
+    )
+    const setAfterStipend = (after: boolean) => {
+        setAfterStipendState(after)
+        saveAfterPersonal(globalThis.localStorage, after)
+    }
     // Motion: the headline figures count up once on arrival (0 → 1), bars grow in
     const arrive = useCountUp(1, true)
     const grown = useGrown(true)
@@ -392,6 +399,7 @@ export function EarningsInsights({
 
             {/* Headline */}
             <section className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                     {kind !== "custom" && (
                         <button
@@ -415,6 +423,8 @@ export function EarningsInsights({
                         </button>
                     )}
                 </div>
+                <PersonalToggle after={afterStipend} onChange={setAfterStipend} />
+                </div>
                 {/* Revenue − expenses = profit, for the chosen period */}
                 <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                     <div className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
@@ -425,7 +435,10 @@ export function EarningsInsights({
                         <span className="text-[13px] text-muted-foreground">{delta}</span>
                     </div>
                     <div className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
-                        <span className="text-[13px] font-semibold text-muted-foreground">Expenses</span>
+                        <Swap swapKey={afterStipend} className="text-[13px] font-semibold text-muted-foreground">
+                            Expenses
+                            {afterStipend && <AfterPersonalTag />}
+                        </Swap>
                         <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">
                             <Glide value={costs} trigger={afterStipend} arrive={arrive} />
                         </span>
@@ -438,13 +451,10 @@ export function EarningsInsights({
                         </Swap>
                     </div>
                     <div className="m-lift col-span-2 sm:col-span-1 min-w-0 rounded-[20px] bg-foreground p-4 sm:p-5 flex flex-col gap-1">
-                        <div className="flex flex-wrap items-start justify-between gap-2">
-                            <Swap swapKey={afterStipend} className="text-[13px] font-semibold text-background/75">
-                                {profit < 0 ? "Loss" : "Profit"}
-                                {afterStipend ? " after personal" : ""}
-                            </Swap>
-                            <PersonalSwitch after={afterStipend} onChange={setAfterStipend} />
-                        </div>
+                        <Swap swapKey={afterStipend} className="text-[13px] font-semibold text-background/75">
+                            {profit < 0 ? "Loss" : "Profit"}
+                            {afterStipend && <AfterPersonalTag onDark />}
+                        </Swap>
                         <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background tabular-nums">
                             <Glide value={profit} trigger={afterStipend} arrive={arrive} signed />
                         </span>
