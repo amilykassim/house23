@@ -7,6 +7,7 @@ import { format, parseISO, startOfDay } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { houses } from "@/lib/houses"
 import { SegmentedControl } from "@/components/segmented-control"
+import { useCountUp, useGrown } from "@/components/admin-motion"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF } from "@/lib/currency"
 import type { Expense } from "@/lib/expenses"
@@ -36,7 +37,7 @@ const CHART_HEIGHT = 170
 const DAY_CHART_HEIGHT = 140
 // Two tiles per row on phones, as many as fit from tablet width up
 const TILE_GRID = "grid grid-cols-2 gap-3 sm:gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(200px,1fr))]"
-const CARD = "rounded-3xl border border-border bg-card p-4 sm:p-6 flex flex-col"
+const CARD = "m-card rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col"
 
 // Hovering, tapping or dragging across a chart selects the bar under the pointer.
 const scrub = (count: number, select: (index: number) => void) => (e: React.PointerEvent<HTMLDivElement>) => {
@@ -67,13 +68,13 @@ function Tile({ label, value, note, href }: TileProps) {
                 {label}
                 {href && <ChevronRight className="h-4 w-4 shrink-0" />}
             </span>
-            <span className="text-[19px] sm:text-[26px] leading-tight font-bold text-foreground">{value}</span>
+            <span className="text-[19px] sm:text-[24px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">{value}</span>
             <span className="text-[13px] text-muted-foreground">{note}</span>
         </>
     )
     if (!href) {
         return (
-            <div className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1">
+            <div className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
                 {content}
             </div>
         )
@@ -81,7 +82,7 @@ function Tile({ label, value, note, href }: TileProps) {
     return (
         <Link
             href={href}
-            className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1 hover:border-[#B0B0B0] transition-colors"
+            className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1 hover:bg-[#F2F2F2]"
         >
             {content}
         </Link>
@@ -124,6 +125,9 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     const [hoveredDay, setHoveredDay] = useState<number | null>(null)
     // Profit before (default) or after the monthly stipend the business pays us
     const [afterStipend, setAfterStipend] = useState(() => params.get("stipend") === "after")
+    // Motion: the headline figures count up once on arrival (0 → 1), bars grow in
+    const arrive = useCountUp(1, true)
+    const grown = useGrown(true)
 
     const view = new URLSearchParams({ kind, house })
     if (afterStipend) view.set("stipend", "after")
@@ -168,7 +172,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
 
     const header = (
         <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-foreground">Earnings</h1>
+            <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Earnings</h1>
             <div className="flex flex-wrap items-center gap-3">
                 {houses.length > 1 && (
                     <SegmentedControl
@@ -218,7 +222,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
 
     if (!period || !summary) {
         return (
-            <div className="space-y-6">
+            <div className="m-stagger space-y-6">
                 {header}
                 {customInputs}
                 <p className="text-sm text-muted-foreground">Pick a start date and an end date to see the earnings.</p>
@@ -305,7 +309,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     const lead = ranked.length > 1 ? Math.round(ranked[0].total - ranked[1].total) : 0
 
     return (
-        <div className="space-y-6">
+        <div className="m-stagger space-y-6">
             {header}
             {customInputs}
 
@@ -317,18 +321,18 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                             type="button"
                             onClick={() => shift(-1)}
                             aria-label={`Previous ${kind}`}
-                            className="w-9 h-9 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] transition-colors"
+                            className="w-11 h-11 rounded-full border border-[#B0B0B0] bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7]"
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </button>
                     )}
-                    <span className="text-[15px] text-muted-foreground">{periodTitle(period)}</span>
+                    <span className="min-w-[150px] text-center text-[17px] font-bold tracking-[-0.01em] text-foreground">{periodTitle(period)}</span>
                     {kind !== "custom" && (
                         <button
                             type="button"
                             onClick={() => shift(1)}
                             aria-label={`Next ${kind}`}
-                            className="w-9 h-9 rounded-full border border-border bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] transition-colors"
+                            className="w-11 h-11 rounded-full border border-[#B0B0B0] bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7]"
                         >
                             <ChevronRight className="h-4 w-4" />
                         </button>
@@ -336,17 +340,17 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 </div>
                 {/* Revenue − expenses = profit, for the chosen period */}
                 <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                    <div className="min-w-0 rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-1">
+                    <div className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
                         <span className="text-[13px] font-semibold text-muted-foreground">Total revenue</span>
-                        <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">
-                            {money(total)}
+                        <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">
+                            {money(total * arrive)}
                         </span>
                         <span className="text-[13px] text-muted-foreground">{delta}</span>
                     </div>
-                    <div className="min-w-0 rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-1">
+                    <div className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
                         <span className="text-[13px] font-semibold text-muted-foreground">Expenses</span>
-                        <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">
-                            {money(costs)}
+                        <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">
+                            {money(costs * arrive)}
                         </span>
                         <span className="text-[13px] text-muted-foreground">
                             {afterStipend
@@ -356,7 +360,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                     : `${plural(periodExpenses.length, "expense")}, mostly ${topCategory.toLowerCase()}`}
                         </span>
                     </div>
-                    <div className="col-span-2 sm:col-span-1 min-w-0 rounded-[20px] bg-foreground p-4 sm:p-5 flex flex-col gap-1">
+                    <div className="m-lift col-span-2 sm:col-span-1 min-w-0 rounded-[20px] bg-foreground p-4 sm:p-5 flex flex-col gap-1">
                         <div className="flex items-start justify-between gap-2">
                             <span className="text-[13px] font-semibold text-background/75">
                                 {profit < 0 ? "Loss" : "Profit"}
@@ -371,9 +375,9 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                 {afterStipend ? "Before stipend" : "After stipend"}
                             </button>
                         </div>
-                        <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background">
+                        <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background tabular-nums">
                             {profit < 0 ? "−" : ""}
-                            {money(Math.abs(profit))}
+                            {money(Math.abs(profit) * arrive)}
                         </span>
                         <span className="text-[13px] text-background/75">
                             {afterStipend
@@ -423,13 +427,13 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                         return (
                             <div
                                 key={bucket.key}
-                                className={`flex-1 min-w-0 h-full flex flex-col-reverse items-center gap-0.5 ${hoveredBar === index ? "bg-[#F7F7F7]" : ""}`}
+                                className={`flex-1 min-w-0 h-full flex flex-col-reverse items-center gap-0.5 rounded-t-md transition-colors ${hoveredBar === index ? "bg-[#F7F7F7]" : ""}`}
                             >
                                 {segments.map((s, i) => (
                                     <div
                                         key={s.slug}
-                                        className={`w-full max-w-7 ${i === segments.length - 1 ? "rounded-t" : ""}`}
-                                        style={{ height: Math.max(Math.round((s.value / maxBucket) * CHART_HEIGHT), 2), background: s.color }}
+                                        className={`m-grow-h w-full max-w-7 ${i === segments.length - 1 ? "rounded-t" : ""}`}
+                                        style={{ height: grown ? Math.max(Math.round((s.value / maxBucket) * CHART_HEIGHT), 2) : 2, background: s.color }}
                                     />
                                 ))}
                             </div>
@@ -474,21 +478,21 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
 
             {hasEarnings ? (
                 <section className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]">
-                    <div className="rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
+                    <div className="m-lift rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
                         <span className="text-[13px] font-semibold text-muted-foreground">Best day</span>
                         <span className="text-xl font-bold tracking-[-0.01em] leading-tight text-foreground">{WEEKDAYS[bestDay]}s earn the most</span>
                         <span className="text-sm text-muted-foreground">
                             {money(summary.weekdays[bestDay])} in this period, {Math.round((summary.weekdays[bestDay] / weekdayTotal) * 100)}% of the total
                         </span>
                     </div>
-                    <div className="rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
+                    <div className="m-lift rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
                         <span className="text-[13px] font-semibold text-muted-foreground">Weekends</span>
                         <span className="text-xl font-bold tracking-[-0.01em] leading-tight text-foreground">{weekendShare}% comes from Friday to Sunday</span>
                         <span className="text-sm text-muted-foreground">
                             {money(weekendTotal)} of {money(weekdayTotal)}
                         </span>
                     </div>
-                    <div className="rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
+                    <div className="m-lift rounded-[20px] bg-[#F7F7F7] p-4 sm:p-[22px] flex flex-col gap-2">
                         <span className="text-[13px] font-semibold text-muted-foreground">Room to grow</span>
                         <span className="text-xl font-bold tracking-[-0.01em] leading-tight text-foreground">{WEEKDAYS[quietDay]}s are the quietest</span>
                         <span className="text-sm text-muted-foreground">
@@ -521,14 +525,14 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                         {summary.weekdays.map((value, index) => (
                             <div
                                 key={WEEKDAYS[index]}
-                                className={`flex-1 min-w-0 h-full flex flex-col justify-end items-center gap-1.5 ${hoveredDay === index ? "bg-[#F7F7F7]" : ""}`}
+                                className={`flex-1 min-w-0 h-full flex flex-col justify-end items-center gap-1.5 rounded-t-md transition-colors ${hoveredDay === index ? "bg-[#F7F7F7]" : ""}`}
                             >
                                 <span className="text-[13px] font-semibold text-foreground text-center whitespace-nowrap">
                                     {hasEarnings && index === bestDay ? Math.round(value).toLocaleString("en-US") : ""}
                                 </span>
                                 <div
-                                    className={`w-full max-w-12 rounded-t ${hasEarnings && index === bestDay ? "bg-foreground" : "bg-[#D5D5D5]"}`}
-                                    style={{ height: Math.max(Math.round((value / weekdayMax) * DAY_CHART_HEIGHT), 2) }}
+                                    className={`m-grow-h w-full max-w-12 rounded-t ${hasEarnings && index === bestDay ? "bg-foreground" : "bg-[#D5D5D5]"}`}
+                                    style={{ height: grown ? Math.max(Math.round((value / weekdayMax) * DAY_CHART_HEIGHT), 2) : 2 }}
                                 />
                             </div>
                         ))}
@@ -543,7 +547,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                     {hasEarnings && (
                         <div className="flex flex-col gap-2 pt-2">
                             <div className="flex gap-0.5 h-3.5">
-                                <div className="rounded-l-full bg-[#D5D5D5]" style={{ width: `${100 - weekendShare}%` }} />
+                                <div className="m-grow-w rounded-l-full bg-[#D5D5D5]" style={{ width: grown ? `${100 - weekendShare}%` : "0%" }} />
                                 <div className="flex-1 rounded-r-full bg-foreground" />
                             </div>
                             <div className="flex justify-between gap-4 text-sm text-foreground">
@@ -568,10 +572,10 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                             {house.freeNights > 0 && ` · ${house.freeNights} free`}
                                         </span>
                                     </div>
-                                    <div className="h-2.5 rounded-full bg-muted">
+                                    <div className="h-2 rounded-full bg-[#EBEBEB] overflow-hidden">
                                         <div
-                                            className="h-2.5 rounded-full"
-                                            style={{ width: `${Math.round((house.total / houseMax) * 100)}%`, background: houseColor(h.slug) }}
+                                            className="m-grow-w h-2 rounded-full"
+                                            style={{ width: grown ? `${Math.round((house.total / houseMax) * 100)}%` : "0%", background: houseColor(h.slug) }}
                                         />
                                     </div>
                                 </div>
@@ -589,10 +593,10 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                     <span>{source.name}</span>
                                     <span className="font-semibold">{plural(source.count, "booking")}</span>
                                 </div>
-                                <div className="h-2.5 rounded-full bg-muted">
+                                <div className="h-2 rounded-full bg-[#EBEBEB] overflow-hidden">
                                     <div
-                                        className="h-2.5 rounded-full bg-muted-foreground"
-                                        style={{ width: `${summary.bookings > 0 ? Math.round((source.count / summary.bookings) * 100) : 0}%` }}
+                                        className="m-grow-w h-2 rounded-full bg-muted-foreground"
+                                        style={{ width: grown ? `${summary.bookings > 0 ? Math.round((source.count / summary.bookings) * 100) : 0}%` : "0%" }}
                                     />
                                 </div>
                             </div>
@@ -682,10 +686,10 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                             {money(spentByCategory[category])} · {Math.round((spentByCategory[category] / spent) * 100)}%
                                         </span>
                                     </div>
-                                    <div className="h-2.5 rounded-full bg-muted">
+                                    <div className="h-2 rounded-full bg-[#EBEBEB] overflow-hidden">
                                         <div
-                                            className="h-2.5 rounded-full bg-foreground"
-                                            style={{ width: `${Math.max(Math.round((spentByCategory[category] / spentByCategory[topCategory]) * 100), 1)}%` }}
+                                            className="m-grow-w h-2 rounded-full bg-foreground"
+                                            style={{ width: grown ? `${Math.max(Math.round((spentByCategory[category] / spentByCategory[topCategory]) * 100), 1)}%` : "0%" }}
                                         />
                                     </div>
                                 </div>
@@ -709,10 +713,10 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                                         </span>
                                         <span className="font-semibold">{money(h.amount)}</span>
                                     </div>
-                                    <div className="h-2.5 rounded-full bg-muted">
+                                    <div className="h-2 rounded-full bg-[#EBEBEB] overflow-hidden">
                                         <div
-                                            className="h-2.5 rounded-full"
-                                            style={{ width: `${Math.round((h.amount / houseSpendMax) * 100)}%`, background: houseColor(h.slug) }}
+                                            className="m-grow-w h-2 rounded-full"
+                                            style={{ width: grown ? `${Math.round((h.amount / houseSpendMax) * 100)}%` : "0%", background: houseColor(h.slug) }}
                                         />
                                     </div>
                                     <span className="text-[13px] text-muted-foreground">

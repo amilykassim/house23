@@ -5,6 +5,7 @@ import { EarningsInsights } from "@/components/earnings-insights"
 import type { EarningsBooking } from "@/lib/earnings"
 import type { Expense } from "@/lib/expenses"
 import { loadBookings, loadExpenses } from "@/lib/admin-data"
+import { Skeleton } from "@/components/admin-motion"
 
 export default function AdminInsightsPage() {
     const [bookings, setBookings] = useState<EarningsBooking[]>([])
@@ -25,8 +26,14 @@ export default function AdminInsightsPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-[60vh]">
-                <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+            <div aria-label="Loading the earnings" className="[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto flex flex-col gap-6">
+                <Skeleton className="h-10 w-48 rounded-xl" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <Skeleton className="h-[118px] rounded-[20px]" />
+                    <Skeleton className="h-[118px] rounded-[20px]" />
+                    <Skeleton className="col-span-2 sm:col-span-1 h-[118px] rounded-[20px]" />
+                </div>
+                <Skeleton className="h-[260px] rounded-[20px]" />
             </div>
         )
     }

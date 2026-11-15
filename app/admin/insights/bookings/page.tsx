@@ -10,6 +10,7 @@ import { SegmentedControl } from "@/components/segmented-control"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { PillMenu } from "@/components/pill-menu"
 import { loadBookings } from "@/lib/admin-data"
+import { Collapse, Skeleton, rise } from "@/components/admin-motion"
 import { HOUSE_FILTERS, houseColor, houseName, isDay, money, plural, stayLabel } from "@/components/earnings-insights"
 import { periodFor, periodTitle, summarizeEarnings, type EarningsBooking, type EarningsStay, type Period } from "@/lib/earnings"
 
@@ -195,15 +196,21 @@ function BookingsDetail() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-[60vh]">
-                <div className="w-6 h-6 border-2 border-foreground/20 border-t-foreground rounded-full animate-spin" />
+            <div aria-label="Loading the bookings" className="[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto flex flex-col gap-6">
+                <Skeleton className="h-10 w-48 rounded-xl" />
+                <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    {[0, 1, 2].map((i) => (
+                        <Skeleton key={i} className="h-[110px] rounded-[20px]" />
+                    ))}
+                </div>
+                <Skeleton className="h-[320px] rounded-[20px]" />
             </div>
         )
     }
 
     return (
         // zoom scales the whole page down a notch on every screen size
-        <div className="[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto flex flex-col gap-6">
+        <div className="m-stagger [zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto flex flex-col gap-6">
             <div className="flex flex-col gap-3">
                 <Link
                     href={`/admin/insights${back ? `?${back}` : ""}`}
@@ -214,7 +221,7 @@ function BookingsDetail() {
                 </Link>
                 <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl sm:text-[28px] font-bold tracking-[-0.02em] text-foreground">
+                        <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">
                             {nightsView ? "Nights booked" : "Bookings"}
                         </h1>
                         <p className="text-[15px] text-muted-foreground">
@@ -232,8 +239,8 @@ function BookingsDetail() {
                 </div>
             </div>
 
-            {editingDates && (
-                <div className="max-w-[560px]">
+            <Collapse open={editingDates} className="-mt-6">
+                <div className="pt-6 max-w-[560px]">
                     <DateRangePicker
                         startLabel="From"
                         endLabel="To"
@@ -249,7 +256,7 @@ function BookingsDetail() {
                         allowSameDay
                     />
                 </div>
-            )}
+            </Collapse>
 
             {/* What the list below adds up to */}
             <section className="grid grid-cols-3 gap-3 sm:gap-4">
@@ -258,9 +265,9 @@ function BookingsDetail() {
                     { label: "Nights", value: String(shownNights), note: filtered || !summary ? "in these bookings" : `of ${summary.capacity} available` },
                     { label: "Earned", value: money(shownAmount), note: shownNights > 0 ? `${money(shownAmount / shownNights)} a night` : "nothing yet" },
                 ].map((tile) => (
-                    <div key={tile.label} className="min-w-0 rounded-2xl border border-border bg-card p-3.5 sm:p-[18px] flex flex-col gap-1">
+                    <div key={tile.label} className="m-lift min-w-0 rounded-[20px] bg-[#F7F7F7] p-4 sm:p-5 flex flex-col gap-1">
                         <span className="text-[13px] font-semibold text-muted-foreground">{tile.label}</span>
-                        <span className="text-[17px] sm:text-[26px] leading-tight font-bold text-foreground">{tile.value}</span>
+                        <span className="text-[17px] sm:text-[24px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">{tile.value}</span>
                         <span className="text-[13px] text-muted-foreground">{tile.note}</span>
                     </div>
                 ))}
@@ -268,7 +275,7 @@ function BookingsDetail() {
 
             {/* Which nights are taken, per house */}
             {nightsView && summary && summary.stays.length > 0 && (
-                <section className="rounded-3xl border border-border bg-card p-4 sm:p-6 flex flex-col gap-3">
+                <section className="m-card rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col gap-3">
                     {shownHouses.map((h) => (
                         <div key={h.slug} className="flex flex-col gap-1.5">
                             <div className="flex justify-between gap-4 text-sm">
@@ -280,7 +287,7 @@ function BookingsDetail() {
                                     <div
                                         key={bucket.key}
                                         title={`${bucket.name}: ${(bucket.byHouse[h.slug] || 0) > 0 ? "booked" : "empty"}`}
-                                        className="flex-1 min-w-0 h-7 rounded bg-muted"
+                                        className="flex-1 min-w-0 h-7 rounded bg-[#EBEBEB] transition-colors duration-300"
                                         style={(bucket.byHouse[h.slug] || 0) > 0 ? { background: houseColor(h.slug) } : undefined}
                                     />
                                 ))}
@@ -335,7 +342,7 @@ function BookingsDetail() {
                     <SegmentedControl options={SOURCES} value={source} onChange={change(setSource)} />
                 </div>
 
-                <div className="rounded-3xl border border-border bg-card px-4 sm:px-6 py-2">
+                <div className="m-card rounded-[20px] border border-border bg-card px-4 sm:px-6 py-2">
                     <div className={`hidden ${COLUMNS} border-b border-[#EBEBEB]`}>
                         {columnHeader("name", "Guest")}
                         {columnHeader("date", "Stay")}
@@ -354,15 +361,17 @@ function BookingsDetail() {
                         </p>
                     )}
 
-                    {visible.map(({ booking, totalNights, nightsInPeriod, freeNights, amountInPeriod }) => {
+                    {visible.map(({ booking, totalNights, nightsInPeriod, freeNights, amountInPeriod }, index) => {
                         const byHand = booking.source === "manual"
                         const contact = [booking.guestPhone, booking.guestEmail].filter(Boolean).join(" · ")
                         // By-hand bookings keep where they came from in their note
                         const detail = contact || (byHand ? booking.specialRequests || "Added by hand without contact details" : "No contact details")
                         return (
                             <div
-                                key={booking.id}
-                                className={`flex flex-wrap justify-between items-center gap-x-6 gap-y-2 ${COLUMNS} py-3.5 border-b border-[#EBEBEB] last:border-b-0`}
+                                // Keyed by page, size, sort and filters (not the search) so the rows rise in again
+                                key={`${booking.id}:${house}:${source}:${sortId}:${current}:${pageSize}`}
+                                {...rise(index, 30)}
+                                className={`m-rise m-row -mx-2 px-2 rounded-lg flex flex-wrap justify-between items-center gap-x-6 gap-y-2 ${COLUMNS} py-3.5 border-b border-[#EBEBEB] last:border-b-0`}
                             >
                                 <div className="flex-[1_1_100%] min-w-0 flex flex-col gap-0.5">
                                     <span className="text-[15px] font-semibold text-foreground [overflow-wrap:anywhere]">
