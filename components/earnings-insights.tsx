@@ -695,7 +695,9 @@ export function EarningsInsights({
                     note={
                         periodOver
                             ? "this period is over"
-                            : `${empty.startsToday ? "from tonight, " : ""}worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`
+                            : shownHouses.length > 1
+                                ? `left to book, worth ${money(emptyWorth)} · ${shownHouses.map((h) => `${h.name}: ${empty.byHouse[h.slug] ?? 0}`).join(" · ")}`
+                                : `left to book, worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`
                     }
                 />
                 <Tile
