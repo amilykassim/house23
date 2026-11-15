@@ -19,6 +19,7 @@ import {
     periodTitle,
     shiftAnchor,
     summarizeEarnings,
+    emptyNightsAhead,
     type EarningsBooking,
     type Period,
     type PeriodKind,
@@ -381,10 +382,11 @@ export function EarningsInsights({
     const weekendTotal = summary.weekdays[4] + summary.weekdays[5] + summary.weekdays[6]
     const weekendShare = weekdayTotal > 0 ? Math.round((weekendTotal / weekdayTotal) * 100) : 0
 
-    const days = summary.capacity / shownHouses.length
-    const emptyByHouse = shownHouses.map((h) => Math.max(days - (summary.byHouse[h.slug]?.nights || 0), 0))
-    const emptyNights = emptyByHouse.reduce((sum, v) => sum + v, 0)
+    // Only nights that can still be booked: from tonight to the period's end
+    const empty = emptyNightsAhead(shownBookings, period, shownHouses.map((h) => h.slug), startOfDay(new Date()))
+    const emptyNights = empty.total
     const emptyWorth = emptyNights * ADMIN_NIGHTLY_PRICE_RWF
+    const periodOver = format(period.end, "yyyy-MM-dd") < format(new Date(), "yyyy-MM-dd")
     const houseMax = Math.max(...shownHouses.map((h) => summary.byHouse[h.slug]?.total || 0), 1)
     const website = summary.bookings - summary.byHand
     const ranked = houses
@@ -687,7 +689,15 @@ export function EarningsInsights({
             {/* Up to five tiles: narrower columns keep them on one line, and on a
                 phone an odd last tile takes the full width */}
             <section className="grid grid-cols-2 gap-3 sm:gap-4 sm:[grid-template-columns:repeat(auto-fit,minmax(170px,1fr))] [&>*:last-child:nth-child(odd)]:col-span-2 sm:[&>*:last-child:nth-child(odd)]:col-span-1">
-                <Tile label="Empty nights" value={String(emptyNights)} note={`worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`} />
+                <Tile
+                    label="Empty nights"
+                    value={String(emptyNights)}
+                    note={
+                        periodOver
+                            ? "this period is over"
+                            : `${empty.startsToday ? "from tonight, " : ""}worth ${money(emptyWorth)} at ${ADMIN_NIGHTLY_PRICE_RWF.toLocaleString("en-US")} a night`
+                    }
+                />
                 <Tile
                     label="Free nights"
                     value={String(summary.freeNights)}

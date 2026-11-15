@@ -252,6 +252,48 @@ export function summarizeEarnings(
     }
 }
 
+/**
+ * Nights of the period that can still be booked and are not: from today
+ * (tonight included) to the period's end, per house, without a confirmed
+ * booking. Past nights are gone, so a period that is over has none.
+ */
+export function emptyNightsAhead(
+    bookings: EarningsBooking[],
+    period: Period,
+    houseSlugs: string[],
+    today: Date
+): { total: number; byHouse: Record<string, number>; startsToday: boolean } {
+    const todayKey = dayKey(today)
+    const firstKey = dayKey(period.start) > todayKey ? dayKey(period.start) : todayKey
+    const endKey = dayKey(period.end)
+    const byHouse: Record<string, number> = {}
+    houseSlugs.forEach((slug) => (byHouse[slug] = 0))
+    const startsToday = firstKey === todayKey && dayKey(period.start) < todayKey
+    if (firstKey > endKey) return { total: 0, byHouse, startsToday: false }
+
+    // Nights held by a confirmed booking, per house (overlaps count once)
+    const taken = new Map<string, Set<string>>(houseSlugs.map((slug) => [slug, new Set<string>()]))
+    for (const booking of bookings) {
+        if (booking.status !== "confirmed") continue
+        const held = taken.get(booking.house)
+        if (!held) continue
+        const checkIn = parseISO(booking.checkIn)
+        const stay = differenceInCalendarDays(parseISO(booking.checkOut), checkIn)
+        for (let i = 0; i < stay; i++) {
+            const key = dayKey(addDays(checkIn, i))
+            if (key >= firstKey && key <= endKey) held.add(key)
+        }
+    }
+
+    const nights = differenceInCalendarDays(parseISO(endKey), parseISO(firstKey)) + 1
+    let total = 0
+    for (const slug of houseSlugs) {
+        byHouse[slug] = nights - (taken.get(slug)?.size ?? 0)
+        total += byHouse[slug]
+    }
+    return { total, byHouse, startsToday }
+}
+
 // The stipend the business pays us each calendar month, counted as a cost
 // when the Earnings page is switched to "after stipend".
 export const MONTHLY_STIPEND_RWF = 350_000
