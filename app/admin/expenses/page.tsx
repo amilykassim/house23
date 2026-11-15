@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { format, parseISO, startOfMonth, subMonths } from "date-fns"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { ArrowDown, ArrowUp, Check, ChevronLeft, ChevronRight, Copy, Loader2, Plus, Trash2, X } from "lucide-react"
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Loader2, Plus, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type Expense, type ExpenseCategory } from "@/lib/expenses"
 import type { EarningsBooking } from "@/lib/earnings"
-import { expenseReport, monthLines, shiftMonth, usualText, type ExpenseLine } from "@/lib/expense-report"
+import { amountFor, expenseReport, monthLines, shiftMonth, usualText, type ExpenseLine, type UsualNote } from "@/lib/expense-report"
 import { SegmentedControl } from "@/components/segmented-control"
 import { PillMenu } from "@/components/pill-menu"
 import { houseColor } from "@/components/earnings-insights"
@@ -35,9 +35,28 @@ const MONTH_MENU = "[&>button]:w-full [&>button]:justify-between [&>button]:min-
 const monthLabel = (key: string) => format(parseISO(`${key}-01`), "MMMM yyyy")
 const monthName = (key: string) => format(parseISO(`${key}-01`), "MMMM")
 
-const SECTION_TITLE = "text-[22px] font-bold tracking-[-0.02em] leading-tight text-foreground"
 const TILE = "min-w-0 rounded-[20px] p-5 flex flex-col gap-1.5"
-const TRACK = "h-2 rounded-full bg-[#D5D5D5] overflow-hidden"
+const CARD = "min-w-0 rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col gap-4"
+const CARD_TITLE = "text-[17px] font-bold tracking-[-0.01em] text-foreground"
+
+/** 1,407,300 → "1.41M", 45,000 → "45k": short labels for the chart. */
+const compact = (n: number) => {
+    const r = Math.round(n)
+    if (r >= 1_000_000) return `${(r / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`
+    if (r >= 1_000) return `${Math.round(r / 1_000)}k`
+    return String(r)
+}
+
+/** The chip beside a category: only when it moved from its usual amount, or is new. */
+function usualChip(note: UsualNote): { label: string; className: string } | null {
+    if (note.kind === "usual") return null
+    if (note.kind === "first") return { label: "New", className: "bg-[#DBEAFE] text-[#1E40AF]" }
+    // Past double, a multiple reads better than "up 2105%"
+    const amount = note.kind === "up" && note.pct >= 100 ? `${((100 + note.pct) / 100).toFixed(1).replace(/\.0$/, "")}× usual` : `${note.pct}%`
+    return note.kind === "up"
+        ? { label: `▲ ${amount}`, className: "bg-[#FEF3C7] text-[#92400E]" }
+        : { label: `▼ ${amount}`, className: "bg-[#F2F2F2] text-[#555555]" }
+}
 const ARROW_BUTTON =
     "w-11 h-11 shrink-0 rounded-full border border-[#B0B0B0] bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:text-[#B0B0B0] disabled:hover:bg-card"
 
@@ -461,198 +480,223 @@ export default function AdminExpensesPage() {
                     {!hasSpending ? (
                         <p className="text-sm text-muted-foreground">The breakdown appears once {listMonthName} has an expense.</p>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6 sm:gap-y-7 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
                             {/* By category, largest first */}
-                            <section aria-labelledby="where-it-goes" className="flex flex-col gap-3.5">
-                                <h2 id="where-it-goes" className={SECTION_TITLE}>
-                                    Where it goes
-                                </h2>
-                                <div className="flex flex-col gap-4">
-                                    {report.categories.map((row) => (
-                                        <div key={row.category} className="flex flex-col gap-2">
-                                            <div className="flex justify-between gap-3 text-[15px] text-foreground">
-                                                <span className="font-semibold">{row.category}</span>
-                                                <span className="whitespace-nowrap">
-                                                    {pct(row.share)} · {rwf(row.amount)}
-                                                </span>
-                                            </div>
-                                            <div className={TRACK}>
-                                                <div className="h-2 rounded-full bg-foreground" style={{ width: `${Math.max(row.share * 100, 1.5)}%` }} />
-                                            </div>
-                                            <span className="text-[13px] text-muted-foreground">{usualText(row.usual)}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </section>
-
-                            {/* By house, when every house is shown */}
-                            {view === ALL_HOUSES && houses.length > 1 && (
-                                <section aria-labelledby="by-house" className="flex flex-col gap-3.5">
-                                    <h2 id="by-house" className={SECTION_TITLE}>
-                                        By house
+                            <section aria-labelledby="where-it-goes" className={CARD}>
+                                <div className="flex items-baseline justify-between gap-3">
+                                    <h2 id="where-it-goes" className={CARD_TITLE}>
+                                        Where it goes
                                     </h2>
-                                    <div className="flex flex-col gap-4">
-                                        {report.byHouse.map((h) => (
-                                            <div key={h.slug} className="flex flex-col gap-2">
-                                                <div className="flex justify-between items-center gap-3 text-[15px] text-foreground">
-                                                    <span className="flex items-center gap-2 font-semibold">
-                                                        <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: houseColor(h.slug) }} />
-                                                        {h.name}
-                                                    </span>
-                                                    <span className="text-right">
-                                                        {rwf(h.amount)}
-                                                        {h.revenue > 0 ? ` · ${pct(h.amount / h.revenue)} of its revenue` : " · no revenue yet"}
-                                                    </span>
-                                                </div>
-                                                <div className={TRACK}>
-                                                    <div className="h-2 rounded-full" style={{ width: `${Math.max(h.share * 100, 1.5)}%`, background: houseColor(h.slug) }} />
-                                                </div>
-                                                <span className="text-[13px] text-muted-foreground">
-                                                    {h.perNight !== null ? `${rwf(h.perNight)} per booked night · ${plural(h.nights, "night")}` : "no nights yet"}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </section>
-                            )}
-
-                            {/* The five largest */}
-                            <section aria-labelledby="biggest" className="flex flex-col gap-3.5">
-                                <h2 id="biggest" className={SECTION_TITLE}>
-                                    Biggest expenses
-                                </h2>
-                                <ol className="flex flex-col">
-                                    {report.top.map(({ line, amount, share }) => (
-                                        <li key={line.key} className="flex justify-between items-center gap-3 py-3 border-b border-[#EBEBEB] last:border-b-0">
-                                            <div className="min-w-0 flex flex-col gap-0.5">
-                                                <span className="text-[15px] text-foreground [overflow-wrap:anywhere]">
-                                                    {line.category}
-                                                    {line.note ? ` (${line.note})` : ""}
-                                                </span>
-                                                <span className="text-[13px] text-muted-foreground">
-                                                    {houseLabel(line.house)} · {dayLabel(line.date)}
-                                                </span>
-                                            </div>
-                                            <div className="shrink-0 flex flex-col items-end gap-0.5">
-                                                <span className="text-[15px] font-bold text-foreground whitespace-nowrap">{rwf(amount)}</span>
-                                                <span className="text-[13px] text-muted-foreground">{pct(share)}</span>
-                                            </div>
-                                        </li>
-                                    ))}
-                                </ol>
-                            </section>
-
-                            {/* Spending, month by month */}
-                            <section aria-labelledby="six-months" className="flex flex-col gap-3.5">
-                                <h2 id="six-months" className={SECTION_TITLE}>
-                                    Last six months
-                                </h2>
-                                <div
-                                    role="group"
-                                    aria-label={`Spent each month, ${report.months[0].label} to ${monthLabel(listMonth)}`}
-                                    className="grid grid-cols-6 gap-2 sm:gap-3"
-                                >
-                                    {report.months.map((m) => {
-                                        const current = m.key === listMonth
+                                    <span className="text-[13px] text-muted-foreground">{plural(report.categories.length, "category")}</span>
+                                </div>
+                                <ul className="flex flex-col gap-4">
+                                    {report.categories.map((row, i) => {
+                                        const note = usualChip(row.usual)
                                         return (
-                                            <button
-                                                key={m.key}
-                                                type="button"
-                                                onClick={() => showMonth(m.key)}
-                                                aria-pressed={current}
-                                                aria-label={`${monthLabel(m.key)}: ${rwf(m.total)}`}
-                                                className="min-w-0 flex flex-col gap-2 rounded-lg hover:bg-[#F7F7F7]"
-                                            >
-                                                <div className="w-full flex items-end" style={{ height: CHART_HEIGHT }}>
+                                            <li key={row.category} className="flex flex-col gap-2">
+                                                <div className="flex items-center justify-between gap-3">
+                                                    <span className="min-w-0 flex items-center gap-2">
+                                                        <span className="text-[15px] font-semibold text-foreground truncate">{row.category}</span>
+                                                        {note && (
+                                                            <span
+                                                                title={usualText(row.usual)}
+                                                                className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold ${note.className}`}
+                                                            >
+                                                                {note.label}
+                                                                <span className="sr-only"> ({usualText(row.usual)})</span>
+                                                            </span>
+                                                        )}
+                                                    </span>
+                                                    <span className="shrink-0 flex items-baseline gap-2 tabular-nums">
+                                                        <span className="text-[15px] font-semibold text-foreground">{rwf(row.amount)}</span>
+                                                        <span className="w-9 text-right text-[13px] text-muted-foreground">{pct(row.share)}</span>
+                                                    </span>
+                                                </div>
+                                                <div className="h-1.5 rounded-full bg-[#EBEBEB] overflow-hidden">
                                                     <div
-                                                        className={`w-full rounded-t ${current ? "bg-foreground" : "bg-[#B0B0B0]"}`}
-                                                        style={{ height: Math.max(Math.round((m.total / chartMax) * CHART_HEIGHT), 2) }}
+                                                        className={`h-full rounded-full ${i === 0 ? "bg-foreground" : "bg-[#6A6A6A]"}`}
+                                                        style={{ width: `${Math.max(row.share * 100, 1)}%` }}
                                                     />
                                                 </div>
-                                                <div className="flex flex-col items-center gap-0.5 text-[13px] min-w-0 w-full">
-                                                    <span className={`text-foreground ${current ? "font-bold" : "font-semibold"}`}>{m.label}</span>
-                                                    <span className={`truncate max-w-full ${current ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
-                                                        {Math.round(m.total).toLocaleString("en-US")}
-                                                    </span>
-                                                </div>
-                                            </button>
+                                            </li>
                                         )
                                     })}
-                                </div>
+                                </ul>
                             </section>
+
+                            <div className="min-w-0 flex flex-col gap-6">
+                                {/* By house, when every house is shown */}
+                                {view === ALL_HOUSES && houses.length > 1 && (
+                                    <section aria-labelledby="by-house" className={CARD}>
+                                        <h2 id="by-house" className={CARD_TITLE}>
+                                            By house
+                                        </h2>
+                                        {/* One bar, split by house */}
+                                        <div className="flex h-2.5 gap-0.5 rounded-full overflow-hidden" aria-hidden="true">
+                                            {report.byHouse
+                                                .filter((h) => h.amount > 0)
+                                                .map((h) => (
+                                                    <div key={h.slug} style={{ flexGrow: h.amount, background: houseColor(h.slug) }} />
+                                                ))}
+                                        </div>
+                                        <ul className="flex flex-col gap-3.5">
+                                            {report.byHouse.map((h) => (
+                                                <li key={h.slug} className="flex flex-col gap-0.5">
+                                                    <div className="flex items-center justify-between gap-3">
+                                                        <span className="flex items-center gap-2 text-[15px] font-semibold text-foreground">
+                                                            <span aria-hidden="true" className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: houseColor(h.slug) }} />
+                                                            {h.name}
+                                                        </span>
+                                                        <span className="text-[15px] font-semibold text-foreground tabular-nums">{rwf(h.amount)}</span>
+                                                    </div>
+                                                    <span className="pl-[18px] text-[13px] text-muted-foreground">
+                                                        {h.revenue > 0 ? `${pct(h.amount / h.revenue)} of its revenue` : "no revenue yet"}
+                                                        {h.perNight !== null ? ` · ${rwf(h.perNight)} per booked night · ${plural(h.nights, "night")}` : " · no nights yet"}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                )}
+
+                                {/* Spending, month by month */}
+                                <section aria-labelledby="six-months" className={CARD}>
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <h2 id="six-months" className={CARD_TITLE}>
+                                            Last six months
+                                        </h2>
+                                        <span className="text-[13px] text-muted-foreground">tap a month to open it</span>
+                                    </div>
+                                    <div
+                                        role="group"
+                                        aria-label={`Spent each month, ${report.months[0].label} to ${monthLabel(listMonth)}`}
+                                        className="grid grid-cols-6 gap-1.5 sm:gap-2"
+                                    >
+                                        {report.months.map((m) => {
+                                            const current = m.key === listMonth
+                                            return (
+                                                <button
+                                                    key={m.key}
+                                                    type="button"
+                                                    onClick={() => showMonth(m.key)}
+                                                    aria-pressed={current}
+                                                    aria-label={`${monthLabel(m.key)}: ${rwf(m.total)}`}
+                                                    className="min-w-0 flex flex-col items-center gap-1.5 rounded-lg pt-1 pb-1.5 hover:bg-[#F7F7F7]"
+                                                >
+                                                    <span className={`text-xs tabular-nums ${current ? "font-bold text-foreground" : "text-muted-foreground"}`}>
+                                                        {compact(m.total)}
+                                                    </span>
+                                                    <div className="w-full px-1 flex items-end" style={{ height: CHART_HEIGHT }}>
+                                                        <div
+                                                            className={`w-full rounded-md ${current ? "bg-foreground" : "bg-[#D5D5D5]"}`}
+                                                            style={{ height: Math.max(Math.round((m.total / chartMax) * CHART_HEIGHT), 3) }}
+                                                        />
+                                                    </div>
+                                                    <span className={`text-[13px] text-foreground ${current ? "font-bold" : "font-medium"}`}>{m.label}</span>
+                                                </button>
+                                            )
+                                        })}
+                                    </div>
+                                </section>
+                            </div>
                         </div>
                     )}
                 </>
             )}
 
             {/* The month's expenses, one line each */}
-            <div className="rounded-[20px] bg-[#F7F7F7] p-5 flex flex-col gap-3.5">
-                <div className="flex flex-wrap justify-between items-end gap-3 pb-3 border-b border-border">
+            <section aria-labelledby="month-expenses" className="rounded-[20px] border border-border bg-card overflow-hidden">
+                <div className="px-5 sm:px-6 pt-5 pb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border">
                     <div className="flex flex-col gap-0.5">
-                        <span className="text-[13px] font-semibold text-muted-foreground">Spent in {listMonthName}</span>
-                        <span className="text-[22px] font-bold tracking-[-0.02em] text-foreground">{rwf(report.total)}</span>
+                        <h2 id="month-expenses" className="text-[13px] font-semibold text-muted-foreground">
+                            Spent in {listMonthName}
+                        </h2>
+                        <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">{rwf(report.total)}</span>
                     </div>
                     {report.lines.length > 0 && (
-                        <span className="text-[13px] text-muted-foreground">{plural(report.lines.length, "expense")}, largest first</span>
+                        <span className="text-[13px] text-muted-foreground">{plural(report.lines.length, "expense")} · largest first</span>
                     )}
                 </div>
 
                 {loading ? (
-                    <p className="text-sm text-muted-foreground">Loading…</p>
+                    <p className="px-5 sm:px-6 py-5 text-sm text-muted-foreground">Loading…</p>
                 ) : report.lines.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="px-5 sm:px-6 py-5 text-sm text-muted-foreground">
                         {expenses.length === 0 ? "No expenses recorded yet." : `No expenses recorded in ${listMonthName}.`}
                     </p>
                 ) : (
-                    visible.map((line) => (
-                        <div key={line.key} className="flex flex-col gap-2">
-                            <div className="flex justify-between items-center gap-4">
-                                <div className="min-w-0 flex flex-col gap-0.5">
-                                    <span className="text-[15px] font-semibold text-foreground [overflow-wrap:anywhere]">
-                                        {line.category}
-                                        {line.note ? ` (${line.note})` : ""}
-                                    </span>
-                                    <span className="text-[13px] text-muted-foreground">
-                                        {houseLabel(line.house)} · {dayLabel(line.date)}
-                                        {view !== ALL_HOUSES && line.house === ALL_HOUSES && ` · ${rwf(line.amountRwf / houses.length)} for ${houseLabel(view)}`}
-                                    </span>
-                                </div>
-                                <span className="flex items-center gap-1 shrink-0">
-                                    <span className="text-[15px] font-semibold text-foreground whitespace-nowrap">{rwf(line.amountRwf)}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmDelete(confirmDelete === line.key ? null : line.key)}
-                                        aria-label={`Delete ${line.category} expense of ${rwf(line.amountRwf)}`}
-                                        className="w-11 h-11 -my-2 -mr-2 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted"
-                                    >
-                                        <Trash2 className="h-4 w-4" />
-                                    </button>
-                                </span>
-                            </div>
-                            {confirmDelete === line.key && (
-                                <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
-                                    <span className="text-muted-foreground">
-                                        {line.ids.length > 1 ? `Delete this expense for ${houseLabel(line.house).toLowerCase()}?` : "Delete this expense?"}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => handleDelete(line)}
-                                        disabled={deleting === line.key}
-                                        className="min-h-9 px-3 rounded-full bg-foreground text-background font-semibold disabled:opacity-50"
-                                    >
-                                        Delete
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmDelete(null)}
-                                        className="min-h-9 px-3 rounded-full border border-[#B0B0B0] bg-card font-semibold text-foreground"
-                                    >
-                                        Keep
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    ))
+                    <ul>
+                        {visible.map((line) => {
+                            const counted = amountFor(line, view)
+                            const day = parseISO(line.date)
+                            return (
+                                <li key={line.key} className="border-b border-[#EBEBEB] last:border-b-0">
+                                    <div className="px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
+                                        {/* The date as a small calendar leaf */}
+                                        <div aria-hidden="true" className="w-12 shrink-0 rounded-xl bg-[#F7F7F7] py-1.5 flex flex-col items-center leading-none">
+                                            <span className="text-[17px] font-bold text-foreground">{format(day, "d")}</span>
+                                            <span className="mt-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{format(day, "MMM")}</span>
+                                        </div>
+                                        <div className="min-w-0 flex-1 flex flex-col gap-1">
+                                            <span className="text-[15px] font-semibold text-foreground [overflow-wrap:anywhere]">
+                                                {line.category}
+                                                {line.note && <span className="font-normal text-muted-foreground"> · {line.note}</span>}
+                                            </span>
+                                            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13px] text-muted-foreground">
+                                                <span className="sr-only">{dayLabel(line.date)}, </span>
+                                                <span className="inline-flex items-center gap-1.5">
+                                                    <span aria-hidden="true" className="flex -space-x-1">
+                                                        {(line.house === ALL_HOUSES ? houses.map((h) => h.slug) : [line.house]).map((slug) => (
+                                                            <span key={slug} className="w-2.5 h-2.5 rounded-full ring-2 ring-card" style={{ background: houseColor(slug) }} />
+                                                        ))}
+                                                    </span>
+                                                    {houseLabel(line.house)}
+                                                </span>
+                                                {view !== ALL_HOUSES && line.house === ALL_HOUSES && <span>{rwf(counted)} for {houseLabel(view)}</span>}
+                                            </span>
+                                        </div>
+                                        <div className="shrink-0 flex flex-col items-end gap-0.5 tabular-nums">
+                                            <span className="text-[15px] font-bold text-foreground whitespace-nowrap">{rwf(line.amountRwf)}</span>
+                                            {report.total > 0 && <span className="text-[13px] text-muted-foreground">{pct(counted / report.total)}</span>}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setConfirmDelete(confirmDelete === line.key ? null : line.key)}
+                                            aria-label={`Delete ${line.category} expense of ${rwf(line.amountRwf)}`}
+                                            aria-expanded={confirmDelete === line.key}
+                                            className={`w-11 h-11 -mr-2 shrink-0 rounded-full flex items-center justify-center hover:text-foreground hover:bg-muted ${confirmDelete === line.key ? "text-foreground bg-muted" : "text-[#8A8A8A]"}`}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    {confirmDelete === line.key && (
+                                        <div className="mx-4 sm:mx-6 mb-3 px-4 py-3 rounded-xl bg-[#F7F7F7] flex flex-wrap items-center justify-between gap-2 text-sm">
+                                            <span className="font-semibold text-foreground">
+                                                {line.ids.length > 1 ? `Delete this expense for ${houseLabel(line.house).toLowerCase()}?` : "Delete this expense?"}
+                                            </span>
+                                            <span className="flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setConfirmDelete(null)}
+                                                    className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card font-semibold text-foreground"
+                                                >
+                                                    Keep
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDelete(line)}
+                                                    disabled={deleting === line.key}
+                                                    className="min-h-11 px-4 rounded-full bg-primary text-primary-foreground font-bold disabled:opacity-50"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </span>
+                                        </div>
+                                    )}
+                                </li>
+                            )
+                        })}
+                    </ul>
                 )}
                 {report.lines.length > FIRST_LINES && (
                     <button
@@ -661,12 +705,14 @@ export default function AdminExpensesPage() {
                             setShowAll((all) => !all)
                             setConfirmDelete(null)
                         }}
-                        className="self-start min-h-9 text-sm font-semibold text-foreground underline"
+                        aria-expanded={showAll}
+                        className="w-full min-h-12 px-5 border-t border-border text-sm font-semibold text-foreground hover:bg-[#F7F7F7] flex items-center justify-center gap-1.5"
                     >
                         {showAll ? "Show fewer" : `Show ${report.lines.length - FIRST_LINES} more from ${listMonthName}`}
+                        <ChevronDown className={`h-4 w-4 transition-transform ${showAll ? "rotate-180" : ""}`} />
                     </button>
                 )}
-            </div>
+            </section>
 
             {/* Copy a month's expenses into another month, and shortcuts to other months */}
             {(sourceMonths.length > 0 || otherMonths.length > 0) && (
