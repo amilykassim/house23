@@ -284,11 +284,10 @@ html.light {
 .admin-motion .m-grow-w { transition: width 900ms var(--m-ease); }
 .admin-motion .m-grow-h { transition: height 900ms var(--m-ease), background-color var(--m-med) var(--m-ease); }
 
-/* Tiles lift, cards gain depth, rows tint on hover */
+/* Tiles lift and rows tint on hover; no shadows */
 .admin-motion .m-lift { transition: transform var(--m-med) var(--m-ease), box-shadow var(--m-med) var(--m-ease); }
 @media (hover: hover) {
-  .admin-motion .m-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.28); }
-  .admin-motion .m-card:hover { box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.25); }
+  .admin-motion .m-lift:hover { transform: translateY(-3px); }
   .admin-motion .m-row:hover { background: #FAFAFA; }
   /* Row actions stay quiet until the row is pointed at */
   .admin-motion .m-quiet { opacity: 0.55; }
