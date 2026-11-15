@@ -14,6 +14,7 @@ import {
     periodFor,
     periodTitle,
     shiftAnchor,
+    stipendForPeriod,
     summarizeEarnings,
     type EarningsBooking,
     type Period,
@@ -121,8 +122,11 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     })
     const [hoveredBar, setHoveredBar] = useState<number | null>(null)
     const [hoveredDay, setHoveredDay] = useState<number | null>(null)
+    // Profit before (default) or after the monthly stipend the business pays us
+    const [afterStipend, setAfterStipend] = useState(() => params.get("stipend") === "after")
 
     const view = new URLSearchParams({ kind, house })
+    if (afterStipend) view.set("stipend", "after")
     if (kind === "custom") {
         if (customStart) view.set("from", customStart)
         if (customEnd) view.set("to", customEnd)
@@ -244,7 +248,11 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 .filter((e) => e.house === house || e.house === "all")
                 .map((e) => (e.house === "all" ? { ...e, amountRwf: e.amountRwf / houses.length } : e))
     const spent = periodExpenses.reduce((sum, e) => sum + e.amountRwf, 0)
-    const profit = total - spent
+    // The stipend inside the period; one house carries its equal share
+    const stipendAll = stipendForPeriod(period.start, period.end)
+    const stipend = house === "all" ? stipendAll : stipendAll / houses.length
+    const costs = afterStipend ? spent + stipend : spent
+    const profit = total - costs
     const spentByCategory: Record<string, number> = {}
     periodExpenses.forEach((e) => {
         spentByCategory[e.category] = (spentByCategory[e.category] || 0) + e.amountRwf
@@ -338,26 +346,43 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                     <div className="min-w-0 rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-1">
                         <span className="text-[13px] font-semibold text-muted-foreground">Expenses</span>
                         <span className="text-[19px] sm:text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground">
-                            {money(spent)}
+                            {money(costs)}
                         </span>
                         <span className="text-[13px] text-muted-foreground">
-                            {periodExpenses.length === 0
-                                ? "none recorded"
-                                : `${plural(periodExpenses.length, "expense")}, mostly ${topCategory.toLowerCase()}`}
+                            {afterStipend
+                                ? `the stipend and ${plural(periodExpenses.length, "expense")}`
+                                : periodExpenses.length === 0
+                                    ? "none recorded"
+                                    : `${plural(periodExpenses.length, "expense")}, mostly ${topCategory.toLowerCase()}`}
                         </span>
                     </div>
                     <div className="col-span-2 sm:col-span-1 min-w-0 rounded-[20px] bg-foreground p-4 sm:p-5 flex flex-col gap-1">
-                        <span className="text-[13px] font-semibold text-background/75">{profit < 0 ? "Loss" : "Profit"}</span>
+                        <div className="flex items-start justify-between gap-2">
+                            <span className="text-[13px] font-semibold text-background/75">
+                                {profit < 0 ? "Loss" : "Profit"}
+                                {afterStipend ? " after stipend" : ""}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setAfterStipend((v) => !v)}
+                                aria-pressed={afterStipend}
+                                className="shrink-0 rounded-full border border-background/40 px-3 py-1 text-[12px] font-semibold text-background hover:bg-background/10 transition-colors"
+                            >
+                                {afterStipend ? "Before stipend" : "After stipend"}
+                            </button>
+                        </div>
                         <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background">
                             {profit < 0 ? "−" : ""}
                             {money(Math.abs(profit))}
                         </span>
                         <span className="text-[13px] text-background/75">
-                            {total > 0
-                                ? profit >= 0
-                                    ? `${Math.round((profit / total) * 100)}% of revenue kept`
-                                    : "expenses were higher than revenue"
-                                : "revenue minus expenses"}
+                            {afterStipend
+                                ? `${money(stipend)} of stipend taken off`
+                                : total > 0
+                                    ? profit >= 0
+                                        ? `${Math.round((profit / total) * 100)}% of revenue kept`
+                                        : "expenses were higher than revenue"
+                                    : "revenue minus expenses"}
                         </span>
                     </div>
                 </div>
