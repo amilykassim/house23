@@ -58,3 +58,41 @@ test("no day is lost or counted twice", () => {
         assert.equal(runs.filter((r) => r.start <= day && day <= r.end).length, 1, `${day} is in exactly one run`)
     }
 })
+
+// ---------------------------------------------- upcomingBlockedRuns, nightsOf
+const { upcomingBlockedRuns, nightsOf } = require("../lib/date-ranges.ts")
+const TODAY = "2026-11-15"
+
+test("past runs are left out; a run that ends today is kept", () => {
+    const runs = upcomingBlockedRuns(["2026-07-01", "2026-07-02", "2026-11-14", "2026-11-15"], TODAY)
+    assert.deepEqual(runs, [{ start: "2026-11-15", end: "2026-11-15", days: 1, owner: null, startedOn: "2026-11-14" }])
+})
+
+test("a run under way is shown from today and remembers where it began", () => {
+    const nov = Array.from({ length: 13 }, (_, i) => `2026-11-${String(4 + i).padStart(2, "0")}`) // 4..16
+    const runs = upcomingBlockedRuns([...nov, "2026-11-29"], TODAY)
+    assert.deepEqual(runs, [
+        { start: "2026-11-15", end: "2026-11-16", days: 2, owner: null, startedOn: "2026-11-04" },
+        { start: "2026-11-29", end: "2026-11-29", days: 1, owner: null, startedOn: null },
+    ])
+})
+
+test("back-to-back nights held by different owners are separate runs", () => {
+    const owner = (d) => (d <= "2026-11-21" ? "BK-1" : d <= "2026-11-23" ? null : "BK-2")
+    const runs = upcomingBlockedRuns(["2026-11-20", "2026-11-21", "2026-11-22", "2026-11-23", "2026-11-24"], TODAY, owner)
+    assert.deepEqual(runs.map((r) => [r.start, r.end, r.owner]), [
+        ["2026-11-20", "2026-11-21", "BK-1"],
+        ["2026-11-22", "2026-11-23", null],
+        ["2026-11-24", "2026-11-24", "BK-2"],
+    ])
+})
+
+test("runs cross a year end; nothing blocked gives no runs", () => {
+    assert.deepEqual(upcomingBlockedRuns(["2026-12-31", "2027-01-01"], TODAY).map((r) => [r.start, r.end, r.days]), [["2026-12-31", "2027-01-01", 2]])
+    assert.deepEqual(upcomingBlockedRuns([], TODAY), [])
+})
+
+test("nightsOf lists every night of a run, across a month end", () => {
+    assert.deepEqual(nightsOf({ start: "2026-11-29", end: "2026-12-02" }), ["2026-11-29", "2026-11-30", "2026-12-01", "2026-12-02"])
+    assert.deepEqual(nightsOf({ start: "2026-11-29", end: "2026-11-29" }), ["2026-11-29"])
+})

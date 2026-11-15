@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import localFont from "next/font/local"
+import { motion } from "motion/react"
 
 import {
     LayoutDashboard,
@@ -54,7 +55,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }, [])
 
     return (
-        <div className={`${jakarta.variable} font-sans min-h-screen bg-background text-foreground flex flex-col`}>
+        <div className={`${jakarta.variable} admin-motion font-sans min-h-screen bg-background text-foreground flex flex-col`}>
             {/* Header — matches website header design */}
             <header
                 className={`fixed top-0 left-0 right-0 z-50 border-b border-[#EBEBEB] bg-background/90 transition-all duration-300 ${scrolled ? "backdrop-blur-lg" : "backdrop-blur-md"}`}
@@ -79,12 +80,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                                         key={item.href}
                                         href={item.href}
                                         aria-current={isActive ? "page" : undefined}
-                                        className={`px-2.5 lg:px-3.5 py-2.5 rounded-full text-sm whitespace-nowrap transition-colors ${isActive
-                                            ? "bg-muted font-semibold text-foreground"
+                                        className={`relative px-2.5 lg:px-3.5 py-2.5 rounded-full text-sm whitespace-nowrap transition-colors ${isActive
+                                            ? "font-semibold text-foreground"
                                             : "font-medium text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
-                                        {item.label}
+                                        {/* The grey pill glides to the page you open */}
+                                        {isActive && (
+                                            <motion.span
+                                                layoutId="admin-nav-pill"
+                                                className="absolute inset-0 rounded-full bg-muted"
+                                                transition={{ type: "spring", stiffness: 420, damping: 36 }}
+                                            />
+                                        )}
+                                        <span className="relative">{item.label}</span>
                                     </Link>
                                 )
                             })}

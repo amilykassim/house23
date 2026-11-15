@@ -234,3 +234,80 @@ html.light {
 @media (prefers-reduced-motion: reduce) {
   .torch-only, .torch-only-flex { display: none !important; }
 }
+/* ---------- Back office motion ----------
+   One set of timings and curves for every admin page. Everything here is
+   scoped to .admin-motion (the admin layout) and switched off for people
+   who ask their system for reduced motion. */
+.admin-motion {
+  --m-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --m-ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+  --m-fast: 160ms;
+  --m-med: 320ms;
+  --m-slow: 620ms;
+}
+
+/* Content rises into place on arrival; stagger with animation-delay */
+@keyframes m-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.admin-motion .m-rise { animation: m-rise var(--m-slow) var(--m-ease) both; }
+
+/* Rows slide in from the side the page moved toward */
+@keyframes m-in-right { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+@keyframes m-in-left { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.admin-motion .m-in-next { animation: m-in-right 380ms var(--m-ease) both; }
+.admin-motion .m-in-prev { animation: m-in-left 380ms var(--m-ease) both; }
+
+/* A row being removed folds away */
+@keyframes m-fold-away {
+  0% { opacity: 1; max-height: 140px; }
+  35% { opacity: 0; transform: translateX(-10px); }
+  100% { opacity: 0; max-height: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; margin-bottom: 0; border-width: 0; }
+}
+.admin-motion .m-fold-away { animation: m-fold-away 300ms var(--m-ease-io) forwards; overflow: hidden; pointer-events: none; }
+
+/* Opening a panel: the height glides instead of jumping */
+.admin-motion .m-collapse { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--m-med) var(--m-ease), opacity var(--m-med) var(--m-ease); }
+.admin-motion .m-collapse[data-open="true"] { grid-template-rows: 1fr; opacity: 1; }
+.admin-motion .m-collapse > div { min-height: 0; overflow: hidden; }
+.admin-motion .m-chevron { transition: transform var(--m-med) var(--m-ease); }
+
+/* Bars and columns grow to their size */
+.admin-motion .m-grow-w { transition: width 900ms var(--m-ease); }
+.admin-motion .m-grow-h { transition: height 900ms var(--m-ease), background-color var(--m-med) var(--m-ease); }
+
+/* Tiles lift, cards gain depth, rows tint on hover */
+.admin-motion .m-lift { transition: transform var(--m-med) var(--m-ease), box-shadow var(--m-med) var(--m-ease); }
+@media (hover: hover) {
+  .admin-motion .m-lift:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.28); }
+  .admin-motion .m-card:hover { box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.25); }
+  .admin-motion .m-row:hover { background: #FAFAFA; }
+  /* Row actions stay quiet until the row is pointed at */
+  .admin-motion .m-quiet { opacity: 0.55; }
+  .admin-motion .m-row:hover .m-quiet, .admin-motion .m-quiet:focus-visible, .admin-motion .m-quiet[aria-expanded="true"] { opacity: 1; }
+}
+.admin-motion .m-card { transition: box-shadow var(--m-med) var(--m-ease), border-color var(--m-med) var(--m-ease); }
+.admin-motion .m-row { transition: background-color var(--m-fast) ease; }
+.admin-motion .m-quiet { transition: opacity var(--m-fast) ease, background-color var(--m-fast) ease, color var(--m-fast) ease; }
+
+/* Every button gives a little under the finger */
+.admin-motion button { transition-property: transform, color, background-color, border-color, box-shadow, opacity; transition-duration: 140ms; transition-timing-function: var(--m-ease); }
+.admin-motion button:not(:disabled):active { transform: scale(0.97); }
+
+/* A pill that slides to the selected page */
+.admin-motion .m-thumb { transition: transform 420ms var(--m-ease); }
+
+/* Skeleton while a page loads */
+@keyframes m-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.admin-motion .m-skeleton { background: linear-gradient(90deg, #F2F2F2 25%, #E8E8E8 37%, #F2F2F2 63%); background-size: 400% 100%; animation: m-shimmer 1.3s ease infinite; }
+
+/* The fuse on an undo toast */
+@keyframes m-fuse { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.m-fuse { transform-origin: left; animation: m-fuse var(--m-fuse, 4500ms) linear forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-motion *, .admin-motion *::before, .admin-motion *::after, .m-fuse {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .admin-motion button:not(:disabled):active { transform: none; }
+}

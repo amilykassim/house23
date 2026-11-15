@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import {
     format,
     addMonths,
@@ -14,15 +14,31 @@ import {
     isSameDay,
     isBefore,
     startOfDay,
+    subDays,
+    parseISO,
 } from "date-fns"
 import { ChevronLeft, ChevronRight, Lock, Unlock, Loader2, RefreshCw, Copy, Check } from "lucide-react"
 import { houses } from "@/lib/houses"
-import { groupDateRanges } from "@/lib/date-ranges"
+import { nightsOf, upcomingBlockedRuns, type BlockedRun } from "@/lib/date-ranges"
+import { loadBookings } from "@/lib/admin-data"
+import { toast } from "sonner"
 import { SegmentedControl } from "@/components/segmented-control"
+import { BlockedTimeline } from "@/components/blocked-timeline"
+import { Skeleton, rise, undoable } from "@/components/admin-motion"
 
 const ARROW_BUTTON =
     "w-11 h-11 shrink-0 rounded-full border border-[#B0B0B0] bg-card flex items-center justify-center text-foreground hover:bg-[#F7F7F7]"
 const TEXT_LINK = "min-h-11 text-sm font-semibold text-foreground underline underline-offset-4"
+
+// A booking as the calendar needs it: whose nights a blocked run is
+interface Stay {
+    id: string
+    house: string
+    guestName: string
+    checkIn: string
+    checkOut: string
+    status: string
+}
 
 interface AirbnbEvent {
     start: string
@@ -48,6 +64,21 @@ export default function AdminCalendarPage() {
     const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
     const today = startOfDay(new Date())
+    const todayKey = format(today, "yyyy-MM-dd")
+    // Bookings, to say which blocked nights belong to a confirmed stay
+    const [stays, setStays] = useState<Stay[]>([])
+    // The blocked run folding away after Unblock (by its first night)
+    const [leaving, setLeaving] = useState<string | null>(null)
+    // Which way the month grid slides when the month changes
+    const [monthDir, setMonthDir] = useState<"next" | "prev">("next")
+    const houseRef = useRef(selectedHouse)
+    houseRef.current = selectedHouse
+
+    useEffect(() => {
+        loadBookings<Stay>()
+            .then(setStays)
+            .catch(() => {})
+    }, [])
 
     useEffect(() => {
         setMounted(true)
@@ -211,32 +242,89 @@ export default function AdminCalendarPage() {
 
     const selectedHouseData = houses.find((h) => h.slug === selectedHouse)
 
-    const blockedRanges = groupDateRanges(blockedDates)
     const dayOf = (key: string) => new Date(key + "T00:00:00")
+
+    // Confirmed stays of this house, night by night
+    const stayByNight = useMemo(() => {
+        const map = new Map<string, Stay>()
+        for (const stay of stays) {
+            if (stay.house !== selectedHouse || stay.status !== "confirmed") continue
+            for (const night of nightsOf({ start: stay.checkIn, end: format(subDays(parseISO(stay.checkOut), 1), "yyyy-MM-dd") })) {
+                map.set(night, stay)
+            }
+        }
+        return map
+    }, [stays, selectedHouse])
+    const runs = upcomingBlockedRuns(blockedDates, todayKey, (night) => stayByNight.get(night)?.id ?? null)
+    const bookingName = (id: string) => stays.find((s) => s.id === id)?.guestName || "a guest"
+
+    // Unblock a run blocked by hand: it leaves the list at once, and the
+    // request goes out when the Undo toast runs out
+    const unblockRun = (run: BlockedRun) => {
+        const house = selectedHouse
+        const houseName = selectedHouseData?.name ?? house
+        const nights = nightsOf(run)
+        const putBack = () => {
+            if (houseRef.current !== house) return
+            setBlockedDates((prev) => new Set([...Array.from(prev), ...nights]))
+        }
+        setLeaving(run.start)
+        setTimeout(() => {
+            setLeaving(null)
+            setBlockedDates((prev) => new Set(Array.from(prev).filter((d) => !nights.includes(d))))
+            setSelectedDates((prev) => new Set(Array.from(prev).filter((d) => !nights.includes(d))))
+            undoable({
+                title: `Unblocked ${nights.length} night${nights.length === 1 ? "" : "s"}`,
+                description: `${format(dayOf(run.start), "EEE d MMM")}${run.days > 1 ? ` → ${format(dayOf(run.end), "EEE d MMM")}` : ""} · ${houseName}`,
+                undo: putBack,
+                send: () => {
+                    fetch("/api/blocked-dates", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ house, dates: nights, action: "unblock" }),
+                        keepalive: true,
+                    })
+                        .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Request failed"))))
+                        .then((data) => {
+                            if (houseRef.current === house) setBlockedDates(new Set(data.dates || []))
+                        })
+                        .catch(() => {
+                            putBack()
+                            toast.error("Couldn't unblock the nights", { description: "They are still blocked. Try again." })
+                        })
+                },
+            })
+        }, 300)
+    }
 
     return (
         // zoom scales the whole page down a notch on every screen size
         <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[1120px] mx-auto flex flex-col gap-6 sm:gap-7">
-            <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Calendar</h1>
+            <h1 {...rise(0)} className="m-rise text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Calendar</h1>
 
             {/* House Selector */}
-            <SegmentedControl
-                className="self-start max-w-full"
-                itemClassName="px-[22px]"
-                options={houses.map((h) => ({ id: h.slug, label: h.name }))}
-                value={selectedHouse}
-                onChange={setSelectedHouse}
-            />
+            <div {...rise(1)} className="m-rise self-start max-w-full">
+                <SegmentedControl
+                    className="max-w-full"
+                    itemClassName="px-[22px]"
+                    options={houses.map((h) => ({ id: h.slug, label: h.name }))}
+                    value={selectedHouse}
+                    onChange={setSelectedHouse}
+                />
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-                <div className="min-w-0 lg:col-span-3 flex flex-col gap-6">
+                <div {...rise(2)} className="m-rise min-w-0 lg:col-span-3 flex flex-col gap-6">
                     {/* Calendar Card */}
-                    <section aria-label={`${selectedHouseData?.name} calendar`} className="rounded-[20px] border border-border bg-card p-4 sm:p-6 flex flex-col gap-4">
+                    <section aria-label={`${selectedHouseData?.name} calendar`} className="m-card rounded-[20px] border border-border bg-card p-4 sm:p-6 flex flex-col gap-4">
                         {/* Month Navigation */}
                         <div className="flex items-center justify-between">
                             <button
                                 type="button"
-                                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                                onClick={() => {
+                                    setMonthDir("prev")
+                                    setCurrentMonth(subMonths(currentMonth, 1))
+                                }}
                                 aria-label="Previous month"
                                 className={ARROW_BUTTON}
                             >
@@ -245,7 +333,10 @@ export default function AdminCalendarPage() {
                             <h2 className="text-xl font-bold tracking-[-0.02em] text-foreground">{format(currentMonth, "MMMM yyyy")}</h2>
                             <button
                                 type="button"
-                                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                                onClick={() => {
+                                    setMonthDir("next")
+                                    setCurrentMonth(addMonths(currentMonth, 1))
+                                }}
                                 aria-label="Next month"
                                 className={ARROW_BUTTON}
                             >
@@ -254,11 +345,13 @@ export default function AdminCalendarPage() {
                         </div>
 
                         {loading ? (
-                            <div className="flex items-center justify-center py-20">
-                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                            <div className="grid grid-cols-7 gap-1 sm:gap-1.5" aria-label="Loading the calendar">
+                                {Array.from({ length: 35 }, (_, i) => (
+                                    <Skeleton key={i} className="h-12 sm:h-[60px] rounded-xl" />
+                                ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col gap-2">
+                            <div key={format(currentMonth, "yyyy-MM")} className={`flex flex-col gap-2 ${monthDir === "next" ? "m-in-next" : "m-in-prev"}`}>
                                 {/* Weekday Headers */}
                                 <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
                                     {weekDays.map((day) => (
@@ -383,27 +476,21 @@ export default function AdminCalendarPage() {
                         </div>
                     </section>
 
-                    {/* Currently Blocked Dates Summary */}
-                    {blockedRanges.length > 0 && (
-                        <section aria-labelledby="blocked-dates" className="flex flex-col gap-3">
-                            <h3 id="blocked-dates" className="text-[17px] font-bold tracking-[-0.01em] text-foreground">
-                                Blocked dates for {selectedHouseData?.name}
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {blockedRanges.map((range) => (
-                                    <span key={range.start} className="px-3.5 py-2 rounded-full bg-[#F2F2F2] text-sm font-semibold text-foreground">
-                                        {range.days === 1
-                                            ? format(dayOf(range.start), "MMM d, yyyy")
-                                            : `${format(dayOf(range.start), "MMM d")} to ${format(dayOf(range.end), "MMM d, yyyy")} · ${range.days} nights`}
-                                    </span>
-                                ))}
-                            </div>
-                        </section>
+                    {/* Blocked nights from today on */}
+                    {!loading && (
+                        <BlockedTimeline
+                            houseName={selectedHouseData?.name ?? selectedHouse}
+                            runs={runs}
+                            today={todayKey}
+                            bookingName={bookingName}
+                            leaving={leaving}
+                            onUnblock={unblockRun}
+                        />
                     )}
                 </div>
 
                 {/* Airbnb Sync Section */}
-                <section aria-labelledby="airbnb-sync" className="min-w-0 lg:col-span-2 rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col gap-5">
+                <section aria-labelledby="airbnb-sync" {...rise(3)} className="m-rise m-card min-w-0 lg:col-span-2 rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
                         <div className="flex items-center justify-between gap-3">
                             <h3 id="airbnb-sync" className="text-[17px] font-bold tracking-[-0.01em] text-foreground">

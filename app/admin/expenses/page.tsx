@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { format, parseISO, startOfMonth, subMonths } from "date-fns"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, Copy, Loader2, Pencil, Plus, Trash2, X } from "lucide-react"
@@ -13,6 +13,7 @@ import { SegmentedControl } from "@/components/segmented-control"
 import { PillMenu } from "@/components/pill-menu"
 import { houseColor } from "@/components/earnings-insights"
 import { forgetExpenses, loadBookings, loadExpenses } from "@/lib/admin-data"
+import { Collapse, Skeleton, rise, undoable, useCountUp, useGrown } from "@/components/admin-motion"
 import { CalendarPanel, dayKey, dayLabel, monthCells } from "@/components/date-range-picker"
 
 const HOUSE_OPTIONS = [
@@ -82,8 +83,9 @@ export default function AdminExpensesPage() {
     const [listMonth, setListMonth] = useState(today.slice(0, 7))
     // Page of the month's list, from 1
     const [page, setPage] = useState(1)
-    const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
-    const [deleting, setDeleting] = useState<string | null>(null)
+    // The line folding away after Delete (by its key), and which way pages move
+    const [leaving, setLeaving] = useState<string | null>(null)
+    const [pageDir, setPageDir] = useState<"next" | "prev">("next")
     // "Where it goes": the category opened to show its expenses, and the line being edited
     const [openCategory, setOpenCategory] = useState<string | null>(null)
     const [editing, setEditing] = useState<ExpenseDraft | null>(null)
@@ -133,8 +135,8 @@ export default function AdminExpensesPage() {
     const firstShown = (currentPage - 1) * PAGE_SIZE
     const visible = report.lines.slice(firstShown, firstShown + PAGE_SIZE)
     const goToPage = (next: number) => {
+        setPageDir(next > currentPage ? "next" : "prev")
         setPage(next)
-        setConfirmDelete(null)
     }
     const listMonthName = monthName(listMonth)
     const previousMonthName = monthName(shiftMonth(listMonth, -1))
@@ -143,7 +145,6 @@ export default function AdminExpensesPage() {
     const showMonth = (key: string) => {
         setListMonth(key)
         setPage(1)
-        setConfirmDelete(null)
         setOpenCategory(null)
         setEditing(null)
     }
@@ -151,6 +152,12 @@ export default function AdminExpensesPage() {
     const topCategory = report.categories[0]
     const chartMax = Math.max(...report.months.map((m) => m.total), 1)
     const hasSpending = report.total > 0
+    // Motion: the month's total counts up once when the page arrives; bars grow in
+    const ready = !loading
+    const shownTotal = useCountUp(report.total, ready)
+    const grown = useGrown(ready)
+    const expensesRef = useRef(expenses)
+    expensesRef.current = expenses
 
     const handleSave = async () => {
         if (!canSave) return
@@ -263,29 +270,45 @@ export default function AdminExpensesPage() {
         }
     }
 
-    // Deletes a line: one expense, or every house's share of a split one
-    const handleDelete = async (line: ExpenseLine) => {
-        setDeleting(line.key)
-        const removed: string[] = []
-        try {
-            for (const id of line.ids) {
-                const res = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: "DELETE" })
-                if (!res.ok) throw new Error("Request failed")
-                removed.push(id)
-            }
-            toast.success("Expense deleted")
-        } catch {
-            toast.error("Couldn't delete the expense", {
-                description: removed.length > 0 ? "Only part of it was deleted. Check the list and try again." : undefined,
+    // Deletes a line (one expense, or every house's share of a split one). It
+    // folds away at once; the delete goes out when the Undo toast runs out.
+    const handleDelete = (line: ExpenseLine) => {
+        if (leaving) return
+        setLeaving(line.key)
+        setEditing(null)
+        setTimeout(() => {
+            const rows = expensesRef.current.filter((e) => line.ids.includes(e.id))
+            const putBack = (back: Expense[]) =>
+                setExpenses((prev) =>
+                    [...prev, ...back.filter((r) => !prev.some((e) => e.id === r.id))].sort(
+                        (x, y) => y.date.localeCompare(x.date) || y.createdAt.localeCompare(x.createdAt)
+                    )
+                )
+            setExpenses((prev) => prev.filter((e) => !line.ids.includes(e.id)))
+            setLeaving(null)
+            undoable({
+                title: "Expense deleted",
+                description: `${line.category}${line.note ? ` · ${line.note}` : ""} · ${rwf(line.amountRwf)}`,
+                undo: () => putBack(rows),
+                send: async () => {
+                    const removed: string[] = []
+                    try {
+                        for (const id of line.ids) {
+                            const res = await fetch(`/api/expenses?id=${encodeURIComponent(id)}`, { method: "DELETE", keepalive: true })
+                            if (!res.ok) throw new Error("Request failed")
+                            removed.push(id)
+                        }
+                    } catch {
+                        putBack(rows.filter((r) => !removed.includes(r.id)))
+                        toast.error("Couldn't delete the expense", {
+                            description: removed.length > 0 ? "Only part of it was deleted. Check the list and try again." : "It is back in the list. Try again.",
+                        })
+                    } finally {
+                        forgetExpenses()
+                    }
+                },
             })
-        } finally {
-            if (removed.length > 0) {
-                forgetExpenses()
-                setExpenses((prev) => prev.filter((e) => !removed.includes(e.id)))
-            }
-            setDeleting(null)
-            setConfirmDelete(null)
-        }
+        }, 300)
     }
 
     // Saves the line being edited: every stored row behind it changes together
@@ -340,6 +363,7 @@ export default function AdminExpensesPage() {
     return (
         // zoom scales the whole page down a notch on every screen size
         <div className="[zoom:0.88] px-4 pt-7 sm:pt-12 pb-14 max-w-[592px] lg:max-w-[1040px] mx-auto flex flex-col gap-6 sm:gap-7">
+            <div {...rise(0)} className="m-rise flex flex-col">
             <div className="flex flex-wrap items-center justify-between gap-4">
                 <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Expenses</h1>
                 <button
@@ -354,8 +378,9 @@ export default function AdminExpensesPage() {
                 </button>
             </div>
 
-            {formOpen && (
-                <div id="add-expense" className="w-full max-w-[592px] rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-5">
+            <Collapse open={formOpen} id="add-expense">
+                <div className="pt-6 sm:pt-7">
+                <div className="w-full max-w-[592px] rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-5">
                     {/* House */}
                     <SegmentedControl
                         className="self-start max-w-full"
@@ -459,27 +484,30 @@ export default function AdminExpensesPage() {
                         Save expense
                     </button>
                 </div>
-            )}
+                </div>
+            </Collapse>
+            </div>
 
             {/* Which house the report is about */}
             {houses.length > 1 && (
+                <div {...rise(1)} className="m-rise self-start max-w-full">
                 <SegmentedControl
-                    className="self-start max-w-full"
+                    className="max-w-full"
                     itemClassName="px-3 sm:px-[22px]"
                     options={HOUSE_OPTIONS}
                     value={view}
                     onChange={(next) => {
                         setView(next)
                         setPage(1)
-                        setConfirmDelete(null)
                         setOpenCategory(null)
                         setEditing(null)
                     }}
                 />
+                </div>
             )}
 
             {/* One month at a time */}
-            <div className="flex items-center gap-3">
+            <div {...rise(2)} className="m-rise flex items-center gap-3">
                 <button type="button" onClick={() => stepMonth(-1)} disabled={listMonth <= oldestMonth} aria-label="Previous month" className={ARROW_BUTTON}>
                     <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -493,34 +521,44 @@ export default function AdminExpensesPage() {
             </div>
 
             {loading ? (
-                <p className="text-sm text-muted-foreground">Loading…</p>
+                <div aria-label="Loading the month" className="flex flex-col gap-6">
+                    <div className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {[0, 1, 2, 3].map((i) => (
+                            <Skeleton key={i} className="h-[118px] rounded-[20px]" />
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6">
+                        <Skeleton className="h-[380px] rounded-[20px]" />
+                        <Skeleton className="h-[380px] rounded-[20px]" />
+                    </div>
+                </div>
             ) : (
                 <>
                     {/* The month at a glance */}
                     <section aria-label={`${listMonthName} at a glance`} className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
-                        <div className={`${TILE} bg-foreground text-background`}>
+                        <div {...rise(3)} className={`${TILE} m-rise m-lift bg-foreground text-background`}>
                             <span className="text-[13px] font-semibold text-background/75">Spent in {listMonthName}</span>
-                            <span className="text-[26px] leading-tight font-bold tracking-[-0.02em]">{rwf(report.total)}</span>
+                            <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] tabular-nums">{rwf(shownTotal)}</span>
                             <span className="text-[13px] flex items-center gap-1.5">{changeLine}</span>
                         </div>
-                        <div className={`${TILE} bg-[#F7F7F7]`}>
+                        <div {...rise(4)} className={`${TILE} m-rise m-lift bg-[#F7F7F7]`}>
                             <span className="text-[13px] font-semibold text-muted-foreground">Per booked night</span>
-                            <span className="text-[22px] leading-tight font-bold tracking-[-0.02em] text-foreground">
-                                {report.nights > 0 ? rwf(report.total / report.nights) : "–"}
+                            <span className="text-[22px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">
+                                {report.nights > 0 ? rwf(shownTotal / report.nights) : "–"}
                             </span>
                             <span className="text-[13px] text-muted-foreground">
                                 {report.nights > 0 ? `${plural(report.nights, "night")} booked` : "no nights yet"}
                             </span>
                         </div>
-                        <div className={`${TILE} bg-[#F7F7F7]`}>
+                        <div {...rise(5)} className={`${TILE} m-rise m-lift bg-[#F7F7F7]`}>
                             <span className="text-[13px] font-semibold text-muted-foreground">Biggest cost</span>
                             <span className="text-[22px] leading-tight font-bold tracking-[-0.02em] text-foreground">{topCategory?.category ?? "–"}</span>
                             <span className="text-[13px] text-muted-foreground">{topCategory ? rwf(topCategory.amount) : "nothing yet"}</span>
                         </div>
-                        <div className={`${TILE} bg-[#F7F7F7]`}>
+                        <div {...rise(6)} className={`${TILE} m-rise m-lift bg-[#F7F7F7]`}>
                             <span className="text-[13px] font-semibold text-muted-foreground">Share of revenue</span>
-                            <span className="text-[22px] leading-tight font-bold tracking-[-0.02em] text-foreground">
-                                {report.revenue > 0 ? pct(report.total / report.revenue) : "–"}
+                            <span className="text-[22px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">
+                                {report.revenue > 0 ? pct(shownTotal / report.revenue) : "–"}
                             </span>
                             <span className="text-[13px] text-muted-foreground">{report.revenue > 0 ? `of ${rwf(report.revenue)}` : "no revenue yet"}</span>
                         </div>
@@ -531,7 +569,7 @@ export default function AdminExpensesPage() {
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
                             {/* By category, largest first */}
-                            <section aria-labelledby="where-it-goes" className={CARD}>
+                            <section aria-labelledby="where-it-goes" {...rise(7)} className={`${CARD} m-rise m-card`}>
                                 <div className="flex items-baseline justify-between gap-3">
                                     <h2 id="where-it-goes" className={CARD_TITLE}>
                                         Where it goes
@@ -550,11 +588,10 @@ export default function AdminExpensesPage() {
                                                     onClick={() => {
                                                         setOpenCategory(open ? null : row.category)
                                                         setEditing(null)
-                                                        setConfirmDelete(null)
                                                     }}
                                                     aria-expanded={open}
                                                     aria-controls={`category-${i}`}
-                                                    className="-mx-2 px-2 py-1.5 rounded-xl flex flex-col gap-2 text-left hover:bg-[#F7F7F7]"
+                                                    className="-mx-2 px-2 py-1.5 rounded-xl flex flex-col gap-2 text-left m-row hover:bg-[#F7F7F7]"
                                                 >
                                                     <span className="w-full flex items-center justify-between gap-3">
                                                         <span className="min-w-0 flex items-center gap-2">
@@ -574,26 +611,25 @@ export default function AdminExpensesPage() {
                                                             <span className="w-9 text-right text-[13px] text-muted-foreground">{pct(row.share)}</span>
                                                             <ChevronDown
                                                                 aria-hidden="true"
-                                                                className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+                                                                className={`m-chevron h-4 w-4 text-muted-foreground ${open ? "rotate-180" : ""}`}
                                                             />
                                                         </span>
                                                     </span>
                                                     <span className="block w-full h-1.5 rounded-full bg-[#EBEBEB] overflow-hidden">
                                                         <span
-                                                            className={`block h-full rounded-full ${i === 0 ? "bg-foreground" : "bg-[#6A6A6A]"}`}
-                                                            style={{ width: `${Math.max(row.share * 100, 1)}%` }}
+                                                            className={`m-grow-w block h-full rounded-full ${i === 0 ? "bg-foreground" : "bg-[#6A6A6A]"}`}
+                                                            style={{ width: grown ? `${Math.max(row.share * 100, 1)}%` : "0%" }}
                                                         />
                                                     </span>
                                                 </button>
 
                                                 {/* The category's expenses, each one editable */}
-                                                {open && (
-                                                    <ul id={`category-${i}`} className="mt-2 rounded-2xl bg-[#F7F7F7] divide-y divide-[#E5E5E5]">
+                                                <Collapse open={open} id={`category-${i}`}>
+                                                    <ul className="mt-2 rounded-2xl bg-[#F7F7F7] divide-y divide-[#E5E5E5]">
                                                         {items.map((line) => {
                                                             const isEditing = editing?.key === line.key
-                                                            const deleteKey = `cat:${line.key}`
                                                             return (
-                                                                <li key={line.key} className="px-3.5 py-3 flex flex-col gap-3">
+                                                                <li key={line.key} className={`m-row px-3.5 py-3 flex flex-col gap-3 ${leaving === line.key ? "m-fold-away" : ""}`}>
                                                                     <div className="flex items-center gap-3">
                                                                         <div className="min-w-0 flex-1 flex flex-col gap-0.5">
                                                                             <span className="text-[15px] font-semibold text-foreground [overflow-wrap:anywhere]">
@@ -610,7 +646,6 @@ export default function AdminExpensesPage() {
                                                                             <button
                                                                                 type="button"
                                                                                 onClick={() => {
-                                                                                    setConfirmDelete(null)
                                                                                     setEditing(
                                                                                         isEditing
                                                                                             ? null
@@ -619,51 +654,25 @@ export default function AdminExpensesPage() {
                                                                                 }}
                                                                                 aria-label={`Edit ${line.category} expense of ${rwf(line.amountRwf)}`}
                                                                                 aria-expanded={isEditing}
-                                                                                className={`w-11 h-11 rounded-full flex items-center justify-center hover:bg-white hover:text-foreground ${isEditing ? "bg-white text-foreground" : "text-[#6A6A6A]"}`}
+                                                                                className={`m-quiet w-11 h-11 rounded-full flex items-center justify-center hover:bg-white hover:text-foreground ${isEditing ? "bg-white text-foreground" : "text-[#6A6A6A]"}`}
                                                                             >
                                                                                 <Pencil className="h-4 w-4" />
                                                                             </button>
                                                                             <button
                                                                                 type="button"
-                                                                                onClick={() => {
-                                                                                    setEditing(null)
-                                                                                    setConfirmDelete(confirmDelete === deleteKey ? null : deleteKey)
-                                                                                }}
+                                                                                onClick={() => handleDelete(line)}
+                                                                                disabled={leaving !== null}
                                                                                 aria-label={`Delete ${line.category} expense of ${rwf(line.amountRwf)}`}
-                                                                                aria-expanded={confirmDelete === deleteKey}
-                                                                                className={`w-11 h-11 rounded-full flex items-center justify-center hover:bg-white hover:text-foreground ${confirmDelete === deleteKey ? "bg-white text-foreground" : "text-[#6A6A6A]"}`}
+                                                                                className="m-quiet w-11 h-11 rounded-full flex items-center justify-center text-[#6A6A6A] hover:bg-white hover:text-foreground"
                                                                             >
                                                                                 <Trash2 className="h-4 w-4" />
                                                                             </button>
                                                                         </span>
                                                                     </div>
 
-                                                                    {confirmDelete === deleteKey && (
-                                                                        <div className="px-3.5 py-3 rounded-xl bg-card flex flex-wrap items-center justify-between gap-2 text-sm">
-                                                                            <span className="font-semibold text-foreground">
-                                                                                {line.ids.length > 1 ? `Delete this expense for ${houseLabel(line.house).toLowerCase()}?` : "Delete this expense?"}
-                                                                            </span>
-                                                                            <span className="flex items-center gap-2">
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => setConfirmDelete(null)}
-                                                                                    className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card font-semibold text-foreground"
-                                                                                >
-                                                                                    Keep
-                                                                                </button>
-                                                                                <button
-                                                                                    type="button"
-                                                                                    onClick={() => handleDelete(line)}
-                                                                                    disabled={deleting === line.key}
-                                                                                    className="min-h-11 px-4 rounded-full bg-primary text-primary-foreground font-bold disabled:opacity-50"
-                                                                                >
-                                                                                    Delete
-                                                                                </button>
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-
+                                                                    <Collapse open={isEditing} className="-mt-3">
                                                                     {isEditing && editing && (
+                                                                        <div className="pt-3">
                                                                         <EditExpenseForm
                                                                             line={line}
                                                                             value={editing}
@@ -673,12 +682,14 @@ export default function AdminExpensesPage() {
                                                                             saving={savingEdit}
                                                                             today={today}
                                                                         />
+                                                                        </div>
                                                                     )}
+                                                                    </Collapse>
                                                                 </li>
                                                             )
                                                         })}
                                                     </ul>
-                                                )}
+                                                </Collapse>
                                             </li>
                                         )
                                     })}
@@ -688,7 +699,7 @@ export default function AdminExpensesPage() {
                             <div className="min-w-0 flex flex-col gap-6">
                                 {/* By house, when every house is shown */}
                                 {view === ALL_HOUSES && houses.length > 1 && (
-                                    <section aria-labelledby="by-house" className={CARD}>
+                                    <section aria-labelledby="by-house" {...rise(8)} className={`${CARD} m-rise m-card`}>
                                         <h2 id="by-house" className={CARD_TITLE}>
                                             By house
                                         </h2>
@@ -697,7 +708,11 @@ export default function AdminExpensesPage() {
                                             {report.byHouse
                                                 .filter((h) => h.amount > 0)
                                                 .map((h) => (
-                                                    <div key={h.slug} style={{ flexGrow: h.amount, background: houseColor(h.slug) }} />
+                                                    <div
+                                                        key={h.slug}
+                                                        className="m-grow-w"
+                                                        style={{ width: grown ? `${(h.amount / Math.max(report.total, 1)) * 100}%` : "0%", background: houseColor(h.slug) }}
+                                                    />
                                                 ))}
                                         </div>
                                         <ul className="flex flex-col gap-3.5">
@@ -721,7 +736,7 @@ export default function AdminExpensesPage() {
                                 )}
 
                                 {/* Spending, month by month */}
-                                <section aria-labelledby="six-months" className={CARD}>
+                                <section aria-labelledby="six-months" {...rise(9)} className={`${CARD} m-rise m-card`}>
                                     <div className="flex items-baseline justify-between gap-3">
                                         <h2 id="six-months" className={CARD_TITLE}>
                                             Last six months
@@ -749,8 +764,8 @@ export default function AdminExpensesPage() {
                                                     </span>
                                                     <div className="w-full px-1 flex items-end" style={{ height: CHART_HEIGHT }}>
                                                         <div
-                                                            className={`w-full rounded-md ${current ? "bg-foreground" : "bg-[#D5D5D5]"}`}
-                                                            style={{ height: Math.max(Math.round((m.total / chartMax) * CHART_HEIGHT), 3) }}
+                                                            className={`m-grow-h w-full rounded-md ${current ? "bg-foreground" : "bg-[#D5D5D5]"}`}
+                                                            style={{ height: grown ? Math.max(Math.round((m.total / chartMax) * CHART_HEIGHT), 3) : 3 }}
                                                         />
                                                     </div>
                                                     <span className={`text-[13px] text-foreground ${current ? "font-bold" : "font-medium"}`}>{m.label}</span>
@@ -766,13 +781,13 @@ export default function AdminExpensesPage() {
             )}
 
             {/* The month's expenses, one line each */}
-            <section aria-labelledby="month-expenses" className="rounded-[20px] border border-border bg-card overflow-hidden">
+            <section aria-labelledby="month-expenses" {...rise(loading ? 3 : 10)} className="m-rise m-card rounded-[20px] border border-border bg-card overflow-hidden">
                 <div className="px-5 sm:px-6 pt-5 pb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border">
                     <div className="flex flex-col gap-0.5">
                         <h2 id="month-expenses" className="text-[13px] font-semibold text-muted-foreground">
                             Spent in {listMonthName}
                         </h2>
-                        <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">{rwf(report.total)}</span>
+                        <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">{rwf(shownTotal)}</span>
                     </div>
                     {report.lines.length > 0 && (
                         <span className="text-[13px] text-muted-foreground">{plural(report.lines.length, "expense")} · largest first</span>
@@ -780,18 +795,26 @@ export default function AdminExpensesPage() {
                 </div>
 
                 {loading ? (
-                    <p className="px-5 sm:px-6 py-5 text-sm text-muted-foreground">Loading…</p>
+                    <div aria-label="Loading the expenses" className="px-5 sm:px-6 py-4 flex flex-col gap-3">
+                        {[0, 1, 2].map((i) => (
+                            <Skeleton key={i} className="h-14 rounded-xl" />
+                        ))}
+                    </div>
                 ) : report.lines.length === 0 ? (
                     <p className="px-5 sm:px-6 py-5 text-sm text-muted-foreground">
                         {expenses.length === 0 ? "No expenses recorded yet." : `No expenses recorded in ${listMonthName}.`}
                     </p>
                 ) : (
-                    <ul>
-                        {visible.map((line) => {
+                    <ul key={`${listMonth}:${view}:${currentPage}`}>
+                        {visible.map((line, i) => {
                             const counted = amountFor(line, view)
                             const day = parseISO(line.date)
                             return (
-                                <li key={line.key} className="border-b border-[#EBEBEB] last:border-b-0">
+                                <li
+                                    key={line.key}
+                                    className={`m-row border-b border-[#EBEBEB] last:border-b-0 ${leaving === line.key ? "m-fold-away" : pageDir === "next" ? "m-in-next" : "m-in-prev"}`}
+                                    style={{ animationDelay: leaving === line.key ? undefined : `${i * 40}ms` }}
+                                >
                                     <div className="px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
                                         {/* The date as a small calendar leaf */}
                                         <div aria-hidden="true" className="w-12 shrink-0 rounded-xl bg-[#F7F7F7] py-1.5 flex flex-col items-center leading-none">
@@ -822,38 +845,14 @@ export default function AdminExpensesPage() {
                                         </div>
                                         <button
                                             type="button"
-                                            onClick={() => setConfirmDelete(confirmDelete === line.key ? null : line.key)}
+                                            onClick={() => handleDelete(line)}
+                                            disabled={leaving !== null}
                                             aria-label={`Delete ${line.category} expense of ${rwf(line.amountRwf)}`}
-                                            aria-expanded={confirmDelete === line.key}
-                                            className={`w-11 h-11 -mr-2 shrink-0 rounded-full flex items-center justify-center hover:text-foreground hover:bg-muted ${confirmDelete === line.key ? "text-foreground bg-muted" : "text-[#8A8A8A]"}`}
+                                            className="m-quiet w-11 h-11 -mr-2 shrink-0 rounded-full flex items-center justify-center text-[#6A6A6A] hover:text-foreground hover:bg-muted"
                                         >
                                             <Trash2 className="h-4 w-4" />
                                         </button>
                                     </div>
-                                    {confirmDelete === line.key && (
-                                        <div className="mx-4 sm:mx-6 mb-3 px-4 py-3 rounded-xl bg-[#F7F7F7] flex flex-wrap items-center justify-between gap-2 text-sm">
-                                            <span className="font-semibold text-foreground">
-                                                {line.ids.length > 1 ? `Delete this expense for ${houseLabel(line.house).toLowerCase()}?` : "Delete this expense?"}
-                                            </span>
-                                            <span className="flex items-center gap-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setConfirmDelete(null)}
-                                                    className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card font-semibold text-foreground"
-                                                >
-                                                    Keep
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleDelete(line)}
-                                                    disabled={deleting === line.key}
-                                                    className="min-h-11 px-4 rounded-full bg-primary text-primary-foreground font-bold disabled:opacity-50"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </span>
-                                        </div>
-                                    )}
                                 </li>
                             )
                         })}
@@ -874,18 +873,26 @@ export default function AdminExpensesPage() {
                             >
                                 <ChevronLeft className="h-4 w-4" />
                             </button>
-                            {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-                                <button
-                                    key={n}
-                                    type="button"
-                                    onClick={() => goToPage(n)}
-                                    aria-current={n === currentPage ? "page" : undefined}
-                                    aria-label={`Page ${n}`}
-                                    className={`h-10 min-w-10 px-2 rounded-full text-sm font-semibold tabular-nums ${n === currentPage ? "bg-foreground text-background" : "text-foreground hover:bg-[#F2F2F2]"}`}
-                                >
-                                    {n}
-                                </button>
-                            ))}
+                            <div className="relative flex gap-1">
+                                {/* The dark pill slides to the page shown */}
+                                <span
+                                    aria-hidden="true"
+                                    className="m-thumb absolute left-0 top-0 w-10 h-10 rounded-full bg-foreground shadow-[0_6px_14px_-6px_rgba(0,0,0,0.45)]"
+                                    style={{ transform: `translateX(${(currentPage - 1) * 44}px)` }}
+                                />
+                                {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                                    <button
+                                        key={n}
+                                        type="button"
+                                        onClick={() => goToPage(n)}
+                                        aria-current={n === currentPage ? "page" : undefined}
+                                        aria-label={`Page ${n}`}
+                                        className={`relative w-10 h-10 rounded-full text-sm font-semibold tabular-nums ${n === currentPage ? "text-background" : "text-foreground hover:bg-[#F2F2F2]"}`}
+                                    >
+                                        {n}
+                                    </button>
+                                ))}
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => goToPage(currentPage + 1)}
