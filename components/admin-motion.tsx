@@ -66,7 +66,6 @@ export function useTween(value: number, trigger: unknown, duration = 650): numbe
 
     useEffect(() => {
         const animate = lastTrigger.current !== trigger
-        console.warn('TWEEN effect', value, String(trigger), 'animate', animate, 'reduce', prefersReducedMotion())
         lastTrigger.current = trigger
         if (frame.current !== null) cancelAnimationFrame(frame.current)
         frame.current = null
@@ -97,7 +96,6 @@ export function useTween(value: number, trigger: unknown, duration = 650): numbe
         if (frame.current !== null) cancelAnimationFrame(frame.current)
     }, [])
 
-    console.warn('TWEEN render', value, String(trigger), 'flipped', flipped, 'moving', moving, 'shown', shown)
     if (flipped) return shownRef.current
     return moving ? shown : value
 }
