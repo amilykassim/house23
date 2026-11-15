@@ -12,13 +12,20 @@ import { amountFor, expenseReport, monthLines, shiftMonth, usualText, type Expen
 import { SegmentedControl } from "@/components/segmented-control"
 import { PillMenu } from "@/components/pill-menu"
 import { houseColor } from "@/components/earnings-insights"
-import { forgetExpenses, loadBookings, loadExpenses } from "@/lib/admin-data"
+import { forgetExpenses, forgetPersonal, loadBookings, loadExpenses, loadPersonal } from "@/lib/admin-data"
+import type { PersonalExpense, StipendMonth } from "@/lib/personal"
+import { PersonalCard } from "@/components/personal-card"
 import { Collapse, Skeleton, rise, undoable, useCountUp, useGrown } from "@/components/admin-motion"
 import { CalendarPanel, dayKey, dayLabel, monthCells } from "@/components/date-range-picker"
 
 const HOUSE_OPTIONS = [
     ...houses.map((h) => ({ id: h.slug, label: h.name })),
     ...(houses.length > 1 ? [{ id: ALL_HOUSES, label: houses.length === 2 ? "Both houses" : "All houses" }] : []),
+]
+// Whose money an expense in the add form was for
+const WHOSE_OPTIONS = [
+    { id: "business" as const, label: "The business" },
+    { id: "personal" as const, label: "Us (personal)" },
 ]
 const houseLabel = (id: string) => HOUSE_OPTIONS.find((h) => h.id === id)?.label ?? id
 const rwf = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
@@ -68,6 +75,10 @@ export default function AdminExpensesPage() {
     const [loading, setLoading] = useState(true)
     // The add form stays folded until "Add an expense" is pressed
     const [formOpen, setFormOpen] = useState(false)
+    // A business expense (default), or money we took for ourselves
+    const [whose, setWhose] = useState<"business" | "personal">("business")
+    const [personal, setPersonal] = useState<{ expenses: PersonalExpense[]; stipends: StipendMonth[] }>({ expenses: [], stipends: [] })
+    const [personalLoading, setPersonalLoading] = useState(true)
     // With more than one house, an expense is shared between them by default
     const [house, setHouse] = useState(houses.length > 1 ? ALL_HOUSES : houses[0].slug)
     const [category, setCategory] = useState<ExpenseCategory>(EXPENSE_CATEGORIES[0])
@@ -104,14 +115,26 @@ export default function AdminExpensesPage() {
         }
     }, [])
 
+    const fetchPersonal = useCallback(async () => {
+        try {
+            const data = await loadPersonal<{ expenses?: PersonalExpense[]; stipends?: StipendMonth[] }>()
+            setPersonal({ expenses: data.expenses ?? [], stipends: data.stipends ?? [] })
+        } catch {
+            // keep whatever is on screen
+        } finally {
+            setPersonalLoading(false)
+        }
+    }, [])
+
     useEffect(() => {
         fetchExpenses()
+        fetchPersonal()
         // Bookings give the month's revenue and booked nights; without them the
         // report still shows what was spent
         loadBookings<EarningsBooking>()
             .then(setBookings)
             .catch(() => {})
-    }, [fetchExpenses])
+    }, [fetchExpenses, fetchPersonal])
 
     const paid = Number(amount)
     // An expense for all houses is saved as an equal share for each
@@ -122,7 +145,7 @@ export default function AdminExpensesPage() {
             : shares.every((s) => s === shares[0])
                 ? `${rwf(shares[0])} for each house`
                 : shares.map((s, i) => `${rwf(s)} for ${houses[i].name}`).join(", ")
-    const canSave = paid > 0 && !saving && shares.every((s) => s > 0)
+    const canSave = paid > 0 && !saving && (whose === "personal" || shares.every((s) => s > 0))
 
     // Expenses can't be dated in the future
     const cells = useMemo(() => monthCells(month, (key) => ({ disabled: key > today })), [month, today])
@@ -141,7 +164,7 @@ export default function AdminExpensesPage() {
     const listMonthName = monthName(listMonth)
     const previousMonthName = monthName(shiftMonth(listMonth, -1))
     // The arrows stop at the oldest month with an expense and at this month
-    const oldestMonth = expenses.reduce((oldest, e) => (e.date.slice(0, 7) < oldest ? e.date.slice(0, 7) : oldest), monthKey)
+    const oldestMonth = [...expenses, ...personal.expenses].reduce((oldest, e) => (e.date.slice(0, 7) < oldest ? e.date.slice(0, 7) : oldest), monthKey)
     const showMonth = (key: string) => {
         setListMonth(key)
         setPage(1)
@@ -161,6 +184,7 @@ export default function AdminExpensesPage() {
 
     const handleSave = async () => {
         if (!canSave) return
+        if (whose === "personal") return handleSavePersonal()
         setSaving(true)
         try {
             const res = await fetch("/api/expenses", {
@@ -184,6 +208,32 @@ export default function AdminExpensesPage() {
             fetchExpenses()
         } catch {
             toast.error("Couldn't save the expense", { description: "Nothing was recorded. Try again." })
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    // Money we took for ourselves: saved apart, never a business expense
+    const handleSavePersonal = async () => {
+        setSaving(true)
+        try {
+            const res = await fetch("/api/personal-expenses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amountRwf: paid, date, note }),
+            })
+            if (!res.ok) throw new Error("Request failed")
+            forgetPersonal()
+            toast.success("Personal expense saved", { description: `${rwf(paid)}${note.trim() ? ` · ${note.trim()}` : ""}` })
+            setAmount("")
+            setNote("")
+            setDate(today)
+            setCalendarOpen(false)
+            setFormOpen(false)
+            showMonth(date.slice(0, 7))
+            fetchPersonal()
+        } catch {
+            toast.error("Couldn't save the personal expense", { description: "Nothing was recorded. Try again." })
         } finally {
             setSaving(false)
         }
@@ -381,6 +431,25 @@ export default function AdminExpensesPage() {
             <Collapse open={formOpen} id="add-expense">
                 <div className="pt-6 sm:pt-7">
                 <div className="w-full max-w-[592px] rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-5">
+                    {/* Whose money it was for */}
+                    <div className="flex flex-col gap-2.5">
+                        <span className="text-[15px] font-semibold text-foreground">Whose money was it for?</span>
+                        <SegmentedControl
+                            className="self-start max-w-full"
+                            itemClassName="px-3 sm:px-[22px]"
+                            options={WHOSE_OPTIONS}
+                            value={whose}
+                            onChange={setWhose}
+                        />
+                        {whose === "personal" && (
+                            <span className="text-[13px] text-muted-foreground">
+                                Money we took from the business for our own life. It won&apos;t count as a business expense.
+                            </span>
+                        )}
+                    </div>
+
+                    {whose === "business" && (
+                    <>
                     {/* House */}
                     <SegmentedControl
                         className="self-start max-w-full"
@@ -410,10 +479,12 @@ export default function AdminExpensesPage() {
                             ))}
                         </div>
                     </div>
+                    </>
+                    )}
 
                     {/* Amount */}
                     <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[18px] flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
-                        <span className="text-[13px] font-semibold text-muted-foreground">Amount spent</span>
+                        <span className="text-[13px] font-semibold text-muted-foreground">{whose === "personal" ? "Amount taken" : "Amount spent"}</span>
                         <input
                             type="number"
                             min="0"
@@ -424,7 +495,7 @@ export default function AdminExpensesPage() {
                             className="w-full bg-transparent text-[34px] sm:text-[40px] leading-tight font-semibold text-foreground placeholder:text-[#B0B0B0] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                         />
                         <span className="text-[13px] text-muted-foreground">
-                            RWF{house === ALL_HOUSES && paid > 0 && ` · split between the houses: ${splitText}`}
+                            RWF{whose === "business" && house === ALL_HOUSES && paid > 0 && ` · split between the houses: ${splitText}`}
                         </span>
                     </label>
 
@@ -446,12 +517,12 @@ export default function AdminExpensesPage() {
                                 </span>
                             </button>
                             <label className={`${fieldCard} border-[#B0B0B0] focus-within:border-foreground`}>
-                                <span className="text-[13px] font-semibold text-muted-foreground">Note (optional)</span>
+                                <span className="text-[13px] font-semibold text-muted-foreground">{whose === "personal" ? "What was it for?" : "Note (optional)"}</span>
                                 <input
                                     type="text"
                                     value={note}
                                     onChange={(e) => setNote(e.target.value)}
-                                    placeholder="e.g. plumber"
+                                    placeholder={whose === "personal" ? "e.g. groceries" : "e.g. plumber"}
                                     maxLength={200}
                                     autoComplete="off"
                                     className="w-full bg-transparent text-[19px] sm:text-[17px] font-medium text-foreground placeholder:text-[#B0B0B0] outline-none"
@@ -481,7 +552,7 @@ export default function AdminExpensesPage() {
                         className="min-h-13 rounded-xl bg-primary text-primary-foreground text-base font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-45 disabled:hover:bg-primary"
                     >
                         {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                        Save expense
+                        {whose === "personal" ? "Save personal expense" : "Save expense"}
                     </button>
                 </div>
                 </div>
@@ -780,8 +851,10 @@ export default function AdminExpensesPage() {
                 </>
             )}
 
+            {/* The month's business expenses beside the money we took for ourselves */}
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
             {/* The month's expenses, one line each */}
-            <section aria-labelledby="month-expenses" {...rise(loading ? 3 : 10)} className="m-rise m-card rounded-[20px] border border-border bg-card overflow-hidden">
+            <section aria-labelledby="month-expenses" {...rise(loading ? 3 : 10)} className="m-rise m-card min-w-0 rounded-[20px] border border-border bg-card overflow-hidden">
                 <div className="px-5 sm:px-6 pt-5 pb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border">
                     <div className="flex flex-col gap-0.5">
                         <h2 id="month-expenses" className="text-[13px] font-semibold text-muted-foreground">
@@ -906,6 +979,19 @@ export default function AdminExpensesPage() {
                     </nav>
                 )}
             </section>
+
+            <PersonalCard
+                month={listMonth}
+                expenses={personal.expenses}
+                stipends={personal.stipends}
+                loading={personalLoading}
+                businessTotal={report.total}
+                revenue={report.revenue}
+                showTotals={view === ALL_HOUSES && !loading}
+                riseIndex={loading ? 4 : 11}
+                onChanged={fetchPersonal}
+            />
+            </div>
 
             {/* Copy a month's expenses into another month, and shortcuts to other months */}
             {(sourceMonths.length > 0 || otherMonths.length > 0) && (

@@ -65,3 +65,20 @@ CREATE TABLE IF NOT EXISTS house_settings (
     value jsonb NOT NULL,
     PRIMARY KEY (key, house)
 );
+
+-- Money we took from the business for our own life. Kept apart from
+-- `expenses` so business totals, reports and Pennywise never include it.
+CREATE TABLE IF NOT EXISTS personal_expenses (
+    id         text PRIMARY KEY, -- "PE-..."
+    amount_rwf integer NOT NULL CHECK (amount_rwf > 0),
+    date       date NOT NULL,
+    note       text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- The monthly stipend, changed for one month (0 = none taken that month).
+-- A month with no row takes the standard amount (MONTHLY_STIPEND_RWF).
+CREATE TABLE IF NOT EXISTS stipend_months (
+    month      text PRIMARY KEY CHECK (month ~ '^\d{4}-(0[1-9]|1[0-2])$'), -- "yyyy-MM"
+    amount_rwf integer NOT NULL CHECK (amount_rwf >= 0)
+);

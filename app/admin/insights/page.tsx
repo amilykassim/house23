@@ -4,22 +4,27 @@ import { Suspense, useEffect, useState } from "react"
 import { EarningsInsights } from "@/components/earnings-insights"
 import type { EarningsBooking } from "@/lib/earnings"
 import type { Expense } from "@/lib/expenses"
-import { loadBookings, loadExpenses } from "@/lib/admin-data"
+import type { PersonalExpense, StipendMonth } from "@/lib/personal"
+import { loadBookings, loadExpenses, loadPersonal } from "@/lib/admin-data"
 import { Skeleton } from "@/components/admin-motion"
 
 export default function AdminInsightsPage() {
     const [bookings, setBookings] = useState<EarningsBooking[]>([])
     const [expenses, setExpenses] = useState<Expense[]>([])
+    // Without it (load failed) Insights still counts the standard stipend
+    const [personal, setPersonal] = useState<{ expenses: PersonalExpense[]; stipends: StipendMonth[] } | undefined>()
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
         Promise.all([
             loadBookings<EarningsBooking>().catch(() => []),
             loadExpenses<Expense>().catch(() => []),
+            loadPersonal<{ expenses: PersonalExpense[]; stipends: StipendMonth[] }>().catch(() => undefined),
         ])
-            .then(([bookings, expenses]) => {
+            .then(([bookings, expenses, personal]) => {
                 setBookings(bookings)
                 setExpenses(expenses)
+                setPersonal(personal && { expenses: personal.expenses ?? [], stipends: personal.stipends ?? [] })
             })
             .finally(() => setLoading(false))
     }, [])
@@ -43,7 +48,7 @@ export default function AdminInsightsPage() {
         <div className="[zoom:0.88] px-4 pt-7 sm:pt-10 pb-14 max-w-[1072px] mx-auto">
             {/* EarningsInsights reads its view from the URL */}
             <Suspense>
-                <EarningsInsights bookings={bookings} expenses={expenses} />
+                <EarningsInsights bookings={bookings} expenses={expenses} personal={personal} />
             </Suspense>
         </div>
     )

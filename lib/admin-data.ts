@@ -23,3 +23,7 @@ export const forgetBookings = () => void loaded.delete("/api/bookings")
 /** Every expense, newest first. */
 export const loadExpenses = <T,>(): Promise<T[]> => load("/api/expenses").then((data) => data.expenses || [])
 export const forgetExpenses = () => void loaded.delete("/api/expenses")
+
+/** Personal money: { expenses, stipends, monthlyStipend }. */
+export const loadPersonal = <T,>(): Promise<T> => load("/api/personal-expenses")
+export const forgetPersonal = () => void loaded.delete("/api/personal-expenses")

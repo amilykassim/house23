@@ -2,6 +2,7 @@ import { db, type Db } from "@/lib/db"
 import type { Booking } from "@/app/api/bookings/route"
 import type { GuideAccessEntry } from "@/app/api/guide-access/route"
 import type { Expense } from "@/lib/expenses"
+import type { PersonalExpense, StipendMonth } from "@/lib/personal"
 
 // All reads and writes of app data. Every function takes an optional `tx` so
 // it can join a transaction (see `transaction` in lib/db.ts).
@@ -244,6 +245,53 @@ export async function sumExpenses(from: string, until: string, tx: Db = db): Pro
         [from, until]
     )
     return Number(rows[0].total)
+}
+
+// ── Personal money (kept apart from business expenses) ────────
+
+const PERSONAL_COLUMNS = `id, amount_rwf AS "amountRwf", date, note, created_at AS "createdAt"`
+
+function toPersonalExpense(row: any): PersonalExpense {
+    return { ...row, createdAt: row.createdAt.toISOString() }
+}
+
+/** Personal expenses, newest first: by date, then by when they were recorded. */
+export async function listPersonalExpenses(tx: Db = db): Promise<PersonalExpense[]> {
+    const { rows } = await tx.query(`SELECT ${PERSONAL_COLUMNS} FROM personal_expenses ORDER BY date DESC, created_at DESC`)
+    return rows.map(toPersonalExpense)
+}
+
+export async function insertPersonalExpense(expense: Omit<PersonalExpense, "createdAt">, tx: Db = db): Promise<PersonalExpense> {
+    const { rows } = await tx.query(
+        `INSERT INTO personal_expenses (id, amount_rwf, date, note) VALUES ($1, $2, $3, $4) RETURNING ${PERSONAL_COLUMNS}`,
+        [expense.id, expense.amountRwf, expense.date, expense.note]
+    )
+    return toPersonalExpense(rows[0])
+}
+
+/** Returns false when the personal expense does not exist. */
+export async function deletePersonalExpense(id: string, tx: Db = db): Promise<boolean> {
+    const result = await tx.query(`DELETE FROM personal_expenses WHERE id = $1`, [id])
+    return (result.rowCount ?? 0) > 0
+}
+
+/** The months whose stipend was changed, oldest first. */
+export async function listStipendMonths(tx: Db = db): Promise<StipendMonth[]> {
+    const { rows } = await tx.query(`SELECT month, amount_rwf AS "amountRwf" FROM stipend_months ORDER BY month`)
+    return rows
+}
+
+/** Sets one month's stipend; null goes back to the standard amount. */
+export async function setStipendMonth(month: string, amountRwf: number | null, tx: Db = db): Promise<void> {
+    if (amountRwf === null) {
+        await tx.query(`DELETE FROM stipend_months WHERE month = $1`, [month])
+    } else {
+        await tx.query(
+            `INSERT INTO stipend_months (month, amount_rwf) VALUES ($1, $2)
+             ON CONFLICT (month) DO UPDATE SET amount_rwf = EXCLUDED.amount_rwf`,
+            [month, amountRwf]
+        )
+    }
 }
 
 // ── Per-house settings ────────────────────────────────────────

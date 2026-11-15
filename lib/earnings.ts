@@ -258,18 +258,24 @@ export const MONTHLY_STIPEND_RWF = 350_000
 
 // The stipend falling inside a period (inclusive dates): a whole month counts
 // in full, part of a month counts for the share of its days that are in the
-// period. Rounded to whole RWF.
-export function stipendForPeriod(start: Date, end: Date, monthly: number = MONTHLY_STIPEND_RWF): number {
+// period. Rounded to whole RWF. `monthly` is one amount for every month, or
+// the amount for a given month ("yyyy-MM") when some months differ.
+export function stipendForPeriod(
+    start: Date,
+    end: Date,
+    monthly: number | ((month: string) => number) = MONTHLY_STIPEND_RWF
+): number {
     if (end < start) return 0
     let sum = 0
     for (const month of eachMonthOfInterval({ start, end })) {
+        const amount = typeof monthly === "number" ? monthly : monthly(format(month, "yyyy-MM"))
         const first = startOfMonth(month)
         const last = endOfMonth(month)
         const from = start > first ? start : first
         const to = end < last ? end : last
         const days = differenceInCalendarDays(to, from) + 1
         const inMonth = differenceInCalendarDays(last, first) + 1
-        sum += (monthly * days) / inMonth
+        sum += (amount * days) / inMonth
     }
     return Math.round(sum)
 }

@@ -11,11 +11,11 @@ import { useCountUp, useGrown } from "@/components/admin-motion"
 import { DateRangePicker } from "@/components/date-range-picker"
 import { ADMIN_NIGHTLY_PRICE_RWF } from "@/lib/currency"
 import type { Expense } from "@/lib/expenses"
+import { personalForPeriod, type PersonalExpense, type StipendMonth } from "@/lib/personal"
 import {
     periodFor,
     periodTitle,
     shiftAnchor,
-    stipendForPeriod,
     summarizeEarnings,
     type EarningsBooking,
     type Period,
@@ -27,6 +27,7 @@ const HOUSE_COLORS = ["#2A78D6", "#EB6834", "#1BAF7A", "#EDA100"]
 export const houseColor = (slug: string) => HOUSE_COLORS[houses.findIndex((h) => h.slug === slug)] ?? HOUSE_COLORS[0]
 // "all" or one house slug, for the house switch on Insights and its detail page
 export const HOUSE_FILTERS = [{ id: "all", label: "All houses" }, ...houses.map((h) => ({ id: h.slug, label: h.name }))]
+const NO_PERSONAL = { expenses: [], stipends: [] }
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 const PERIOD_KINDS: { id: Exclude<PeriodKind, "custom">; label: string }[] = [
     { id: "week", label: "Week" },
@@ -97,7 +98,16 @@ export function stayLabel(checkIn: string, checkOut: string) {
     return `${format(start, sameMonth ? "EEE d" : "EEE d MMM")} to ${format(end, "EEE d MMM")}`
 }
 
-export function EarningsInsights({ bookings, expenses = [] }: { bookings: EarningsBooking[]; expenses?: Expense[] }) {
+export function EarningsInsights({
+    bookings,
+    expenses = [],
+    personal = NO_PERSONAL,
+}: {
+    bookings: EarningsBooking[]
+    expenses?: Expense[]
+    // Money taken for ourselves; without it every month counts the standard stipend
+    personal?: { expenses: PersonalExpense[]; stipends: StipendMonth[] }
+}) {
     // The view (period and house) lives in the URL, so coming back from a
     // detail page or reloading shows the same thing.
     const params = useSearchParams()
@@ -123,7 +133,8 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
     })
     const [hoveredBar, setHoveredBar] = useState<number | null>(null)
     const [hoveredDay, setHoveredDay] = useState<number | null>(null)
-    // Profit before (default) or after the monthly stipend the business pays us
+    // Profit before (default) or after the money we took for ourselves: the
+    // stipend plus personal expenses ("stipend" stays the URL name, for old links)
     const [afterStipend, setAfterStipend] = useState(() => params.get("stipend") === "after")
     // Motion: the headline figures count up once on arrival (0 → 1), bars grow in
     const arrive = useCountUp(1, true)
@@ -252,10 +263,11 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                 .filter((e) => e.house === house || e.house === "all")
                 .map((e) => (e.house === "all" ? { ...e, amountRwf: e.amountRwf / houses.length } : e))
     const spent = periodExpenses.reduce((sum, e) => sum + e.amountRwf, 0)
-    // The stipend inside the period; one house carries its equal share
-    const stipendAll = stipendForPeriod(period.start, period.end)
-    const stipend = house === "all" ? stipendAll : stipendAll / houses.length
-    const costs = afterStipend ? spent + stipend : spent
+    // Personal money inside the period (stipend + personal expenses); one
+    // house carries its equal share
+    const personalAll = personalForPeriod(periodStart, periodEnd, personal.expenses, personal.stipends).total
+    const personalShare = house === "all" ? personalAll : personalAll / houses.length
+    const costs = afterStipend ? spent + personalShare : spent
     const profit = total - costs
     const spentByCategory: Record<string, number> = {}
     periodExpenses.forEach((e) => {
@@ -354,7 +366,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                         </span>
                         <span className="text-[13px] text-muted-foreground">
                             {afterStipend
-                                ? `the stipend and ${plural(periodExpenses.length, "expense")}`
+                                ? `${plural(periodExpenses.length, "expense")} and ${money(personalShare)} personal`
                                 : periodExpenses.length === 0
                                     ? "none recorded"
                                     : `${plural(periodExpenses.length, "expense")}, mostly ${topCategory.toLowerCase()}`}
@@ -364,17 +376,17 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                         <div className="flex items-start justify-between gap-2">
                             <span className="text-[13px] font-semibold text-background/75">
                                 {profit < 0 ? "Loss" : "Profit"}
-                                {afterStipend ? " after stipend" : ""}
+                                {afterStipend ? " after personal" : ""}
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setAfterStipend((v) => !v)}
                                 aria-label={afterStipend
-                                    ? "Showing profit after stipend. Switch to before stipend"
-                                    : "Showing profit before stipend. Switch to after stipend"}
+                                    ? "Showing profit after personal money. Switch to before"
+                                    : "Showing profit before personal money. Switch to after"}
                                 className="shrink-0 rounded-full border border-background/40 px-3 py-1 text-[12px] font-semibold text-background hover:bg-background/10 transition-colors"
                             >
-                                {afterStipend ? "After stipend" : "Before stipend"}
+                                {afterStipend ? "After personal" : "Before personal"}
                             </button>
                         </div>
                         <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-background tabular-nums">
@@ -383,7 +395,7 @@ export function EarningsInsights({ bookings, expenses = [] }: { bookings: Earnin
                         </span>
                         <span className="text-[13px] text-background/75">
                             {afterStipend
-                                ? `${money(stipend)} of stipend taken off`
+                                ? `${money(personalShare)} personal taken off${total > 0 && profit >= 0 ? ` · ${Math.round((profit / total) * 100)}% kept` : ""}`
                                 : total > 0
                                     ? profit >= 0
                                         ? `${Math.round((profit / total) * 100)}% of revenue kept`
