@@ -13,7 +13,10 @@ const {
 
 test("the rates stay as they were", () => {
     assert.equal(USD_TO_RWF, 1471)
-    assert.equal(ADMIN_NIGHTLY_PRICE_RWF, 70_000)
+})
+
+test("the back office set price is 75,000 RWF a night", () => {
+    assert.equal(ADMIN_NIGHTLY_PRICE_RWF, 75_000)
 })
 
 test("francs: whole, grouped, with RWF", () => {
@@ -43,10 +46,13 @@ test("website price lines convert at the fixed rate", () => {
 })
 
 test("a by-hand price gives back the francs it was set from", () => {
-    // What Add booking stores for the 70,000 RWF set price
+    // What Add booking stores for the 75,000 RWF set price
     const stored = Math.round((ADMIN_NIGHTLY_PRICE_RWF / USD_TO_RWF) * 100) / 100
-    assert.equal(Math.round(stored * USD_TO_RWF), 70_005) // the problem
-    assert.equal(usdLineToRwf(stored, true), 70_000)
+    assert.equal(stored, 50.99)
+    assert.equal(Math.round(stored * USD_TO_RWF), 75_006) // the problem
+    assert.equal(usdLineToRwf(stored, true), 75_000)
+    // bookings saved at the old 70,000 set price still read back as 70,000
+    assert.equal(usdLineToRwf(47.59, true), 70_000)
     // any set price in hundreds of francs comes back exactly
     for (let set = 100; set <= 500_000; set += 100) {
         assert.equal(usdLineToRwf(Math.round((set / USD_TO_RWF) * 100) / 100, true), set, String(set))
