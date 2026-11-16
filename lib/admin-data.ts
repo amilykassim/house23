@@ -27,3 +27,20 @@ export const forgetExpenses = () => void loaded.delete("/api/expenses")
 /** Personal money: { expenses, stipends, monthlyStipend }. */
 export const loadPersonal = <T,>(): Promise<T> => load("/api/personal-expenses")
 export const forgetPersonal = () => void loaded.delete("/api/personal-expenses")
+
+/**
+ * Nights each house cannot be booked outside the bookings list (manual blocks
+ * and the Airbnb calendar), from /api/availability. Not kept in memory: the
+ * calendar changes them. A house whose read fails is left out.
+ */
+export async function loadUnavailable(slugs: string[]): Promise<Record<string, string[]>> {
+    const entries = await Promise.all(
+        slugs.map((slug) =>
+            fetch(`/api/availability?house=${encodeURIComponent(slug)}`)
+                .then((res) => (res.ok ? res.json() : Promise.reject(new Error(String(res.status)))))
+                .then((data) => (Array.isArray(data.dates) ? ([slug, data.dates] as const) : null))
+                .catch(() => null)
+        )
+    )
+    return Object.fromEntries(entries.filter((e): e is readonly [string, string[]] => e !== null))
+}

@@ -116,6 +116,7 @@ export function periodTitle(period: Period): string {
 }
 
 const dayKey = (d: Date) => format(d, "yyyy-MM-dd")
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/
 
 /**
  * Earnings for a period. A booking's total is spread evenly over its nights,
@@ -256,12 +257,17 @@ export function summarizeEarnings(
  * Nights of the period that can still be booked and are not: from today
  * (tonight included) to the period's end, per house, without a confirmed
  * booking. Past nights are gone, so a period that is over has none.
+ *
+ * `unavailable` holds nights per house ("yyyy-MM-dd") that are taken outside
+ * the bookings list: manual blocks and the Airbnb calendar, as the admin
+ * calendar shows them. A night taken both ways counts once.
  */
 export function emptyNightsAhead(
     bookings: EarningsBooking[],
     period: Period,
     houseSlugs: string[],
-    today: Date
+    today: Date,
+    unavailable: Record<string, readonly string[]> = {}
 ): { total: number; byHouse: Record<string, number>; startsToday: boolean } {
     const todayKey = dayKey(today)
     const firstKey = dayKey(period.start) > todayKey ? dayKey(period.start) : todayKey
@@ -282,6 +288,13 @@ export function emptyNightsAhead(
         for (let i = 0; i < stay; i++) {
             const key = dayKey(addDays(checkIn, i))
             if (key >= firstKey && key <= endKey) held.add(key)
+        }
+    }
+    for (const [slug, keys] of Object.entries(unavailable)) {
+        const held = taken.get(slug)
+        if (!held || !Array.isArray(keys)) continue
+        for (const key of keys) {
+            if (typeof key === "string" && DAY_KEY.test(key) && key >= firstKey && key <= endKey) held.add(key)
         }
     }
 

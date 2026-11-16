@@ -95,3 +95,72 @@ test("a booking with no nights or bad dates is ignored", () => {
     )
     assert.equal(r.total, 16)
 })
+
+// Nights taken outside the bookings list (manual blocks, Airbnb calendar):
+// Empty nights must match the open nights on the admin calendar.
+const range = (from, to) => {
+    const out = []
+    for (let t = d(from); t <= d(to); t.setDate(t.getDate() + 1)) {
+        out.push(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`)
+    }
+    return out
+}
+
+test("the bug: a night red on the calendar but not a confirmed booking (screenshot, 16 Nov)", () => {
+    // House 22: Airbnb holds 16–23 and 27–30 (12 nights); the app's confirmed
+    // bookings cover only 11 of them. House 23: Airbnb holds 16, 20, 21, 29.
+    const bookings = [
+        booking("house-22", "2026-11-16", "2026-11-23"), // 16–22: 7 nights, the 23rd missing
+        booking("house-22", "2026-11-27", "2026-12-01"), // 27–30: 4 nights
+        booking("house-23", "2026-11-16", "2026-11-17"),
+        booking("house-23", "2026-11-20", "2026-11-22"),
+        booking("house-23", "2026-11-29", "2026-11-30"),
+    ]
+    const airbnb = {
+        "house-22": [...range("2026-11-16", "2026-11-23"), ...range("2026-11-27", "2026-11-30")],
+        "house-23": ["2026-11-16", "2026-11-20", "2026-11-21", "2026-11-29"],
+    }
+    const before = emptyNightsAhead(bookings, NOV, HOUSES, d("2026-11-16"))
+    assert.deepEqual(before.byHouse, { "house-23": 11, "house-22": 4 }) // what the tile showed: 15
+    const r = emptyNightsAhead(bookings, NOV, HOUSES, d("2026-11-16"), airbnb)
+    assert.deepEqual(r.byHouse, { "house-23": 11, "house-22": 3 })
+    assert.equal(r.total, 14)
+    assert.equal(r.startsToday, true)
+})
+
+test("manual blocks and Airbnb nights count once alongside bookings that hold the same night", () => {
+    const r = emptyNightsAhead(
+        [booking("house-23", "2026-11-20", "2026-11-23")], // 20, 21, 22
+        NOV, ["house-23"], d("2026-11-15"),
+        { "house-23": ["2026-11-21", "2026-11-22", "2026-11-22", "2026-11-25"] }
+    )
+    assert.equal(r.total, 16 - 4) // 20, 21, 22, 25
+})
+
+test("unavailable nights outside the bookable window or for other houses are ignored", () => {
+    const r = emptyNightsAhead([], NOV, ["house-23"], d("2026-11-15"), {
+        "house-23": ["2026-11-14", "2026-10-30", "2026-12-01", "2026-11-15"], // only the 15th counts
+        "house-22": ["2026-11-20"], // not shown
+        "house-99": ["2026-11-20"],
+    })
+    assert.deepEqual(r.byHouse, { "house-23": 15 })
+    // A period that is over still has none
+    const oct = periodFor("month", d("2026-10-10"))
+    assert.equal(emptyNightsAhead([], oct, ["house-23"], d("2026-11-15"), { "house-23": ["2026-10-20"] }).total, 0)
+})
+
+test("bad unavailable data is ignored, never crashes or goes below zero", () => {
+    const r = emptyNightsAhead([], NOV, ["house-23"], d("2026-11-15"), {
+        "house-23": ["2026-11-2", "nope", null, 20261120, "2026-11-20T00:00:00", ...range("2026-11-15", "2026-11-30"), "2026-11-30"],
+    })
+    assert.equal(r.total, 0)
+    assert.equal(emptyNightsAhead([], NOV, ["house-23"], d("2026-11-15"), { "house-23": "2026-11-20" }).total, 16)
+})
+
+test("controls: no unavailable list, or an empty one, gives exactly the old result", () => {
+    for (const today of ["2026-11-15", "2026-11-30", "2026-10-01"]) {
+        const base = emptyNightsAhead(BOOKINGS, NOV, HOUSES, d(today))
+        assert.deepEqual(emptyNightsAhead(BOOKINGS, NOV, HOUSES, d(today), {}), base)
+        assert.deepEqual(emptyNightsAhead(BOOKINGS, NOV, HOUSES, d(today), { "house-23": [], "house-22": [] }), base)
+    }
+})

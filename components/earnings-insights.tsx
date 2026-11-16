@@ -31,6 +31,7 @@ export const houseColor = (slug: string) => HOUSE_COLORS[houses.findIndex((h) =>
 // "all" or one house slug, for the house switch on Insights and its detail page
 export const HOUSE_FILTERS = [{ id: "all", label: "All houses" }, ...houses.map((h) => ({ id: h.slug, label: h.name }))]
 const NO_PERSONAL = { expenses: [], stipends: [] }
+const NO_UNAVAILABLE: Record<string, string[]> = {}
 
 /** A money figure that glides to its new value when `trigger` flips; "−" in front when signed and below zero. */
 function Glide({ value, trigger, arrive, signed = false }: { value: number; trigger: unknown; arrive: number; signed?: boolean }) {
@@ -167,11 +168,14 @@ export function EarningsInsights({
     bookings,
     expenses = [],
     personal = NO_PERSONAL,
+    unavailable = NO_UNAVAILABLE,
 }: {
     bookings: EarningsBooking[]
     expenses?: Expense[]
     // Money taken for ourselves; without it every month counts the standard stipend
     personal?: { expenses: PersonalExpense[]; stipends: StipendMonth[] }
+    // Nights per house taken outside the bookings (manual blocks, Airbnb), for Empty nights
+    unavailable?: Record<string, string[]>
 }) {
     // The view (period and house) lives in the URL, so coming back from a
     // detail page or reloading shows the same thing.
@@ -382,8 +386,9 @@ export function EarningsInsights({
     const weekendTotal = summary.weekdays[4] + summary.weekdays[5] + summary.weekdays[6]
     const weekendShare = weekdayTotal > 0 ? Math.round((weekendTotal / weekdayTotal) * 100) : 0
 
-    // Only nights that can still be booked: from tonight to the period's end
-    const empty = emptyNightsAhead(shownBookings, period, shownHouses.map((h) => h.slug), startOfDay(new Date()))
+    // Only nights that can still be booked: from tonight to the period's end,
+    // not booked, blocked or taken on Airbnb (the admin calendar's open nights)
+    const empty = emptyNightsAhead(shownBookings, period, shownHouses.map((h) => h.slug), startOfDay(new Date()), unavailable)
     const emptyNights = empty.total
     const emptyWorth = emptyNights * ADMIN_NIGHTLY_PRICE_RWF
     const periodOver = format(period.end, "yyyy-MM-dd") < format(new Date(), "yyyy-MM-dd")
