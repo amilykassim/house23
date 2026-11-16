@@ -73,7 +73,7 @@ export default function AdminExpensesPage() {
     const [expenses, setExpenses] = useState<Expense[]>([])
     const [bookings, setBookings] = useState<EarningsBooking[]>([])
     const [loading, setLoading] = useState(true)
-    // The add form stays folded until "Add an expense" is pressed
+    // The add form opens in a dialog when "Add an expense" is pressed
     const [formOpen, setFormOpen] = useState(false)
     // A business expense (default), or money we took for ourselves
     const [whose, setWhose] = useState<"business" | "personal">("business")
@@ -418,145 +418,14 @@ export default function AdminExpensesPage() {
                 <h1 className="text-[28px] sm:text-[34px] leading-tight font-bold tracking-[-0.02em] text-foreground">Expenses</h1>
                 <button
                     type="button"
-                    onClick={() => setFormOpen((open) => !open)}
-                    aria-expanded={formOpen}
-                    aria-controls="add-expense"
+                    onClick={() => setFormOpen(true)}
+                    aria-haspopup="dialog"
                     className="min-h-13 px-5 rounded-xl bg-primary text-primary-foreground text-[15px] font-bold flex items-center gap-2 hover:bg-primary/90 transition-colors"
                 >
-                    {formOpen ? <X className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                    {formOpen ? "Close" : "Add an expense"}
+                    <Plus className="h-5 w-5" />
+                    Add an expense
                 </button>
             </div>
-
-            <Collapse open={formOpen} id="add-expense">
-                <div className="pt-6 sm:pt-7">
-                <div className="w-full max-w-[592px] rounded-[20px] border border-border bg-card p-4 sm:p-5 flex flex-col gap-5">
-                    {/* Whose money it was for */}
-                    <div className="flex flex-col gap-2.5">
-                        <span className="text-[15px] font-semibold text-foreground">Whose money was it for?</span>
-                        <SegmentedControl
-                            className="self-start max-w-full"
-                            itemClassName="px-3 sm:px-[22px]"
-                            options={WHOSE_OPTIONS}
-                            value={whose}
-                            onChange={setWhose}
-                        />
-                        {whose === "personal" && (
-                            <span className="text-[13px] text-muted-foreground">
-                                Money we took from the business for our own life. It won&apos;t count as a business expense.
-                            </span>
-                        )}
-                    </div>
-
-                    {whose === "business" && (
-                    <>
-                    {/* House */}
-                    <SegmentedControl
-                        className="self-start max-w-full"
-                        itemClassName="px-3 sm:px-[22px]"
-                        options={HOUSE_OPTIONS}
-                        value={house}
-                        onChange={setHouse}
-                    />
-
-                    {/* Category */}
-                    <div className="flex flex-col gap-3">
-                        <span className="text-[15px] font-semibold text-foreground">What was it for?</span>
-                        <div className="flex flex-wrap gap-2">
-                            {EXPENSE_CATEGORIES.map((c) => (
-                                <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setCategory(c)}
-                                    aria-pressed={category === c}
-                                    className={`min-h-11 px-4 rounded-full border text-sm font-semibold ${category === c
-                                        ? "border-foreground bg-foreground text-background"
-                                        : "border-[#B0B0B0] bg-card text-foreground hover:bg-[#F7F7F7]"
-                                        }`}
-                                >
-                                    {c}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    </>
-                    )}
-
-                    {/* Amount */}
-                    <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[18px] flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
-                        <span className="text-[13px] font-semibold text-muted-foreground">{whose === "personal" ? "Amount taken" : "Amount spent"}</span>
-                        <input
-                            type="number"
-                            min="0"
-                            inputMode="numeric"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
-                            placeholder="0"
-                            className="w-full bg-transparent text-[34px] sm:text-[40px] leading-tight font-semibold text-foreground placeholder:text-[#B0B0B0] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                        />
-                        <span className="text-[13px] text-muted-foreground">
-                            RWF{whose === "business" && house === ALL_HOUSES && paid > 0 && ` · split between the houses: ${splitText}`}
-                        </span>
-                    </label>
-
-                    {/* Date + note */}
-                    <div className="flex flex-col gap-3">
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setMonth(startOfMonth(parseISO(date)))
-                                    setCalendarOpen((open) => !open)
-                                }}
-                                aria-expanded={calendarOpen}
-                                className={`${fieldCard} text-left ${calendarOpen ? "border-foreground" : "border-[#B0B0B0]"}`}
-                            >
-                                <span className="text-[13px] font-semibold text-muted-foreground">Date</span>
-                                <span className="text-[17px] font-medium text-foreground">
-                                    {date === today ? `Today, ${dayLabel(date)}` : dayLabel(date)}
-                                </span>
-                            </button>
-                            <label className={`${fieldCard} border-[#B0B0B0] focus-within:border-foreground`}>
-                                <span className="text-[13px] font-semibold text-muted-foreground">{whose === "personal" ? "What was it for?" : "Note (optional)"}</span>
-                                <input
-                                    type="text"
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    placeholder={whose === "personal" ? "e.g. groceries" : "e.g. plumber"}
-                                    maxLength={200}
-                                    autoComplete="off"
-                                    className="w-full bg-transparent text-[19px] sm:text-[17px] font-medium text-foreground placeholder:text-[#B0B0B0] outline-none"
-                                />
-                            </label>
-                        </div>
-                        {calendarOpen && (
-                            <CalendarPanel
-                                prompt="Pick the date"
-                                onClose={() => setCalendarOpen(false)}
-                                month={month}
-                                onMonthChange={setMonth}
-                                cells={cells}
-                                start={date}
-                                onPick={(key) => {
-                                    setDate(key)
-                                    setCalendarOpen(false)
-                                }}
-                            />
-                        )}
-                    </div>
-
-                    <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={!canSave}
-                        className="min-h-13 rounded-xl bg-primary text-primary-foreground text-base font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-45 disabled:hover:bg-primary"
-                    >
-                        {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                        {whose === "personal" ? "Save personal expense" : "Save expense"}
-                    </button>
-                </div>
-                </div>
-            </Collapse>
             </div>
 
             {/* Which house the report is about */}
@@ -1018,6 +887,151 @@ export default function AdminExpensesPage() {
                     ))}
                 </div>
             )}
+
+            {/* Add an expense. Rendered in place (no portal) so it keeps the admin font and scale */}
+            <DialogPrimitive.Root open={formOpen} onOpenChange={(open) => !open && !saving && setFormOpen(false)}>
+                <DialogPrimitive.Overlay className="fixed inset-0 z-[60] bg-black/50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=closed]:animate-out data-[state=closed]:fade-out-0" />
+                <DialogPrimitive.Content
+                    aria-describedby={undefined}
+                    className="fixed left-1/2 top-1/2 z-[60] w-[calc(100%-2rem)] max-w-[592px] max-h-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl bg-card p-5 sm:p-7 shadow-xl flex flex-col gap-5 outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 duration-200"
+                >
+                    <div className="flex items-center justify-between gap-4">
+                        <DialogPrimitive.Title className="text-[22px] font-bold tracking-[-0.02em] text-foreground">
+                            Add an expense
+                        </DialogPrimitive.Title>
+                        <DialogPrimitive.Close
+                            disabled={saving}
+                            aria-label="Close"
+                            className="h-10 w-10 shrink-0 rounded-full flex items-center justify-center text-foreground hover:bg-[#F7F7F7] disabled:opacity-45"
+                        >
+                            <X className="h-5 w-5" />
+                        </DialogPrimitive.Close>
+                    </div>
+                    {/* Whose money it was for */}
+                    <div className="flex flex-col gap-2.5">
+                        <span className="text-[15px] font-semibold text-foreground">Whose money was it for?</span>
+                        <SegmentedControl
+                            className="self-start max-w-full"
+                            itemClassName="px-3 sm:px-[22px]"
+                            options={WHOSE_OPTIONS}
+                            value={whose}
+                            onChange={setWhose}
+                        />
+                        {whose === "personal" && (
+                            <span className="text-[13px] text-muted-foreground">
+                                Money we took from the business for our own life. It won&apos;t count as a business expense.
+                            </span>
+                        )}
+                    </div>
+
+                    {whose === "business" && (
+                    <>
+                    {/* House */}
+                    <SegmentedControl
+                        className="self-start max-w-full"
+                        itemClassName="px-3 sm:px-[22px]"
+                        options={HOUSE_OPTIONS}
+                        value={house}
+                        onChange={setHouse}
+                    />
+
+                    {/* Category */}
+                    <div className="flex flex-col gap-3">
+                        <span className="text-[15px] font-semibold text-foreground">What was it for?</span>
+                        <div className="flex flex-wrap gap-2">
+                            {EXPENSE_CATEGORIES.map((c) => (
+                                <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setCategory(c)}
+                                    aria-pressed={category === c}
+                                    className={`min-h-11 px-4 rounded-full border text-sm font-semibold ${category === c
+                                        ? "border-foreground bg-foreground text-background"
+                                        : "border-[#B0B0B0] bg-card text-foreground hover:bg-[#F7F7F7]"
+                                        }`}
+                                >
+                                    {c}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    </>
+                    )}
+
+                    {/* Amount */}
+                    <label className="rounded-2xl border border-[#B0B0B0] bg-card px-5 py-[18px] flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground">
+                        <span className="text-[13px] font-semibold text-muted-foreground">{whose === "personal" ? "Amount taken" : "Amount spent"}</span>
+                        <input
+                            type="number"
+                            min="0"
+                            inputMode="numeric"
+                            value={amount}
+                            onChange={(e) => setAmount(e.target.value)}
+                            placeholder="0"
+                            className="w-full bg-transparent text-[34px] sm:text-[40px] leading-tight font-semibold text-foreground placeholder:text-[#B0B0B0] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                        />
+                        <span className="text-[13px] text-muted-foreground">
+                            RWF{whose === "business" && house === ALL_HOUSES && paid > 0 && ` · split between the houses: ${splitText}`}
+                        </span>
+                    </label>
+
+                    {/* Date + note */}
+                    <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMonth(startOfMonth(parseISO(date)))
+                                    setCalendarOpen((open) => !open)
+                                }}
+                                aria-expanded={calendarOpen}
+                                className={`${fieldCard} text-left ${calendarOpen ? "border-foreground" : "border-[#B0B0B0]"}`}
+                            >
+                                <span className="text-[13px] font-semibold text-muted-foreground">Date</span>
+                                <span className="text-[17px] font-medium text-foreground">
+                                    {date === today ? `Today, ${dayLabel(date)}` : dayLabel(date)}
+                                </span>
+                            </button>
+                            <label className={`${fieldCard} border-[#B0B0B0] focus-within:border-foreground`}>
+                                <span className="text-[13px] font-semibold text-muted-foreground">{whose === "personal" ? "What was it for?" : "Note (optional)"}</span>
+                                <input
+                                    type="text"
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
+                                    placeholder={whose === "personal" ? "e.g. groceries" : "e.g. plumber"}
+                                    maxLength={200}
+                                    autoComplete="off"
+                                    className="w-full bg-transparent text-[19px] sm:text-[17px] font-medium text-foreground placeholder:text-[#B0B0B0] outline-none"
+                                />
+                            </label>
+                        </div>
+                        {calendarOpen && (
+                            <CalendarPanel
+                                prompt="Pick the date"
+                                onClose={() => setCalendarOpen(false)}
+                                month={month}
+                                onMonthChange={setMonth}
+                                cells={cells}
+                                start={date}
+                                onPick={(key) => {
+                                    setDate(key)
+                                    setCalendarOpen(false)
+                                }}
+                            />
+                        )}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={!canSave}
+                        className="min-h-13 rounded-xl bg-primary text-primary-foreground text-base font-bold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-45 disabled:hover:bg-primary"
+                    >
+                        {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {whose === "personal" ? "Save personal expense" : "Save expense"}
+                    </button>
+                </DialogPrimitive.Content>
+            </DialogPrimitive.Root>
 
             {/* Rendered in place (no portal) so it keeps the admin font and scale */}
             <DialogPrimitive.Root open={copy !== null} onOpenChange={(open) => !open && !copying && setCopy(null)}>
