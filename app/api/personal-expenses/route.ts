@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { isAdminRequest } from "@/lib/admin-session"
 import {
     deletePersonalExpense,
     insertPersonalExpense,
@@ -13,10 +14,8 @@ export const dynamic = "force-dynamic"
 
 // Money we took from the business for ourselves: personal expenses and the
 // monthly stipend. Back-office data: every method needs the admin session.
-function unauthorized(request: NextRequest) {
-    return request.cookies.get("admin_auth")?.value !== "authenticated"
-        ? NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        : null
+async function unauthorized(request: NextRequest) {
+    return (await isAdminRequest(request)) ? null : NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 }
 
 async function readJson(request: NextRequest): Promise<unknown | undefined> {
@@ -29,7 +28,7 @@ async function readJson(request: NextRequest): Promise<unknown | undefined> {
 
 /** { expenses (newest first), stipends (months changed), monthlyStipend }. */
 export async function GET(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     const [expenses, stipends] = await Promise.all([listPersonalExpenses(), listStipendMonths()])
@@ -38,7 +37,7 @@ export async function GET(request: NextRequest) {
 
 /** Records one personal expense: { amountRwf, date, note }. */
 export async function POST(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     const parsed = readPersonalExpense(await readJson(request))
@@ -51,7 +50,7 @@ export async function POST(request: NextRequest) {
 
 /** Changes one month's stipend: { month, amountRwf } (0 = none; null = back to the standard amount). */
 export async function PUT(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     const parsed = readStipendChange(await readJson(request))
@@ -62,7 +61,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     const id = new URL(request.url).searchParams.get("id")

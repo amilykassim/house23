@@ -110,7 +110,7 @@ async function call(method, body, { auth = true, query = "" } = {}) {
     const { NextRequest } = require("next/server")
     const route = require("../app/api/expenses/route.ts")
     const headers = { "content-type": "application/json" }
-    if (auth) headers.cookie = "admin_auth=authenticated"
+    if (auth) headers.cookie = await require("./helpers/admin-cookie.cjs").adminCookie()
     const request = new NextRequest(`http://localhost/api/expenses${query}`, {
         method,
         headers,

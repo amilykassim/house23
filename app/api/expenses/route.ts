@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { isAdminRequest } from "@/lib/admin-session"
 import { transaction } from "@/lib/db"
 import { isValid, parseISO } from "date-fns"
 import { deleteExpense, getExpensesForUpdate, insertExpense, listExpenses, updateExpense } from "@/lib/store"
@@ -8,14 +9,12 @@ import { ALL_HOUSES, EXPENSE_CATEGORIES, planExpenseEdit, splitEvenly, type Expe
 export const dynamic = "force-dynamic"
 
 // Expenses are back-office data: every method needs the admin session.
-function unauthorized(request: NextRequest) {
-    return request.cookies.get("admin_auth")?.value !== "authenticated"
-        ? NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-        : null
+async function unauthorized(request: NextRequest) {
+    return (await isAdminRequest(request)) ? null : NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 }
 
 export async function GET(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     // Newest first: by expense date, then by when it was recorded
@@ -48,7 +47,7 @@ const MAX_BATCH = 100
 // Saves one expense, or several at once as { items: [...] } (copying a month):
 // either all of them are saved or none.
 export async function POST(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     const body = await request.json()
@@ -99,7 +98,7 @@ const MAX_IDS = 10
 // are the stored rows behind the line (one per house when it was split);
 // they all change together, or none does.
 export async function PATCH(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     let body: any
@@ -140,7 +139,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-    const denied = unauthorized(request)
+    const denied = await unauthorized(request)
     if (denied) return denied
 
     const id = new URL(request.url).searchParams.get("id")

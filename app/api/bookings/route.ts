@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { isAdminRequest } from "@/lib/admin-session"
 import { expandDateRange, getUnavailableDates } from "@/lib/airbnb-ical"
 import { sendBookingAcknowledgment, sendBookingConfirmation, sendBookingCancellation, sendAdminNewBookingNotification } from "@/lib/email"
 import { transaction, type Db } from "@/lib/db"
@@ -97,7 +98,7 @@ function todayAndTomorrow(): [string, string] {
 // Record a booking by hand from the admin panel: confirmed straight away,
 // dates blocked, no guest emails.
 async function createManualBooking(request: NextRequest, body: Record<string, unknown>) {
-    if (request.cookies.get("admin_auth")?.value !== "authenticated") {
+    if (!(await isAdminRequest(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -324,7 +325,7 @@ export async function PATCH(request: NextRequest) {
 // Permanently remove a booking (admin only). A confirmed booking also gives
 // back its dates and its house-guide access; no email is sent to the guest.
 export async function DELETE(request: NextRequest) {
-    if (request.cookies.get("admin_auth")?.value !== "authenticated") {
+    if (!(await isAdminRequest(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

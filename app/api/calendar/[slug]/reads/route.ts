@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { isAdminRequest } from "@/lib/admin-session"
 import { getHouseSetting } from "@/lib/store"
 import type { FeedRead } from "@/app/api/calendar/[slug]/ical/route"
 
@@ -10,7 +11,7 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ slug: string }> }
 ) {
-    if (request.cookies.get("admin_auth")?.value !== "authenticated") {
+    if (!(await isAdminRequest(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

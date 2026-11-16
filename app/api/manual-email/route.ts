@@ -2,6 +2,7 @@
 // No booking is created or changed. A "confirmed" send also saves the guest's
 // house guide access code, since the email tells them to use it.
 import { NextRequest, NextResponse } from "next/server"
+import { isAdminRequest } from "@/lib/admin-session"
 import { Resend } from "resend"
 import { FROM_EMAIL } from "@/lib/email"
 import { buildManualEmail, parseManualEmail } from "@/lib/manual-email"
@@ -10,8 +11,7 @@ import { addGuideAccess } from "@/lib/store"
 export const dynamic = "force-dynamic"
 
 export async function POST(request: NextRequest) {
-    const authCookie = request.cookies.get("admin_auth")
-    if (!authCookie || authCookie.value !== "authenticated") {
+    if (!(await isAdminRequest(request))) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 

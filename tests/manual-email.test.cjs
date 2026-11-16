@@ -12,7 +12,7 @@ if (TEST_DB && !/^postgres(ql)?:\/\/[^@/]*@?(localhost|127\.0\.0\.1)[:/]/.test(T
 // The app's pool reads DATABASE_URL; never let these tests use the real one
 process.env.DATABASE_URL = TEST_DB || "postgresql://no-database-for-tests@localhost:1/none"
 const { fakeResend } = require("./helpers/ts-loader.cjs")
-const { test, beforeEach, after } = require("node:test")
+const { test, before, beforeEach, after } = require("node:test")
 const assert = require("node:assert/strict")
 const { NextRequest } = require("next/server")
 const email = require("../lib/email.ts")
@@ -171,7 +171,13 @@ test("a typed guest name can't inject HTML", () => {
 // Sends that don't involve an access code use the request email
 const requestForm = { ...form, template: "request" }
 
-function request(body, { cookie = "admin_auth=authenticated", raw } = {}) {
+// Signed in as the admin: a real session from lib/admin-session.ts
+let ADMIN_COOKIE_HEADER
+before(async () => {
+    ADMIN_COOKIE_HEADER = await require("./helpers/admin-cookie.cjs").adminCookie()
+})
+
+function request(body, { cookie = ADMIN_COOKIE_HEADER, raw } = {}) {
     return new NextRequest("http://localhost/api/manual-email", {
         method: "POST",
         headers: { "content-type": "application/json", ...(cookie ? { cookie } : {}) },
@@ -187,6 +193,8 @@ async function call(body, opts) {
 test("the route refuses anyone who isn't signed in to the admin", async () => {
     assert.equal((await call({ ...requestForm, action: "send" }, { cookie: null })).status, 401)
     assert.equal((await call({ ...requestForm, action: "send" }, { cookie: "admin_auth=yes" })).status, 401)
+    // the old fixed value is no longer a session
+    assert.equal((await call({ ...requestForm, action: "send" }, { cookie: "admin_auth=authenticated" })).status, 401)
     assert.equal(fakeResend.attempts.length, 0)
 })
 
