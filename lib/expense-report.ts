@@ -1,13 +1,53 @@
 import { addMonths, format, parseISO } from "date-fns"
 import { ALL_HOUSES, type Expense, type ExpenseCategory } from "@/lib/expenses"
 import { houses } from "@/lib/houses"
-import { periodFor, summarizeEarnings, type EarningsBooking } from "@/lib/earnings"
+import { periodFor, shiftAnchor, summarizeEarnings, type EarningsBooking } from "@/lib/earnings"
 
-// The figures behind the Expenses page, for one month and one view: every
-// house together (ALL_HOUSES) or a single house. Pure functions, no React.
+// The figures behind the Expenses page, for one period (a week, month or
+// year, cut as on the Insights page) and one view: every house together
+// (ALL_HOUSES) or a single house. Pure functions, no React.
 
 /** "yyyy-MM" of the month `step` months away. */
 export const shiftMonth = (month: string, step: number) => format(addMonths(parseISO(`${month}-01`), step), "yyyy-MM")
+
+export type SpanKind = "week" | "month" | "year"
+
+/** A report period: inclusive days, "yyyy-MM-dd". */
+export interface Span {
+    kind: SpanKind
+    start: string
+    end: string
+}
+
+const dayKey = (d: Date) => format(d, "yyyy-MM-dd")
+
+/** The week (Monday to Sunday), month or year holding a day. */
+export function spanFor(kind: SpanKind, day: Date | string): Span {
+    const period = periodFor(kind, typeof day === "string" ? parseISO(day) : day)
+    return { kind, start: dayKey(period.start), end: dayKey(period.end) }
+}
+
+/** The span `step` periods away (-1: the one before). */
+export const shiftSpan = (span: Span, step: number): Span => spanFor(span.kind, shiftAnchor(span.kind, parseISO(span.start), step))
+
+/** The span of a month ("yyyy-MM"). */
+export const monthSpan = (month: string): Span => spanFor("month", `${month}-01`)
+
+/** Short name of a span: "November", "2026", "10 to 16 Nov". */
+export function spanName(span: Span): string {
+    const start = parseISO(span.start)
+    if (span.kind === "month") return format(start, "MMMM")
+    if (span.kind === "year") return format(start, "yyyy")
+    const end = parseISO(span.end)
+    if (start.getFullYear() !== end.getFullYear()) return `${format(start, "d MMM yyyy")} to ${format(end, "d MMM yyyy")}`
+    return start.getMonth() === end.getMonth() ? `${format(start, "d")} to ${format(end, "d MMM")}` : `${format(start, "d MMM")} to ${format(end, "d MMM")}`
+}
+
+/** Label of a span's bar in the chart: "Oct", "2026", "10 Nov". */
+export function spanBarLabel(span: Span): string {
+    const start = parseISO(span.start)
+    return span.kind === "month" ? format(start, "MMM") : span.kind === "year" ? format(start, "yyyy") : format(start, "d MMM")
+}
 
 // Months of history a category is compared against ("vs usual")
 const USUAL_MONTHS = 3
@@ -26,16 +66,18 @@ export function amountFor(expense: Pick<Expense, "house" | "amountRwf">, view: s
     return expense.house === ALL_HOUSES ? expense.amountRwf / houses.length : 0
 }
 
-const inMonth = (expense: Pick<Expense, "date">, month: string) => expense.date.startsWith(month)
+const inSpan = (expense: Pick<Expense, "date">, span: Span) => expense.date >= span.start && expense.date <= span.end
 
-export function spentInMonth(expenses: Expense[], month: string, view: string): number {
-    return expenses.reduce((sum, e) => (inMonth(e, month) ? sum + amountFor(e, view) : sum), 0)
+export function spentInSpan(expenses: Expense[], span: Span, view: string): number {
+    return expenses.reduce((sum, e) => (inSpan(e, span) ? sum + amountFor(e, view) : sum), 0)
 }
 
-function spentByCategory(expenses: Expense[], month: string, view: string): Partial<Record<ExpenseCategory, number>> {
+export const spentInMonth = (expenses: Expense[], month: string, view: string): number => spentInSpan(expenses, monthSpan(month), view)
+
+function spentByCategory(expenses: Expense[], span: Span, view: string): Partial<Record<ExpenseCategory, number>> {
     const totals: Partial<Record<ExpenseCategory, number>> = {}
     for (const e of expenses) {
-        if (!inMonth(e, month)) continue
+        if (!inSpan(e, span)) continue
         const amount = amountFor(e, view)
         if (amount > 0) totals[e.category] = (totals[e.category] || 0) + amount
     }
@@ -54,7 +96,7 @@ export function trend(current: number, previous: number): Trend {
     return { kind: pct > 0 ? "up" : pct < 0 ? "down" : "same", pct: Math.abs(pct) }
 }
 
-/** A category against its average over the months before that had it. */
+/** A category against its average over the periods before that had it. */
 export interface UsualNote {
     kind: "first" | "usual" | "up" | "down"
     pct: number
@@ -86,10 +128,13 @@ export interface ExpenseLine {
 }
 
 /** Every line of a month, largest first, with the per-house shares of a split expense joined again. */
-export function monthLines(expenses: Expense[], month: string): ExpenseLine[] {
+export const monthLines = (expenses: Expense[], month: string): ExpenseLine[] => spanLines(expenses, monthSpan(month))
+
+/** Every line of a span, largest first, with the per-house shares of a split expense joined again. */
+export function spanLines(expenses: Expense[], span: Span): ExpenseLine[] {
     const groups = new Map<string, Expense[]>()
     for (const e of expenses) {
-        if (!inMonth(e, month)) continue
+        if (!inSpan(e, span)) continue
         const key = e.id.replace(/-\d+$/, "")
         groups.set(key, [...(groups.get(key) ?? []), e])
     }
@@ -142,41 +187,50 @@ export interface HouseRow {
 }
 
 export interface MonthBar {
-    key: string // "yyyy-MM"
-    label: string // "Oct"
+    key: string // the span's first day, "yyyy-MM-dd"; "yyyy-MM" for a month
+    span: Span
+    label: string // "Oct", "10 Nov", "2026"
     total: number
 }
 
 export interface ExpenseReport {
-    month: string
+    month: string // "yyyy-MM" of the span's first day
+    span: Span
     total: number
     previousTotal: number
-    change: Trend // against the month before
-    revenue: number // confirmed earnings in the month, for the view
-    nights: number // booked nights in the month, for the view
+    change: Trend // against the period before
+    revenue: number // confirmed earnings in the period, for the view
+    nights: number // booked nights in the period, for the view
     categories: CategoryRow[] // largest first
     byHouse: HouseRow[] // in listing order; only meaningful when every house is shown
     top: TopLine[]
-    months: MonthBar[] // the last six, ending with this one
-    lines: ExpenseLine[] // the month's lines for the view, largest first
+    months: MonthBar[] // the last six periods, ending with this one
+    lines: ExpenseLine[] // the period's lines for the view, largest first
 }
 
 /**
- * Confirmed earnings and booked nights per house in a month, counted as on
+ * Confirmed earnings and booked nights per house in a period, counted as on
  * the Insights page: a booking's total spread evenly over its nights.
  */
-export function revenueInMonth(bookings: EarningsBooking[], month: string): Record<string, { total: number; nights: number }> {
+export function revenueInSpan(bookings: EarningsBooking[], span: Span): Record<string, { total: number; nights: number }> {
     const slugs = houses.map((h) => h.slug)
-    const summary = summarizeEarnings(bookings, periodFor("month", parseISO(`${month}-01`)), slugs)
+    const summary = summarizeEarnings(bookings, periodFor(span.kind, parseISO(span.start)), slugs)
     return Object.fromEntries(slugs.map((slug) => [slug, { total: summary.byHouse[slug]?.total || 0, nights: summary.byHouse[slug]?.nights || 0 }]))
 }
 
-export function expenseReport(expenses: Expense[], bookings: EarningsBooking[], month: string, view: string): ExpenseReport {
-    const total = spentInMonth(expenses, month, view)
-    const previousTotal = spentInMonth(expenses, shiftMonth(month, -1), view)
+export const revenueInMonth = (bookings: EarningsBooking[], month: string) => revenueInSpan(bookings, monthSpan(month))
 
-    const byCategory = spentByCategory(expenses, month, view)
-    const history = Array.from({ length: USUAL_MONTHS }, (_, i) => spentByCategory(expenses, shiftMonth(month, -(i + 1)), view))
+/** The report for a month ("yyyy-MM"). */
+export const expenseReport = (expenses: Expense[], bookings: EarningsBooking[], month: string, view: string): ExpenseReport =>
+    spanReport(expenses, bookings, monthSpan(month), view)
+
+/** The report for any span: a week and a year are measured as a month is. */
+export function spanReport(expenses: Expense[], bookings: EarningsBooking[], span: Span, view: string): ExpenseReport {
+    const total = spentInSpan(expenses, span, view)
+    const previousTotal = spentInSpan(expenses, shiftSpan(span, -1), view)
+
+    const byCategory = spentByCategory(expenses, span, view)
+    const history = Array.from({ length: USUAL_MONTHS }, (_, i) => spentByCategory(expenses, shiftSpan(span, -(i + 1)), view))
     const categories = (Object.keys(byCategory) as ExpenseCategory[])
         .map((category) => {
             const amount = byCategory[category] as number
@@ -191,13 +245,13 @@ export function expenseReport(expenses: Expense[], bookings: EarningsBooking[], 
         })
         .sort((a, b) => b.amount - a.amount)
 
-    const revenueByHouse = revenueInMonth(bookings, month)
+    const revenueByHouse = revenueInSpan(bookings, span)
     const shown = view === ALL_HOUSES ? houses : houses.filter((h) => h.slug === view)
     const revenue = shown.reduce((sum, h) => sum + revenueByHouse[h.slug].total, 0)
     const nights = shown.reduce((sum, h) => sum + revenueByHouse[h.slug].nights, 0)
 
     const byHouse = houses.map((h) => {
-        const amount = spentInMonth(expenses, month, h.slug)
+        const amount = spentInSpan(expenses, span, h.slug)
         const { total: earned, nights: booked } = revenueByHouse[h.slug]
         return {
             slug: h.slug,
@@ -210,7 +264,7 @@ export function expenseReport(expenses: Expense[], bookings: EarningsBooking[], 
         }
     })
 
-    const lines = linesFor(monthLines(expenses, month), view)
+    const lines = linesFor(spanLines(expenses, span), view)
     const top = lines
         .map((line) => {
             const amount = amountFor({ house: line.house, amountRwf: line.amountRwf }, view)
@@ -220,9 +274,15 @@ export function expenseReport(expenses: Expense[], bookings: EarningsBooking[], 
         .slice(0, TOP_LINES)
 
     const months = Array.from({ length: CHART_MONTHS }, (_, i) => {
-        const key = shiftMonth(month, i - (CHART_MONTHS - 1))
-        return { key, label: format(parseISO(`${key}-01`), "MMM"), total: spentInMonth(expenses, key, view) }
+        const bar = shiftSpan(span, i - (CHART_MONTHS - 1))
+        return {
+            key: bar.kind === "month" ? bar.start.slice(0, 7) : bar.start,
+            span: bar,
+            label: spanBarLabel(bar),
+            total: spentInSpan(expenses, bar, view),
+        }
     })
 
-    return { month, total, previousTotal, change: trend(total, previousTotal), revenue, nights, categories, byHouse, top, months, lines }
+    const month = span.start.slice(0, 7)
+    return { month, span, total, previousTotal, change: trend(total, previousTotal), revenue, nights, categories, byHouse, top, months, lines }
 }

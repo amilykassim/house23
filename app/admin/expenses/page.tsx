@@ -7,8 +7,21 @@ import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronLeft, ChevronRight, Copy
 import { toast } from "sonner"
 import { houses } from "@/lib/houses"
 import { ALL_HOUSES, EXPENSE_CATEGORIES, splitEvenly, type Expense, type ExpenseCategory } from "@/lib/expenses"
-import type { EarningsBooking } from "@/lib/earnings"
-import { amountFor, expenseReport, monthLines, shiftMonth, usualText, type ExpenseLine, type UsualNote } from "@/lib/expense-report"
+import { periodTitle, type EarningsBooking } from "@/lib/earnings"
+import {
+    amountFor,
+    monthLines,
+    monthSpan,
+    shiftSpan,
+    spanFor,
+    spanName,
+    spanReport,
+    usualText,
+    type ExpenseLine,
+    type Span,
+    type SpanKind,
+    type UsualNote,
+} from "@/lib/expense-report"
 import { SegmentedControl } from "@/components/segmented-control"
 import { PillMenu } from "@/components/pill-menu"
 import { houseColor } from "@/components/earnings-insights"
@@ -27,6 +40,12 @@ const WHOSE_OPTIONS = [
     { id: "business" as const, label: "The business" },
     { id: "personal" as const, label: "Us (personal)" },
 ]
+// The period the report covers, as on the Insights page
+const SPAN_KINDS: { id: SpanKind; label: string }[] = [
+    { id: "week", label: "Week" },
+    { id: "month", label: "Month" },
+    { id: "year", label: "Year" },
+]
 const houseLabel = (id: string) => HOUSE_OPTIONS.find((h) => h.id === id)?.label ?? id
 const rwf = (n: number) => `${Math.round(n).toLocaleString("en-US")} RWF`
 const pct = (share: number) => `${Math.round(share * 100)}%`
@@ -42,6 +61,13 @@ const CHART_HEIGHT = 120
 const MONTH_MENU = "[&>button]:w-full [&>button]:justify-between [&>button]:min-h-12 [&>button]:text-[15px]"
 const monthLabel = (key: string) => format(parseISO(`${key}-01`), "MMMM yyyy")
 const monthName = (key: string) => format(parseISO(`${key}-01`), "MMMM")
+// "November 2026", "2026", "10 Nov to 16 Nov 2026"
+const spanTitle = (span: Span) => periodTitle({ kind: span.kind, start: parseISO(span.start), end: parseISO(span.end) })
+// "Spent in November", "Spent in 2026", "Spent 10 to 16 Nov"
+const spentIn = (span: Span) => (span.kind === "week" ? `Spent ${spanName(span)}` : `Spent in ${spanName(span)}`)
+// What the period is compared with: "October", "2025", "the week before"
+const beforeName = (span: Span) => (span.kind === "week" ? "the week before" : spanName(shiftSpan(span, -1)))
+const SIX_PERIODS: Record<SpanKind, string> = { week: "Last six weeks", month: "Last six months", year: "Last six years" }
 
 const TILE = "min-w-0 rounded-[20px] p-5 flex flex-col gap-1.5"
 const CARD = "min-w-0 rounded-[20px] border border-border bg-card p-5 sm:p-6 flex flex-col gap-4"
@@ -90,8 +116,10 @@ export default function AdminExpensesPage() {
     const [saving, setSaving] = useState(false)
     // The house the report is about: every house, or one of them
     const [view, setView] = useState(houses.length > 1 ? ALL_HOUSES : houses[0].slug)
-    // Month whose expenses are reported ("yyyy-MM"), and whether all of them show
-    const [listMonth, setListMonth] = useState(today.slice(0, 7))
+    // The week, month (default) or year whose expenses are reported
+    const [span, setSpan] = useState<Span>(() => spanFor("month", today))
+    // Month-only parts (the personal card, month shortcuts) use the month it starts in
+    const listMonth = span.start.slice(0, 7)
     // Page of the month's list, from 1
     const [page, setPage] = useState(1)
     // The line folding away after Delete (by its key), and which way pages move
@@ -151,7 +179,7 @@ export default function AdminExpensesPage() {
     const cells = useMemo(() => monthCells(month, (key) => ({ disabled: key > today })), [month, today])
 
     const monthKey = today.slice(0, 7)
-    const report = useMemo(() => expenseReport(expenses, bookings, listMonth, view), [expenses, bookings, listMonth, view])
+    const report = useMemo(() => spanReport(expenses, bookings, span, view), [expenses, bookings, span, view])
     const pageCount = Math.max(1, Math.ceil(report.lines.length / PAGE_SIZE))
     // Held to the last page, so deleting its only line never leaves an empty page
     const currentPage = Math.min(page, pageCount)
@@ -161,17 +189,20 @@ export default function AdminExpensesPage() {
         setPageDir(next > currentPage ? "next" : "prev")
         setPage(next)
     }
-    const listMonthName = monthName(listMonth)
-    const previousMonthName = monthName(shiftMonth(listMonth, -1))
-    // The arrows stop at the oldest month with an expense and at this month
-    const oldestMonth = [...expenses, ...personal.expenses].reduce((oldest, e) => (e.date.slice(0, 7) < oldest ? e.date.slice(0, 7) : oldest), monthKey)
-    const showMonth = (key: string) => {
-        setListMonth(key)
+    const listName = spanName(span)
+    const spentLabel = spentIn(span)
+    // The arrows stop at the period of the oldest expense and at this period
+    const oldestDay = [...expenses, ...personal.expenses].reduce((oldest, e) => (e.date < oldest ? e.date : oldest), today)
+    const showSpan = (next: Span) => {
+        setSpan(next)
         setPage(1)
         setOpenCategory(null)
         setEditing(null)
     }
-    const stepMonth = (step: number) => showMonth(shiftMonth(listMonth, step))
+    const showMonth = (key: string) => showSpan(monthSpan(key))
+    const stepSpan = (step: number) => showSpan(shiftSpan(span, step))
+    // A new kind of period opens on the one holding today, as on Insights
+    const pickKind = (kind: SpanKind) => showSpan(spanFor(kind, today))
     const topCategory = report.categories[0]
     const chartMax = Math.max(...report.months.map((m) => m.total), 1)
     const hasSpending = report.total > 0
@@ -230,7 +261,7 @@ export default function AdminExpensesPage() {
             setDate(today)
             setCalendarOpen(false)
             setFormOpen(false)
-            showMonth(date.slice(0, 7))
+            showSpan(spanFor(span.kind, date))
             fetchPersonal()
         } catch {
             toast.error("Couldn't save the personal expense", { description: "Nothing was recorded. Try again." })
@@ -398,14 +429,14 @@ export default function AdminExpensesPage() {
     // "▲ 45% vs September", "same as September", "first month"
     const changeLine =
         report.change.kind === "first" ? (
-            <span>first month</span>
+            <span>first {span.kind}</span>
         ) : report.change.kind === "same" ? (
-            <span>same as {previousMonthName}</span>
+            <span>same as {beforeName(span)}</span>
         ) : (
             <>
                 {report.change.kind === "up" ? <ArrowUp className="h-3.5 w-3.5" aria-label="up" /> : <ArrowDown className="h-3.5 w-3.5" aria-label="down" />}
                 <span>
-                    {report.change.pct}% vs {previousMonthName}
+                    {report.change.pct}% vs {beforeName(span)}
                 </span>
             </>
         )
@@ -428,34 +459,35 @@ export default function AdminExpensesPage() {
             </div>
             </div>
 
-            {/* Which house the report is about */}
-            {houses.length > 1 && (
-                <div {...rise(1)} className="m-rise self-start max-w-full">
-                <SegmentedControl
-                    className="max-w-full"
-                    itemClassName="px-3 sm:px-[22px]"
-                    options={HOUSE_OPTIONS}
-                    value={view}
-                    onChange={(next) => {
-                        setView(next)
-                        setPage(1)
-                        setOpenCategory(null)
-                        setEditing(null)
-                    }}
-                />
-                </div>
-            )}
+            {/* Which house the report is about, and over which period */}
+            <div {...rise(1)} className="m-rise flex flex-wrap items-center gap-3">
+                {houses.length > 1 && (
+                    <SegmentedControl
+                        className="max-w-full"
+                        itemClassName="px-3 sm:px-[22px]"
+                        options={HOUSE_OPTIONS}
+                        value={view}
+                        onChange={(next) => {
+                            setView(next)
+                            setPage(1)
+                            setOpenCategory(null)
+                            setEditing(null)
+                        }}
+                    />
+                )}
+                <SegmentedControl className="max-w-full" options={SPAN_KINDS} value={span.kind} onChange={pickKind} />
+            </div>
 
-            {/* One month at a time */}
+            {/* One period at a time */}
             <div {...rise(2)} className="m-rise flex items-center gap-3">
-                <button type="button" onClick={() => stepMonth(-1)} disabled={listMonth <= oldestMonth} aria-label="Previous month" className={ARROW_BUTTON}>
+                <button type="button" onClick={() => stepSpan(-1)} disabled={span.start <= oldestDay} aria-label={`Previous ${span.kind}`} className={ARROW_BUTTON}>
                     <ChevronLeft className="h-4 w-4" />
                 </button>
                 <div className="min-w-0 flex flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
-                    <span className="text-[17px] font-bold tracking-[-0.02em] text-foreground">{monthLabel(listMonth)}</span>
+                    <span className="text-[17px] font-bold tracking-[-0.02em] text-foreground">{spanTitle(span)}</span>
                     <span className="text-[13px] text-muted-foreground">{plural(report.lines.length, "expense")}</span>
                 </div>
-                <button type="button" onClick={() => stepMonth(1)} disabled={listMonth >= monthKey} aria-label="Next month" className={ARROW_BUTTON}>
+                <button type="button" onClick={() => stepSpan(1)} disabled={span.end >= today} aria-label={`Next ${span.kind}`} className={ARROW_BUTTON}>
                     <ChevronRight className="h-4 w-4" />
                 </button>
             </div>
@@ -475,9 +507,9 @@ export default function AdminExpensesPage() {
             ) : (
                 <>
                     {/* The month at a glance */}
-                    <section aria-label={`${listMonthName} at a glance`} className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <section aria-label={`${listName} at a glance`} className="grid grid-cols-1 min-[480px]:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div {...rise(3)} className={`${TILE} m-rise m-lift bg-foreground text-background`}>
-                            <span className="text-[13px] font-semibold text-background/75">Spent in {listMonthName}</span>
+                            <span className="text-[13px] font-semibold text-background/75">{spentLabel}</span>
                             <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] tabular-nums">{rwf(shownTotal)}</span>
                             <span className="text-[13px] flex items-center gap-1.5">{changeLine}</span>
                         </div>
@@ -505,7 +537,7 @@ export default function AdminExpensesPage() {
                     </section>
 
                     {!hasSpending ? (
-                        <p className="text-sm text-muted-foreground">The breakdown appears once {listMonthName} has an expense.</p>
+                        <p className="text-sm text-muted-foreground">The breakdown appears once {listName} has an expense.</p>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
                             {/* By category, largest first */}
@@ -675,28 +707,28 @@ export default function AdminExpensesPage() {
                                     </section>
                                 )}
 
-                                {/* Spending, month by month */}
+                                {/* Spending, period by period */}
                                 <section aria-labelledby="six-months" {...rise(9)} className={`${CARD} m-rise m-card`}>
                                     <div className="flex items-baseline justify-between gap-3">
                                         <h2 id="six-months" className={CARD_TITLE}>
-                                            Last six months
+                                            {SIX_PERIODS[span.kind]}
                                         </h2>
-                                        <span className="text-[13px] text-muted-foreground">tap a month to open it</span>
+                                        <span className="text-[13px] text-muted-foreground">tap a {span.kind} to open it</span>
                                     </div>
                                     <div
                                         role="group"
-                                        aria-label={`Spent each month, ${report.months[0].label} to ${monthLabel(listMonth)}`}
+                                        aria-label={`Spent each ${span.kind}, ${spanTitle(report.months[0].span)} to ${spanTitle(span)}`}
                                         className="grid grid-cols-6 gap-1.5 sm:gap-2"
                                     >
                                         {report.months.map((m) => {
-                                            const current = m.key === listMonth
+                                            const current = m.span.start === span.start
                                             return (
                                                 <button
                                                     key={m.key}
                                                     type="button"
-                                                    onClick={() => showMonth(m.key)}
+                                                    onClick={() => showSpan(m.span)}
                                                     aria-pressed={current}
-                                                    aria-label={`${monthLabel(m.key)}: ${rwf(m.total)}`}
+                                                    aria-label={`${spanTitle(m.span)}: ${rwf(m.total)}`}
                                                     className="min-w-0 flex flex-col items-center gap-1.5 rounded-lg pt-1 pb-1.5 hover:bg-[#F7F7F7]"
                                                 >
                                                     <span className={`text-xs tabular-nums ${current ? "font-bold text-foreground" : "text-muted-foreground"}`}>
@@ -720,14 +752,15 @@ export default function AdminExpensesPage() {
                 </>
             )}
 
-            {/* The month's business expenses beside the money we took for ourselves */}
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-6 items-start">
+            {/* The period's business expenses, beside the money we took for
+                ourselves when a month is shown (the stipend is set per month) */}
+            <div className={`grid grid-cols-1 ${span.kind === "month" ? "lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]" : ""} gap-6 items-start`}>
             {/* The month's expenses, one line each */}
             <section aria-labelledby="month-expenses" {...rise(loading ? 3 : 10)} className="m-rise m-card min-w-0 rounded-[20px] border border-border bg-card overflow-hidden">
                 <div className="px-5 sm:px-6 pt-5 pb-4 flex flex-wrap items-end justify-between gap-3 border-b border-border">
                     <div className="flex flex-col gap-0.5">
                         <h2 id="month-expenses" className="text-[13px] font-semibold text-muted-foreground">
-                            Spent in {listMonthName}
+                            {spentLabel}
                         </h2>
                         <span className="text-[26px] leading-tight font-bold tracking-[-0.02em] text-foreground tabular-nums">{rwf(shownTotal)}</span>
                     </div>
@@ -744,10 +777,10 @@ export default function AdminExpensesPage() {
                     </div>
                 ) : report.lines.length === 0 ? (
                     <p className="px-5 sm:px-6 py-5 text-sm text-muted-foreground">
-                        {expenses.length === 0 ? "No expenses recorded yet." : `No expenses recorded in ${listMonthName}.`}
+                        {expenses.length === 0 ? "No expenses recorded yet." : `No expenses recorded in ${listName}.`}
                     </p>
                 ) : (
-                    <ul key={`${listMonth}:${view}:${currentPage}`}>
+                    <ul key={`${span.kind}:${span.start}:${view}:${currentPage}`}>
                         {visible.map((line, i) => {
                             const counted = amountFor(line, view)
                             const day = parseISO(line.date)
@@ -849,6 +882,7 @@ export default function AdminExpensesPage() {
                 )}
             </section>
 
+            {span.kind === "month" && (
             <PersonalCard
                 month={listMonth}
                 expenses={personal.expenses}
@@ -860,6 +894,7 @@ export default function AdminExpensesPage() {
                 riseIndex={loading ? 4 : 11}
                 onChanged={fetchPersonal}
             />
+            )}
             </div>
 
             {/* Copy a month's expenses into another month, and shortcuts to other months */}
