@@ -6,6 +6,7 @@ import {
     listPersonalExpenses,
     listStipendMonths,
     setStipendMonth,
+    updatePersonalExpense,
 } from "@/lib/store"
 import { MONTHLY_STIPEND_RWF } from "@/lib/earnings"
 import { readPersonalExpense, readStipendChange } from "@/lib/personal"
@@ -58,6 +59,22 @@ export async function PUT(request: NextRequest) {
 
     await setStipendMonth(parsed.month, parsed.amountRwf)
     return NextResponse.json({ stipends: await listStipendMonths() })
+}
+
+/** Changes one personal expense: { id, amountRwf, date, note }, checked as when adding. */
+export async function PATCH(request: NextRequest) {
+    const denied = await unauthorized(request)
+    if (denied) return denied
+
+    const body = await readJson(request)
+    const id = (body as any)?.id
+    if (typeof id !== "string" || id === "") return NextResponse.json({ error: "Missing id" }, { status: 400 })
+    const parsed = readPersonalExpense(body)
+    if (typeof parsed === "string") return NextResponse.json({ error: parsed }, { status: 400 })
+
+    const expense = await updatePersonalExpense({ id, ...parsed })
+    if (!expense) return NextResponse.json({ error: "Not found" }, { status: 404 })
+    return NextResponse.json({ expense })
 }
 
 export async function DELETE(request: NextRequest) {

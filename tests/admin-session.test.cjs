@@ -146,6 +146,7 @@ const routes = [
     ["GET /api/personal-expenses", () => require("../app/api/personal-expenses/route.ts").GET(req("http://localhost/api/personal-expenses", { cookie: FORGED }))],
     ["POST /api/personal-expenses", () => require("../app/api/personal-expenses/route.ts").POST(req("http://localhost/api/personal-expenses", { cookie: FORGED, method: "POST", body: {} }))],
     ["PUT /api/personal-expenses", () => require("../app/api/personal-expenses/route.ts").PUT(req("http://localhost/api/personal-expenses", { cookie: FORGED, method: "PUT", body: {} }))],
+    ["PATCH /api/personal-expenses", () => require("../app/api/personal-expenses/route.ts").PATCH(req("http://localhost/api/personal-expenses", { cookie: FORGED, method: "PATCH", body: {} }))],
     ["DELETE /api/personal-expenses", () => require("../app/api/personal-expenses/route.ts").DELETE(req("http://localhost/api/personal-expenses?id=PE-1", { cookie: FORGED, method: "DELETE" }))],
     ["POST /api/bookings (by hand)", () => require("../app/api/bookings/route.ts").POST(req("http://localhost/api/bookings", { cookie: FORGED, method: "POST", body: { manual: true } }))],
     ["DELETE /api/bookings", () => require("../app/api/bookings/route.ts").DELETE(req("http://localhost/api/bookings?id=B-1", { cookie: FORGED, method: "DELETE" }))],

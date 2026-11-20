@@ -42,6 +42,10 @@ export function PersonalCard({
     // The stipend amount being typed while it is edited; null when closed
     const [draft, setDraft] = useState<string | null>(null)
     const [savingStipend, setSavingStipend] = useState(false)
+    // The personal expense being changed; null when no line is open
+    const [editing, setEditing] = useState<PersonalDraft | null>(null)
+    const [savingEdit, setSavingEdit] = useState(false)
+    const today = format(new Date(), "yyyy-MM-dd")
 
     const monthName = format(parseISO(`${month}-01`), "MMMM")
     const lines = expenses.filter((e) => e.date.startsWith(month) && !hidden.includes(e.id))
@@ -75,6 +79,31 @@ export function PersonalCard({
             toast.error("Couldn't change the stipend", { description: "Nothing was changed. Try again." })
         } finally {
             setSavingStipend(false)
+        }
+    }
+
+    // Saves the line being edited; a new date can move it to another month
+    const saveEdit = async (line: PersonalExpense) => {
+        if (!editing || editing.id !== line.id) return
+        setSavingEdit(true)
+        try {
+            const res = await fetch("/api/personal-expenses", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: line.id, amountRwf: Math.round(Number(editing.amount)), date: editing.date, note: editing.note }),
+            })
+            if (!res.ok) throw new Error("Request failed")
+            forgetPersonal()
+            const moved = !editing.date.startsWith(month)
+            toast.success("Personal expense updated", {
+                description: moved ? `Moved to ${format(parseISO(editing.date), "MMMM yyyy")}` : undefined,
+            })
+            setEditing(null)
+            onChanged()
+        } catch {
+            toast.error("Couldn't update the personal expense", { description: "Nothing was changed. Try again." })
+        } finally {
+            setSavingEdit(false)
         }
     }
 
@@ -145,7 +174,10 @@ export function PersonalCard({
                             <span className="shrink-0 text-[15px] font-bold text-foreground tabular-nums whitespace-nowrap">{rwf(stipend)}</span>
                             <button
                                 type="button"
-                                onClick={() => setDraft(draft === null ? String(stipend) : null)}
+                                onClick={() => {
+                                    setEditing(null)
+                                    setDraft(draft === null ? String(stipend) : null)
+                                }}
                                 aria-expanded={draft !== null}
                                 aria-label={`Change the stipend for ${monthName}`}
                                 className={`m-quiet w-11 h-11 -mr-2 shrink-0 rounded-full flex items-center justify-center hover:text-foreground hover:bg-muted ${draft !== null ? "bg-muted text-foreground" : "text-[#6A6A6A]"}`}
@@ -203,7 +235,9 @@ export function PersonalCard({
                         </Collapse>
                     </li>
 
-                    {lines.map((line) => (
+                    {lines.map((line) => {
+                        const isEditing = editing?.id === line.id
+                        return (
                         <li key={line.id} className="m-row border-b border-[#EBEBEB] last:border-b-0">
                             <div className="px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
                                 {leaf(line.date)}
@@ -211,17 +245,48 @@ export function PersonalCard({
                                     {line.note || <span className="font-normal text-muted-foreground">Personal</span>}
                                 </span>
                                 <span className="shrink-0 text-[15px] font-bold text-foreground tabular-nums whitespace-nowrap">{rwf(line.amountRwf)}</span>
-                                <button
-                                    type="button"
-                                    onClick={() => remove(line)}
-                                    aria-label={`Delete ${line.note || "personal expense"} of ${rwf(line.amountRwf)}`}
-                                    className="m-quiet w-11 h-11 -mr-2 shrink-0 rounded-full flex items-center justify-center text-[#6A6A6A] hover:text-foreground hover:bg-muted"
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </button>
+                                <span className="shrink-0 flex items-center -mr-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setDraft(null)
+                                            setEditing(isEditing ? null : { id: line.id, amount: String(line.amountRwf), date: line.date, note: line.note })
+                                        }}
+                                        aria-expanded={isEditing}
+                                        aria-label={`Edit ${line.note || "personal expense"} of ${rwf(line.amountRwf)}`}
+                                        className={`m-quiet w-11 h-11 rounded-full flex items-center justify-center hover:text-foreground hover:bg-muted ${isEditing ? "bg-muted text-foreground" : "text-[#6A6A6A]"}`}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (isEditing) setEditing(null)
+                                            remove(line)
+                                        }}
+                                        aria-label={`Delete ${line.note || "personal expense"} of ${rwf(line.amountRwf)}`}
+                                        className="m-quiet w-11 h-11 rounded-full flex items-center justify-center text-[#6A6A6A] hover:text-foreground hover:bg-muted"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </span>
                             </div>
+                            <Collapse open={isEditing}>
+                                {isEditing && editing && (
+                                    <EditPersonalForm
+                                        line={line}
+                                        value={editing}
+                                        onChange={setEditing}
+                                        onCancel={() => setEditing(null)}
+                                        onSave={() => saveEdit(line)}
+                                        saving={savingEdit}
+                                        today={today}
+                                    />
+                                )}
+                            </Collapse>
                         </li>
-                    ))}
+                        )
+                    })}
                 </ul>
             )}
 
@@ -238,5 +303,89 @@ export function PersonalCard({
                 </div>
             )}
         </section>
+    )
+}
+
+type PersonalDraft = { id: string; amount: string; date: string; note: string }
+
+/** The amount, date and name of one personal expense, as on the Add form. */
+function EditPersonalForm({
+    line,
+    value,
+    onChange,
+    onCancel,
+    onSave,
+    saving,
+    today,
+}: {
+    line: PersonalExpense
+    value: PersonalDraft
+    onChange: (next: PersonalDraft) => void
+    onCancel: () => void
+    onSave: () => void
+    saving: boolean
+    today: string
+}) {
+    const amount = value.amount.trim() === "" ? NaN : Math.round(Number(value.amount))
+    const changed = amount !== line.amountRwf || value.date !== line.date || value.note.trim() !== line.note
+    const valid = amount > 0 && /^\d{4}-\d{2}-\d{2}$/.test(value.date) && value.date <= today
+    const field = "rounded-xl border border-[#B0B0B0] bg-card px-3.5 py-2.5 flex flex-col gap-0.5 focus-within:border-foreground focus-within:ring-1 focus-within:ring-foreground"
+    const input = "w-full bg-transparent text-[16px] text-foreground placeholder:text-[#8A8A8A] outline-none"
+
+    return (
+        <form
+            onSubmit={(e) => {
+                e.preventDefault()
+                if (changed && valid && !saving) onSave()
+            }}
+            className="mx-4 sm:mx-6 mb-4 p-3.5 rounded-xl bg-[#F7F7F7] flex flex-col gap-3"
+        >
+            <label className={field}>
+                <span className="text-[13px] font-semibold text-muted-foreground">What it was for</span>
+                <input
+                    type="text"
+                    value={value.note}
+                    onChange={(e) => onChange({ ...value, note: e.target.value })}
+                    placeholder="e.g. fuel"
+                    maxLength={200}
+                    autoComplete="off"
+                    className={input}
+                />
+            </label>
+            <div className="grid grid-cols-1 min-[420px]:grid-cols-2 gap-2.5">
+                <label className={field}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Amount, RWF</span>
+                    <input
+                        type="number"
+                        min="1"
+                        inputMode="numeric"
+                        value={value.amount}
+                        onChange={(e) => onChange({ ...value, amount: e.target.value })}
+                        className={`${input} tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
+                    />
+                </label>
+                <label className={field}>
+                    <span className="text-[13px] font-semibold text-muted-foreground">Date</span>
+                    <input type="date" value={value.date} max={today} onChange={(e) => onChange({ ...value, date: e.target.value })} className={input} />
+                </label>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+                <button
+                    type="button"
+                    onClick={onCancel}
+                    className="min-h-11 px-4 rounded-full border border-[#B0B0B0] bg-card text-sm font-semibold text-foreground hover:bg-white"
+                >
+                    Cancel
+                </button>
+                <button
+                    type="submit"
+                    disabled={!changed || !valid || saving}
+                    className="min-h-11 px-5 rounded-full bg-foreground text-background text-sm font-bold flex items-center gap-2 hover:bg-foreground/85 disabled:opacity-45"
+                >
+                    {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                    Save
+                </button>
+            </div>
+        </form>
     )
 }

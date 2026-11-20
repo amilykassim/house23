@@ -269,6 +269,18 @@ export async function insertPersonalExpense(expense: Omit<PersonalExpense, "crea
     return toPersonalExpense(rows[0])
 }
 
+/** Sets a personal expense's amount, date and note; its id stays. Null when it does not exist. */
+export async function updatePersonalExpense(
+    expense: Pick<PersonalExpense, "id" | "amountRwf" | "date" | "note">,
+    tx: Db = db
+): Promise<PersonalExpense | null> {
+    const { rows } = await tx.query(
+        `UPDATE personal_expenses SET amount_rwf = $2, date = $3, note = $4 WHERE id = $1 RETURNING ${PERSONAL_COLUMNS}`,
+        [expense.id, expense.amountRwf, expense.date, expense.note]
+    )
+    return rows[0] ? toPersonalExpense(rows[0]) : null
+}
+
 /** Returns false when the personal expense does not exist. */
 export async function deletePersonalExpense(id: string, tx: Db = db): Promise<boolean> {
     const result = await tx.query(`DELETE FROM personal_expenses WHERE id = $1`, [id])

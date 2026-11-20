@@ -198,6 +198,7 @@ dbTest("every method needs the admin session, and nothing is written without it"
         ["GET", undefined, ""],
         ["POST", { amountRwf: 1000, date: "2026-11-15" }, ""],
         ["PUT", { month: "2026-11", amountRwf: 0 }, ""],
+        ["PATCH", { id: "PE-x", amountRwf: 1000, date: "2026-11-15" }, ""],
         ["DELETE", undefined, "?id=PE-x"],
     ]) {
         const { status } = await personalCall(method, body, { auth: false, query })
@@ -286,4 +287,90 @@ dbTest("personal money never reaches business expenses, their API, or the totals
     assert.equal(await sumExpenses("2026-11-01", "2026-12-01"), sumBefore)
     assert.equal(sumBefore, 845000)
     assert.deepEqual((await call("expenses", "GET")).json.expenses.map((e) => e.id), listBefore)
+})
+
+// ------------------------------------------ editing a personal expense (PATCH)
+
+const fullRows = () =>
+    sql(`SELECT id, amount_rwf, to_char(date, 'YYYY-MM-DD') AS date, note, created_at FROM personal_expenses ORDER BY id`)
+
+async function seedPersonal() {
+    await seed()
+    await sql(`INSERT INTO personal_expenses (id, amount_rwf, date, note) VALUES
+        ('PE-a', 50000, '2026-11-17', 'Fuel (20K), Hassan 20K'),
+        ('PE-b', 30000, '2026-11-15', 'Dee drinks')`)
+}
+
+dbTest("editing changes that one line's amount, date and note; the other line, its id and created time stay", async () => {
+    await seedPersonal()
+    const before = await fullRows()
+    const { status, json } = await personalCall("PATCH", { id: "PE-a", amountRwf: "51500.4", date: "2026-11-16", note: "  Fuel, Hassan, moto  " })
+    assert.equal(status, 200)
+    assert.deepEqual([json.expense.id, json.expense.amountRwf, json.expense.date, json.expense.note], ["PE-a", 51500, "2026-11-16", "Fuel, Hassan, moto"])
+    const after = await fullRows()
+    assert.deepEqual(after[0], { ...before[0], amount_rwf: 51500, date: "2026-11-16", note: "Fuel, Hassan, moto" })
+    assert.deepEqual(after[1], before[1])
+    // The page reads it back the same way
+    const listed = (await personalCall("GET")).json.expenses.find((e) => e.id === "PE-a")
+    assert.deepEqual([listed.amountRwf, listed.date, listed.note], [51500, "2026-11-16", "Fuel, Hassan, moto"])
+})
+
+dbTest("moving a line to another month moves it out of this month's personal total", async () => {
+    await seedPersonal()
+    await personalCall("PATCH", { id: "PE-a", amountRwf: 50000, date: "2026-10-31", note: "Fuel" })
+    const { expenses, stipends } = (await personalCall("GET")).json
+    assert.equal(personalForPeriod("2026-11-01", "2026-11-30", expenses, stipends).entries, 30000)
+    assert.equal(personalForPeriod("2026-10-01", "2026-10-31", expenses, stipends).entries, 50000)
+})
+
+dbTest("sending the same edit twice leaves the same rows (idempotent)", async () => {
+    await seedPersonal()
+    const body = { id: "PE-a", amountRwf: 45000, date: "2026-11-17", note: "Fuel" }
+    assert.equal((await personalCall("PATCH", body)).status, 200)
+    const once = await fullRows()
+    assert.equal((await personalCall("PATCH", body)).status, 200)
+    assert.deepEqual(await fullRows(), once)
+})
+
+dbTest("an unknown id is 404 and writes nothing; the retry with the right id works", async () => {
+    await seedPersonal()
+    const before = await fullRows()
+    assert.equal((await personalCall("PATCH", { id: "PE-gone", amountRwf: 1000, date: "2026-11-17" })).status, 404)
+    assert.deepEqual(await fullRows(), before)
+    assert.equal((await personalCall("PATCH", { id: "PE-b", amountRwf: 1000, date: "2026-11-17" })).status, 200)
+    assert.equal((await fullRows())[1].amount_rwf, 1000)
+})
+
+dbTest("bad edits are refused before anything is written, checked as when adding", async () => {
+    await seedPersonal()
+    const before = await fullRows()
+    const good = { id: "PE-a", amountRwf: 1000, date: "2026-11-17", note: "" }
+    for (const bad of [
+        { ...good, id: undefined },
+        { ...good, id: "" },
+        { ...good, id: 7 },
+        { ...good, amountRwf: 0 },
+        { ...good, amountRwf: -5 },
+        { ...good, amountRwf: "abc" },
+        { ...good, amountRwf: 3e9 },
+        { ...good, date: "2026-02-30" },
+        { ...good, date: "17/11/2026" },
+    ]) {
+        assert.equal((await personalCall("PATCH", bad)).status, 400, JSON.stringify(bad))
+    }
+    assert.equal((await personalCall("PATCH", "{not json")).status, 400)
+    assert.equal((await personalCall("PATCH", { ...good, note: "x".repeat(300) })).status, 200)
+    assert.equal((await fullRows())[0].note.length, 200)
+    await personalCall("PATCH", { id: "PE-a", amountRwf: before[0].amount_rwf, date: before[0].date, note: before[0].note })
+    assert.deepEqual(await fullRows(), before)
+})
+
+dbTest("editing a personal expense never touches business expenses or the stipend", async () => {
+    await seedPersonal()
+    await personalCall("PUT", { month: "2026-11", amountRwf: 300000 })
+    const business = await businessRows()
+    const stipends = await stipendRows()
+    await personalCall("PATCH", { id: "PE-a", amountRwf: 99000, date: "2026-11-01", note: "x" })
+    assert.deepEqual(await businessRows(), business)
+    assert.deepEqual(await stipendRows(), stipends)
 })
